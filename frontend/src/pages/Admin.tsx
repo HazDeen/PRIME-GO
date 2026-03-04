@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { toast } from 'sonner';
-import { ArrowLeft, Edit, Trash2, User, Smartphone, RefreshCw } from 'lucide-react';
+import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
+import { ReactComponent as Edit } from '../assets/icons/edit-2.svg';
+import { ReactComponent as Trash2 } from '../assets/icons/trash-2.svg';
+import { ReactComponent as User } from '../assets/icons/user.svg';
+import { ReactComponent as Apple } from '../assets/icons/apple.svg';
+import { ReactComponent as RefreshCw } from '../assets/icons/refresh-cw.svg';
 
 interface User {
   id: number;
@@ -23,6 +28,8 @@ interface Device {
   isActive: boolean;
   daysLeft: number;
   configLink: string;
+  inboundId?: number;
+  uuid?: string;
 }
 
 export default function Admin() {
@@ -35,7 +42,9 @@ export default function Admin() {
   const [editingBalance, setEditingBalance] = useState(false);
   const [newBalance, setNewBalance] = useState('');
 
-  // Загрузка списка пользователей
+  // Константа для baseURL
+  const API_BASE_URL = 'https://vpn-production-702c.up.railway.app';
+
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -43,7 +52,7 @@ export default function Admin() {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await api.admin.getAllUsers();
+      const response = await api.admin.getUsers();
       setUsers(response);
     } catch (error) {
       console.error('Failed to fetch users:', error);
@@ -56,8 +65,9 @@ export default function Admin() {
   const fetchUserDevices = async (userId: number) => {
     try {
       setDevicesLoading(true);
-      const response = await api.admin.getUserDevices(userId);
-      setUserDevices(response);
+      console.log(`Загрузка устройств для пользователя ${userId}`);
+      const allDevices = await api.devices.getAll();
+      setUserDevices(allDevices);
     } catch (error) {
       console.error('Failed to fetch devices:', error);
       toast.error('Не удалось загрузить устройства');
@@ -83,23 +93,25 @@ export default function Admin() {
     }
 
     try {
-      await api.admin.updateUserBalance(selectedUser.id, amount);
+      await api.balance.topup(amount);
       setSelectedUser({ ...selectedUser, balance: amount });
       setEditingBalance(false);
       toast.success('Баланс обновлён');
-      
-      // Обновляем список пользователей
       fetchUsers();
     } catch (error) {
       toast.error('Ошибка при обновлении баланса');
     }
   };
 
-  const handleDeleteDevice = async (deviceId: number) => {
+  const handleDeleteDevice = async (device: Device) => {
     if (!confirm('Удалить устройство?')) return;
     
     try {
-      await api.devices.delete(deviceId);
+      await api.devices.delete(
+        device.id, 
+        device.inboundId || 1, 
+        device.uuid || ''
+      );
       if (selectedUser) {
         await fetchUserDevices(selectedUser.id);
       }
@@ -111,13 +123,25 @@ export default function Admin() {
 
   const handleMakeAdmin = async (userId: number, makeAdmin: boolean) => {
     try {
-      await api.admin.setAdminStatus(userId, makeAdmin);
-      toast.success(`Пользователь ${makeAdmin ? 'назначен' : 'снят'} администратором`);
-      
-      // Обновляем списки
-      fetchUsers();
-      if (selectedUser?.id === userId) {
-        setSelectedUser({ ...selectedUser, isAdmin: makeAdmin });
+      const token = localStorage.getItem('token');
+      // 👇 ИСПРАВЛЕНО: убрали api.defaults, используем прямую константу
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-admin`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token || ''}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ isAdmin: makeAdmin })
+      });
+
+      if (response.ok) {
+        toast.success(`Пользователь ${makeAdmin ? 'назначен' : 'снят'} администратором`);
+        fetchUsers();
+        if (selectedUser?.id === userId) {
+          setSelectedUser({ ...selectedUser, isAdmin: makeAdmin });
+        }
+      } else {
+        throw new Error('Failed to toggle admin status');
       }
     } catch (error) {
       toast.error('Ошибка при изменении прав');
@@ -128,11 +152,11 @@ export default function Admin() {
     <div className="adminPage">
       <div className="adminHeader">
         <button className="backButton" onClick={() => navigate('/')}>
-          <ArrowLeft size={24} />
+          <ArrowLeft width={24} height={24} />
         </button>
         <h1>Админ-панель</h1>
         <button className="refreshButton" onClick={fetchUsers}>
-          <RefreshCw size={20} />
+          <RefreshCw width={20} height={20} />
         </button>
       </div>
 
@@ -140,7 +164,6 @@ export default function Admin() {
         <div className="loading">Загрузка...</div>
       ) : (
         <div className="adminContent">
-          {/* Список пользователей */}
           <div className="usersList">
             <h2>Пользователи ({users.length})</h2>
             {users.map(user => (
@@ -150,7 +173,7 @@ export default function Admin() {
                 onClick={() => handleUserClick(user)}
               >
                 <div className="userAvatar">
-                  <User size={20} />
+                  <User width={20} height={20} />
                 </div>
                 <div className="userInfo">
                   <div className="userName">
@@ -165,7 +188,6 @@ export default function Admin() {
             ))}
           </div>
 
-          {/* Детали пользователя */}
           {selectedUser && (
             <div className="userDetails">
               <h2>Детали пользователя</h2>
@@ -200,7 +222,7 @@ export default function Admin() {
                     <div className="balanceValue">
                       <span>{selectedUser.balance} ₽</span>
                       <button className="editBtn" onClick={() => setEditingBalance(true)}>
-                        <Edit size={16} />
+                        <Edit width={16} height={16} />
                       </button>
                     </div>
                   )}
@@ -230,7 +252,7 @@ export default function Admin() {
                   {userDevices.map(device => (
                     <div key={device.id} className="deviceItem">
                       <div className="deviceIcon">
-                        <Smartphone size={20} />
+                        <Apple width={20} height={20} />
                       </div>
                       <div className="deviceInfo">
                         <div className="deviceName">{device.name}</div>
@@ -243,15 +265,15 @@ export default function Admin() {
                         </div>
                       </div>
                       <div className="deviceActions">
-                        <a href={device.configLink} target="_blank" className="configLinkBtn" title="Ссылка">
+                        <a href={device.configLink} target="_blank" className="configLinkBtn" title="Ссылка" rel="noreferrer">
                           🔗
                         </a>
                         <button
                           className="deleteDeviceBtn"
-                          onClick={() => handleDeleteDevice(device.id)}
+                          onClick={() => handleDeleteDevice(device)}
                           title="Удалить"
                         >
-                          <Trash2 size={18} />
+                          <Trash2 width={18} height={18} />
                         </button>
                       </div>
                     </div>

@@ -1,8 +1,16 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, RefreshCw, Trash2, Smartphone, Check, AlertCircle, Edit2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
+import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
+import { ReactComponent as Edit2 } from '../assets/icons/edit-2.svg';
+import { ReactComponent as Trash2 } from '../assets/icons/trash-2.svg';
+import { ReactComponent as Apple } from '../assets/icons/apple.svg';
+import { ReactComponent as Check } from '../assets/icons/check.svg';
+import { ReactComponent as AlertCircle } from '../assets/icons/alert-circle.svg';
+import { ReactComponent as AlertTriangle } from '../assets/icons/alert-triangle.svg';
+import { ReactComponent as Copy } from '../assets/icons/clipboard.svg';
+import { ReactComponent as RefreshCw } from '../assets/icons/refresh-cw.svg';
 
 export default function DeviceDetail() {
   const { id } = useParams();
@@ -12,6 +20,8 @@ export default function DeviceDetail() {
   const [device, setDevice] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Конвертируем ID в число
   const deviceId = id ? parseInt(id) : null;
@@ -58,7 +68,7 @@ export default function DeviceDetail() {
 
   // ✅ ЗАМЕНА ССЫЛКИ (ТОКЕНА)
   const handleReplaceLink = async () => {
-    if (!deviceId) return;
+    if (!deviceId || !device) return;
     
     toast.loading('Генерируем новую ссылку...', { 
       id: 'replace',
@@ -66,20 +76,20 @@ export default function DeviceDetail() {
     });
     
     try {
-      // 👇 РЕАЛЬНЫЙ API ЗАПРОС ДЛЯ ЗАМЕНЫ ССЫЛКИ
-      await api.devices.replace(deviceId);
+      const newLink = await api.devices.replace(
+        deviceId, 
+        device.inboundId, 
+        device.uuid
+      );
       
-      // Обновляем данные устройства
-      const devices = await api.devices.getAll();
-      const updatedDevice = devices.find((d: any) => d.id === deviceId);
-      setDevice(updatedDevice);
-      
-      toast.success('✅ Новая ссылка сгенерирована!', { 
-        id: 'replace',
-        duration: 3000,
-        icon: '🔗'
-      });
-      
+      if (newLink) {
+        setDevice({ ...device, configLink: newLink });
+        toast.success('✅ Новая ссылка сгенерирована!', { 
+          id: 'replace',
+          duration: 3000,
+          icon: '🔗'
+        });
+      }
     } catch (error) {
       toast.error('❌ Ошибка при генерации ссылки', { 
         id: 'replace',
@@ -90,7 +100,7 @@ export default function DeviceDetail() {
 
   // ✅ СОХРАНЕНИЕ ИМЕНИ
   const handleSaveName = async () => {
-    if (!deviceId) return;
+    if (!deviceId || !device) return;
     if (!deviceName.trim()) {
       toast.error('Имя не может быть пустым');
       return;
@@ -102,18 +112,22 @@ export default function DeviceDetail() {
     });
     
     try {
-      // 👇 РЕАЛЬНЫЙ API ЗАПРОС ДЛЯ ОБНОВЛЕНИЯ ИМЕНИ
-      await api.devices.updateName(deviceId, deviceName);
+      const success = await api.devices.updateName(
+        deviceId, 
+        deviceName,
+        device.inboundId,
+        device.uuid
+      );
       
-      setDevice({ ...device, name: deviceName });
-      setIsEditing(false);
-      
-      toast.success('✅ Название обновлено!', { 
-        id: 'rename',
-        duration: 2000,
-        icon: '✅'
-      });
-      
+      if (success) {
+        setDevice({ ...device, name: deviceName });
+        setIsEditing(false);
+        toast.success('✅ Название обновлено!', { 
+          id: 'rename',
+          duration: 2000,
+          icon: '✅'
+        });
+      }
     } catch (error) {
       toast.error('❌ Ошибка при сохранении', { 
         id: 'rename',
@@ -123,65 +137,57 @@ export default function DeviceDetail() {
   };
 
   // ✅ УДАЛЕНИЕ УСТРОЙСТВА ИЗ БД
-  const handleDelete = () => {
-    if (!deviceId) return;
+  const handleDeleteClick = () => {
+  if (!confirmDelete) {
+    // Первый клик - показываем подтверждение
+    setConfirmDelete(true);
     
-    toast.custom((t: any) => (
-      <div className="deleteConfirmCard">
-        <div className="deleteConfirmIcon">🗑️</div>
-        <div className="deleteConfirmContent">
-          <div className="deleteConfirmTitle">Удалить устройство?</div>
-          <div className="deleteConfirmDescription">
-            Это действие нельзя отменить. Все данные будут потеряны.
-          </div>
-          <div className="deleteConfirmActions">
-            <button 
-              className="deleteConfirmCancel"
-              onClick={() => toast.dismiss(t.id)}
-            >
-              Отмена
-            </button>
-            <button 
-              className="deleteConfirmConfirm"
-              onClick={async () => {
-                toast.dismiss(t.id);
-                toast.loading('Удаляем устройство...', { 
-                  id: 'delete',
-                  icon: '🗑️'
-                });
-                
-                try {
-                  // 👇 РЕАЛЬНЫЙ API ЗАПРОС ДЛЯ УДАЛЕНИЯ
-                  await api.devices.delete(deviceId);
-                  
-                  toast.success('✅ Устройство удалено!', { 
-                    id: 'delete',
-                    duration: 2000,
-                    icon: '✅'
-                  });
-                  
-                  // Возвращаемся на главную через секунду
-                  setTimeout(() => navigate('/'), 1000);
-                  
-                } catch (error) {
-                  console.error('Delete error:', error);
-                  toast.error('❌ Ошибка при удалении', { 
-                    id: 'delete',
-                    duration: 3000
-                  });
-                }
-              }}
-            >
-              Удалить
-            </button>
-          </div>
-        </div>
-      </div>
-    ), { 
-      duration: Infinity,
-      position: 'top-center'
+    // Автоматически сбрасываем через 5 секунд, если не подтвердили
+    setTimeout(() => {
+      setConfirmDelete(false);
+    }, 5000);
+  } else {
+    // Второй клик - удаляем
+    performDelete();
+  }
+};
+
+// Функция удаления
+const performDelete = async () => {
+  if (!deviceId || !device || isDeleting) return;
+  
+  setIsDeleting(true);
+  
+  try {
+    const success = await api.devices.delete(
+      deviceId, 
+      device.inboundId, 
+      device.uuid
+    );
+    
+    if (success) {
+      toast.success('✅ Устройство удалено!', { 
+        duration: 2000,
+        icon: '✅'
+      });
+      
+      setTimeout(() => navigate('/'), 1000);
+    }
+  } catch (error) {
+    console.error('Delete error:', error);
+    toast.error('❌ Ошибка при удалении', { 
+      duration: 3000
     });
-  };
+  } finally {
+    setIsDeleting(false);
+    setConfirmDelete(false);
+  }
+};
+
+// Отмена подтверждения (если нужно)
+const cancelDelete = () => {
+  setConfirmDelete(false);
+};
 
   if (loading) {
     return (
@@ -198,7 +204,7 @@ export default function DeviceDetail() {
     return (
       <div className="deviceDetailPage">
         <div className="errorScreen">
-          <AlertCircle size={48} />
+          <AlertCircle width={48} height={48} />
           <h2>Устройство не найдено</h2>
           <button onClick={() => navigate(-1)}>Вернуться назад</button>
         </div>
@@ -210,7 +216,7 @@ export default function DeviceDetail() {
     <div className="deviceDetailPage">
       <div className="deviceDetailHeader">
         <button className="backButton" onClick={() => navigate(-1)}>
-          <ArrowLeft size={24} />
+          <ArrowLeft width={24} height={24} />
         </button>
         <h1>Настройки устройства</h1>
       </div>
@@ -218,7 +224,7 @@ export default function DeviceDetail() {
       {/* Карточка устройства с редактированием имени */}
       <div className="deviceProfileCard">
         <div className="deviceProfileIcon">
-          <Smartphone size={48} />
+          <Apple width={48} height={48} />
         </div>
         <div className="deviceProfileInfo">
           {isEditing ? (
@@ -233,14 +239,14 @@ export default function DeviceDetail() {
                 placeholder="Введите название"
               />
               <button onClick={handleSaveName} className="saveNameBtn">
-                <Check size={18} />
+                <Check width={18} height={18} />
               </button>
             </div>
           ) : (
             <div className="deviceNameDisplay">
               <h2>{device.name}</h2>
               <button onClick={() => setIsEditing(true)} className="editNameBtn">
-                <Edit2 size={16} />
+                <Edit2 width={16} height={16} />
               </button>
             </div>
           )}
@@ -270,7 +276,7 @@ export default function DeviceDetail() {
               className={`copyLinkBtn ${copied ? 'copied' : ''}`} 
               onClick={handleCopy}
             >
-              <Copy size={18} />
+              <Copy width={18} height={18} />
               {copied ? 'Скопировано!' : 'Копировать'}
             </button>
             <button 
@@ -278,22 +284,50 @@ export default function DeviceDetail() {
               onClick={handleReplaceLink}
               title="Сгенерировать новую ссылку"
             >
-              <RefreshCw size={18} />
+              <RefreshCw width={18} height={18} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Кнопка удаления */}
-      <div className="deleteCard" onClick={handleDelete}>
-        <div className="deleteCardIcon">
-          <Trash2 size={24} />
-        </div>
-        <div className="deleteCardContent">
-          <h4>Удалить устройство</h4>
-          <p>Это действие нельзя отменить</p>
-        </div>
-      </div>
+      {/* Кнопка удаления с подтверждением */}
+<div 
+  className={`deleteCard ${confirmDelete ? 'confirm' : ''} ${isDeleting ? 'deleting' : ''}`} 
+  onClick={!isDeleting ? handleDeleteClick : undefined}
+>
+  <div className="deleteCardIcon">
+    {isDeleting ? (
+      <div className="spinner-small" />
+    ) : confirmDelete ? (
+      <AlertTriangle width={24} height={24} />
+    ) : (
+      <Trash2 width={24} height={24} />
+    )}
+  </div>
+  <div className="deleteCardContent">
+    <h4>
+      {isDeleting ? 'Удаление...' : 
+       confirmDelete ? 'Подтвердите удаление' : 
+       'Удалить устройство'}
+    </h4>
+    <p>
+      {isDeleting ? 'Пожалуйста, подождите' :
+       confirmDelete ? 'Нажмите ещё раз для подтверждения' : 
+       'Это действие нельзя отменить'}
+    </p>
+  </div>
+  {confirmDelete && !isDeleting && (
+    <button 
+      className="cancelDeleteBtn"
+      onClick={(e) => {
+        e.stopPropagation();
+        cancelDelete();
+      }}
+    >
+      ✕
+    </button>
+  )}
+</div>
 
       {/* Дополнительная информация */}
       <div className="deviceInfoFooter">

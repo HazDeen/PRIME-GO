@@ -1,28 +1,42 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { Smartphone, Laptop, Monitor, Cpu } from "lucide-react";
+import { ReactComponent as Apple } from '../assets/icons/apple.svg';
+import { ReactComponent as Android } from '../assets/icons/android.svg';
+import { ReactComponent as Laptop } from '../assets/icons/laptop.svg';
+import { ReactComponent as Monitor } from '../assets/icons/monitor.svg';
+import { ReactComponent as Cpu } from '../assets/icons/cpu.svg';
 import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
 
 type Props = {
   onClose: () => void;
   onAdd: (name: string, type: DeviceType, customName: string) => Promise<void>;
+  tgUserId: string;
 };
 
 const DEVICE_TYPES: { id: DeviceType; label: string; icon: any }[] = [
-  { id: "iPhone", label: "iPhone", icon: Smartphone },
-  { id: "Android", label: "Android", icon: Smartphone },
+  { id: "iPhone", label: "iPhone", icon: Apple },
+  { id: "Android", label: "Android", icon: Android },
   { id: "Mac", label: "Mac", icon: Laptop },
   { id: "PC", label: "PC", icon: Monitor },
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
-export default function AddDeviceModal({ onClose, onAdd }: Props) {
+export default function AddDeviceModal({ onClose, onAdd, tgUserId }: Props) {
   const [name, setName] = useState("");
   const [customName, setCustomName] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("iPhone");
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const generateRandomEmail = (): string => {
+    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  };
 
   const handleClose = () => {
     if (isClosing) return;
@@ -38,21 +52,58 @@ export default function AddDeviceModal({ onClose, onAdd }: Props) {
 
     setLoading(true);
     try {
-      await onAdd(name, selectedType, customName || name);
-      toast.success('✅ Устройство добавлено!');
-      
-      // 👉 ПЕРЕЗАГРУЗКА ЧЕРЕЗ 1 СЕКУНДУ
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-      
-      handleClose();
+      const response = await fetch('https://vpn-production-702c.up.railway.app/xui/client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          inboundId: 1,
+          tgUid: tgUserId,
+          email: generateRandomEmail(),
+          flow: "xtls-rprx-vision",
+          totalGb: 100*1024*1024*1024,
+          expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000,
+          comment: `${selectedType}: ${customName || name}`
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('✅ Устройство добавлено!');
+        
+        if (data.data?.subscriptionUrl) {
+          localStorage.setItem(`sub_${data.data.email}`, data.data.subscriptionUrl);
+          
+          toast.success('Ссылка для подключения готова', {
+            duration: 5000,
+            action: {
+              label: '📋 Копировать',
+              onClick: () => {
+                navigator.clipboard.writeText(data.data.subscriptionUrl);
+                toast.success('Ссылка скопирована!');
+              }
+            }
+          });
+        }
+
+        await onAdd(name, selectedType, customName || name);
+        
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+        
+        handleClose();
+      } else {
+        throw new Error(data.message || 'Ошибка создания');
+      }
     } catch (error: any) {
+      console.error('❌ Ошибка:', error);
       toast.error(error.message || '❌ Не удалось добавить устройство');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <motion.div 

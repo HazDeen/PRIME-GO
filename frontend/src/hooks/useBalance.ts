@@ -13,7 +13,7 @@ export const useBalance = () => {
       setLoading(true);
       console.log('💰 Fetching balance...');
       
-      const data = await api.user.getBalance();
+      const data = await api.users.getProfile();
       console.log('✅ Balance response:', data);
       
       setBalance(data.balance);

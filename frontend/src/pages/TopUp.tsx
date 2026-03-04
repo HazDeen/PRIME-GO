@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, CreditCard } from 'lucide-react';
+import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
+import { ReactComponent as CreditCard } from '../assets/icons/credit-card.svg';
 import { useBalance } from '../hooks/useBalance';
 import { api } from '../api/client';
 import { toast } from 'sonner';
@@ -25,7 +26,7 @@ export default function TopUp() {
     setLoading(true);
     try {
       // ✅ API сам возьмёт username из заголовка
-      await api.user.topUp(amount);
+      await api.balance.topup(amount);
       
       toast.success(`✅ Баланс пополнен на ${amount} ₽`);
       
@@ -45,7 +46,7 @@ export default function TopUp() {
     <div className="topupPage">
       <div className="topupHeader">
         <button className="backButton" onClick={() => navigate(-1)}>
-          <ArrowLeft size={24} />
+          <ArrowLeft width={24} height={24} />
         </button>
         <h1>Пополнение баланса</h1>
       </div>
@@ -98,7 +99,7 @@ export default function TopUp() {
         onClick={handlePay}
         disabled={loading || (selected === 'custom' && !customAmount)}
       >
-        <CreditCard size={20} />
+        <CreditCard width={20} height={20} />
         {loading ? 'Обработка...' : 'Пополнить'}
       </button>
     </div>

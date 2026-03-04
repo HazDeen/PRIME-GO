@@ -1,5 +1,10 @@
 import { useNavigate } from 'react-router-dom';
-import { Smartphone, Laptop, Monitor, Cpu, ChevronRight } from 'lucide-react';
+import { ReactComponent as ChevronRight } from '../assets/icons/chevron-right.svg';
+import { ReactComponent as Apple } from '../assets/icons/apple.svg';
+import { ReactComponent as Android } from '../assets/icons/android.svg';
+import { ReactComponent as Laptop } from '../assets/icons/laptop.svg';
+import { ReactComponent as Monitor } from '../assets/icons/monitor.svg';
+import { ReactComponent as Cpu } from '../assets/icons/cpu.svg';
 import type { DeviceType } from '../types/device';
 
 type Props = {
@@ -16,8 +21,9 @@ type Props = {
 const getDeviceIcon = (type: DeviceType) => {
   switch (type) {
     case 'iPhone':
+      return Apple;
     case 'Android':
-      return Smartphone;
+      return Android;
     case 'Mac':
       return Laptop;
     case 'PC':
@@ -25,7 +31,7 @@ const getDeviceIcon = (type: DeviceType) => {
     case 'Other':
       return Cpu;
     default:
-      return Smartphone;
+      return Apple;
   }
 };
 
@@ -39,7 +45,7 @@ export default function DeviceCard({ id, name, model, type, date, isActive, days
       onClick={() => navigate(`/device/${id}`)}
     >
       <div className="deviceIcon">
-        <Icon size={22} />
+        <Icon width={22} height={22} />
       </div>
       
       <div className="deviceInfo">
@@ -62,7 +68,7 @@ export default function DeviceCard({ id, name, model, type, date, isActive, days
         </div>
       </div>
       
-      <ChevronRight size={20} className="deviceChevron" />
+      <ChevronRight width={20} height={20} className="deviceChevron" />
     </div>
   );
 }

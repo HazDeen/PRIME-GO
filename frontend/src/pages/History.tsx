@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, PlusCircle, RefreshCw, ArrowDownCircle } from 'lucide-react';
+import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
+import { ReactComponent as ArrowDownCircle } from '../assets/icons/arrow-down-circle.svg';
+import { ReactComponent as RefreshCw } from '../assets/icons/refresh-cw.svg';
+import { ReactComponent as PlusCircle } from '../assets/icons/plus-circle.svg';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBalance } from '../hooks/useBalance';
 
@@ -13,11 +16,11 @@ export default function History() {
       <div className="historyPage">
         <div className="historyHeader">
           <button className="backButton" onClick={() => navigate(-1)}>
-            <ArrowLeft size={24} />
+            <ArrowLeft width={24} height={24} />
           </button>
           <h1>История платежей</h1>
           <button className="topupSmallButton" onClick={() => navigate('/topup')}>
-            <PlusCircle size={20} />
+            <PlusCircle width={20} height={20} />
             <span>{balance} ₽</span>
           </button>
         </div>
@@ -32,11 +35,11 @@ export default function History() {
     <div className="historyPage">
       <div className="historyHeader">
         <button className="backButton" onClick={() => navigate(-1)}>
-          <ArrowLeft size={24} />
+          <ArrowLeft width={24} height={24} />
         </button>
         <h1>История платежей</h1>
         <button className="topupSmallButton" onClick={() => navigate('/topup')}>
-          <PlusCircle size={20} />
+          <PlusCircle width={20} height={20} />
           <span>{balance} ₽</span>
         </button>
       </div>
@@ -60,7 +63,7 @@ export default function History() {
               return (
                 <div key={itemIdx} className="transactionRow">
                   <div className="transactionIcon" style={{ background: `${iconColor}10` }}>
-                    <Icon size={20} color={iconColor} />
+                    <Icon width={20} height={20} color={iconColor} />
                   </div>
                   <div className="transactionInfo">
                     <span className="transactionDesc">{item.description}</span>

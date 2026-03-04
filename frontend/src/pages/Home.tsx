@@ -8,7 +8,10 @@ import BalanceCard from "../components/BalanceCard";
 import DevicesCard from "../components/DevicesCard";
 import ActionButtons from "../components/ActionButtons";
 import AddDeviceModal from "../components/AddDeviceModal";
-import { Moon, Sun, LogOut, Shield } from 'lucide-react'; // 👈 ДОБАВИЛИ Shield
+import { ReactComponent as Moon } from '../assets/icons/moon.svg';
+import { ReactComponent as Sun } from '../assets/icons/sun.svg';
+import { ReactComponent as LogOut } from '../assets/icons/log-out.svg';
+import { ReactComponent as Shield } from '../assets/icons/server.svg';
 import { useTheme } from '../context/ThemeContext';
 import type { DeviceType } from '../types/device';
 
@@ -16,7 +19,7 @@ export default function Home() {
   const [showAddModal, setShowAddModal] = useState(false);
   const { addDevice } = useDevices();
   const { refetch: refetchBalance } = useBalance();
-  const { user, logout } = useAuth();
+  const { user, logout } = useAuth(); // 👈 user содержит данные из БД
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
@@ -43,19 +46,18 @@ export default function Home() {
       <div className="homeHeader">
         <h1 className="screenTitle">VPN</h1>
         <div className="headerButtons">
-          {/* 👇 КНОПКА АДМИНКИ - ТОЛЬКО ДЛЯ АДМИНОВ */}
           {user?.isAdmin && (
             <button className="adminButton" onClick={handleAdminClick} title="Админ-панель">
-              <Shield size={22} />
+              <Shield width={22} height={22} />
             </button>
           )}
           
           <button className="logoutButton" onClick={handleLogout} title="Выйти">
-            <LogOut size={22} />
+            <LogOut width={22} height={22} />
           </button>
           
           <button className="themeButton" onClick={toggleTheme}>
-            {theme === 'dark' ? <Sun size={22} /> : <Moon size={22} />}
+            {theme === 'dark' ? <Sun width={22} height={22} /> : <Moon width={22} height={22} />}
           </button>
         </div>
       </div>
@@ -71,6 +73,7 @@ export default function Home() {
           <AddDeviceModal 
             onClose={() => setShowAddModal(false)}
             onAdd={handleAddDevice}
+            tgUserId={user?.telegramId?.toString() || "0"} // 👈 Telegram ID из БД
           />
         )}
       </AnimatePresence>

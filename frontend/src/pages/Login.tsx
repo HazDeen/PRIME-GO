@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
-import { LogIn } from 'lucide-react';
+import { ReactComponent as LogIn } from '../assets/icons/log-in.svg';
 
 export default function Login() {
   const [username, setUsername] = useState('');
@@ -91,7 +91,7 @@ export default function Login() {
               className="loginButton"
               disabled={loading}
             >
-              <LogIn size={20} />
+              <LogIn width={20} height={20} />
               {loading ? 'Вход...' : 'Войти'}
             </button>
           </form>

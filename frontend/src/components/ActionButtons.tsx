@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { PlusCircle, Clock } from 'lucide-react';
+import { ReactComponent as PlusCircle } from '../assets/icons/plus-circle.svg';
+import { ReactComponent as Clock } from '../assets/icons/clock.svg';
 
 export default function ActionButtons() {
   const navigate = useNavigate();
@@ -7,11 +8,11 @@ export default function ActionButtons() {
   return (
     <div className="actionsRow">
       <button className="actionBtnSmall" onClick={() => navigate('/topup')}>
-        <PlusCircle size={20} />
+        <PlusCircle width={20} height={20} />
         Пополнить
       </button>
       <button className="actionBtnSmall" onClick={() => navigate('/history')}>
-        <Clock size={20} />
+        <Clock width={20} height={20} />
         История
       </button>
     </div>

@@ -1,6 +1,7 @@
 import { useDevices } from '../hooks/useDevices';
 import DeviceCard from './DeviceCard';
-import { Plus } from 'lucide-react';
+import { ReactComponent as Plus } from '../assets/icons/plus.svg';
+
 
 type Props = {
   onAddClick: () => void;
@@ -21,7 +22,7 @@ export default function DevicesCard({ onAddClick }: Props) {
           <span className="devicesCount">{devices.length}</span>
         </div>
         <button className="addButton" onClick={onAddClick}>
-          <Plus size={18} />
+          <Plus width={18} height={18} />
           Добавить
         </button>
       </div>

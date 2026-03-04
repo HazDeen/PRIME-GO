@@ -1,100 +1,84 @@
+// frontend/src/hooks/useDevices.ts
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
-import type { Device, DeviceType } from '../types/device';
-import { toast } from 'sonner';
+import type { DeviceType } from '../types/device';
 
-export const useDevices = () => {
+interface Device {
+  id: number;
+  name: string;
+  model: string;
+  type: DeviceType;
+  date: string;
+  isActive: boolean;
+  daysLeft?: number;
+  configLink: string;
+  uuid: string;
+  inboundId: number;
+  comment?: string;
+  email?: string;
+}
+
+export function useDevices() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDevices = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      console.log('📱 Fetching devices...');
-      
       const data = await api.devices.getAll();
-      console.log('✅ Devices response:', data);
-      
-      const typedDevices = data.map((d: any) => ({
-        id: d.id,
-        name: d.name || '',
-        model: d.model || '',
-        type: d.type as DeviceType,
-        date: d.date || '',
-        isActive: d.isActive || false,
-        configLink: d.configLink || '',
-        daysLeft: d.daysLeft || 0
-      }));
-      
-      setDevices(typedDevices);
+      setDevices(data);
     } catch (error) {
-      console.error('❌ Failed to fetch devices:', error);
+      console.error('❌ Ошибка загрузки устройств:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const addDevice = async (name: string, customName: string, type: DeviceType) => {
+  const addDevice = async (name: string, model: string, type: DeviceType) => {
     try {
-      console.log('➕ Adding device:', { name, customName, type });
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const tgUserId = user.telegramId || user.tgId || '0';
       
-      const response = await api.devices.add({ 
-        name, 
-        customName: customName || name, 
-        type 
+      const result = await api.devices.create({
+        name,
+        model,
+        type,
+        tgUserId
       });
       
-      console.log('✅ Device added response:', response);
-      await fetchDevices();
-      return response;
-    } catch (error: any) {
-      console.error('❌ Failed to add device:', error);
-      toast.error(error.message || 'Не удалось добавить устройство');
-      throw error;
+      if (result.success) {
+        await fetchDevices(); // Перезагружаем список
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Ошибка добавления:', error);
+      return false;
     }
   };
 
-  const deleteDevice = async (deviceId: number) => {
-    try {
-      console.log('🗑️ Deleting device:', deviceId);
-      await api.devices.delete(deviceId);
+  const deleteDevice = async (deviceId: number, inboundId: number, uuid: string) => {
+    const success = await api.devices.delete(deviceId, inboundId, uuid);
+    if (success) {
       await fetchDevices();
-      toast.success('Устройство удалено');
-    } catch (error) {
-      console.error('❌ Failed to delete device:', error);
-      throw error;
     }
+    return success;
   };
 
-  const replaceDevice = async (deviceId: number) => {
-    try {
-      console.log('🔄 Replacing device:', deviceId);
-      toast.info('Функция замены временно недоступна');
-      // TODO: добавить API вызов
-      // await api.devices.replace(deviceId);
+  const updateDeviceName = async (deviceId: number, newName: string, inboundId: number, uuid: string) => {
+    const success = await api.devices.updateName(deviceId, newName, inboundId, uuid);
+    if (success) {
       await fetchDevices();
-    } catch (error) {
-      console.error('❌ Failed to replace device:', error);
-      throw error;
     }
+    return success;
   };
 
-  const updateDeviceName = async (deviceId: number, customName: string) => {
-    try {
-      console.log('✏️ Updating device name:', { deviceId, customName });
-      
-      setDevices(prev => prev.map(d => 
-        d.id === deviceId ? { ...d, name: customName } : d
-      ));
-      
-      toast.success('Название обновлено');
-      // TODO: добавить API вызов
-      // await api.devices.updateName(deviceId, customName);
+  const replaceDeviceLink = async (deviceId: number, inboundId: number, uuid: string) => {
+    const newLink = await api.devices.replace(deviceId, inboundId, uuid);
+    if (newLink) {
       await fetchDevices();
-    } catch (error) {
-      console.error('❌ Failed to update device name:', error);
-      throw error;
     }
+    return newLink;
   };
 
   useEffect(() => {
@@ -104,10 +88,10 @@ export const useDevices = () => {
   return {
     devices,
     loading,
-    fetchDevices,
     addDevice,
     deleteDevice,
-    replaceDevice,
     updateDeviceName,
+    replaceDeviceLink,
+    refetch: fetchDevices
   };
-};
+}
