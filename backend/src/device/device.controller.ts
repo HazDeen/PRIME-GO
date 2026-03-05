@@ -74,7 +74,8 @@ export class DeviceController {
   }
 
   @Get('user/:tgId')
-  async getDevices(@Param('tgId') tgId: string) {
+  async getByTgId(@Param('tgId') tgId: string) {
     return this.deviceService.getUserDevicesByTgId(tgId);
   }
+
 }
