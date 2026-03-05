@@ -146,7 +146,7 @@ export class XuiApiService implements OnModuleInit {
     
     try {
       // Используем /list вместо /get — это работает стабильнее
-      const response = await this.api.get('/panel/inbound/list');
+      const response = await this.api.post('/panel/inbound/list');
       
       if (response.data?.success && Array.isArray(response.data.obj)) {
         const inbounds = response.data.obj;
