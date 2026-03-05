@@ -1,269 +1,206 @@
 import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { randomBytes } from 'crypto';
+import { XuiApiService } from '../xui/xui-api.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
   private readonly DEVICE_PRICE = 300;
 
-  constructor(private prisma: PrismaService) {}
-
-  private generateConfigLink(): string {
-    return `https://hvpn.io/${randomBytes(16).toString('base64url')}`;
-  }
+  constructor(
+    private prisma: PrismaService,
+    private xuiApiService: XuiApiService,
+  ) {}
 
   private async findUserByUsername(username: string) {
     const user = await this.prisma.user.findFirst({
       where: { 
-        username: {
-          equals: username,
-          mode: 'insensitive',
-        },
+        username: { equals: username, mode: 'insensitive' },
       },
     });
-
-    if (!user) {
-      throw new NotFoundException(`User @${username} not found`);
-    }
-
+    if (!user) throw new NotFoundException(`User @${username} not found`);
     return user;
   }
 
-  async getUserDevices(userId: number) {
-    this.logger.log(`📱 Getting devices for user ${userId}`);
+  // --- МЕТОДЫ ДЛЯ КОНТРОЛЛЕРА (CRUD) ---
+
+  async create(dto: any) {
+    const userId = Number(dto.userId);
     
-    const devices = await this.prisma.device.findMany({
-      where: { userId },
-      orderBy: { connectedAt: 'desc' },
-    });
+    const count = await this.prisma.device.count({ where: { userId } });
+    if (count >= 5) throw new BadRequestException('Максимум 5 устройств');
 
-    return devices.map(d => {
-      let daysLeft = 0;
-      let isActive = d.isActive;
-      
-      if (d.expiresAt) {
-        const now = new Date();
-        const diffTime = d.expiresAt.getTime() - now.getTime();
-        daysLeft = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-        
-        if (daysLeft === 0 && isActive) {
-          this.deactivateDevice(d.id, userId).catch(e => 
-            this.logger.error(`Failed to deactivate expired device: ${e.message}`)
-          );
-          isActive = false;
-        }
-      }
-
-      return {
-        id: d.id,
-        name: d.customName || d.name,
-        model: d.name,
-        type: d.type,
-        date: d.connectedAt.toLocaleDateString('ru-RU'),
-        isActive,
-        daysLeft,
-        expiresAt: d.expiresAt?.toLocaleDateString('ru-RU'),
-        configLink: d.configLink,
-      };
-    });
-  }
-
-  async getUserDevicesByUsername(username: string) {
-    const user = await this.findUserByUsername(username);
-    return this.getUserDevices(user.id);
-  }
-
-  async addDevice(userId: number, dto: any) {
-    this.logger.log(`➕ Adding device for user ${userId}: ${JSON.stringify(dto)}`);
-    
-    const count = await this.prisma.device.count({ 
-      where: { userId } 
-    });
-    
-    if (count >= 5) {
-      throw new BadRequestException('Максимум 5 устройств');
-    }
-
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Пользователь не найден');
-    }
-
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Пользователь не найден');
     if (user.balance < this.DEVICE_PRICE) {
-      throw new BadRequestException(
-        `Недостаточно средств. Нужно ${this.DEVICE_PRICE} ₽, у вас ${user.balance} ₽`
-      );
+      throw new BadRequestException(`Недостаточно средств. Нужно ${this.DEVICE_PRICE} ₽`);
     }
 
+    const clientUuid = uuidv4();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
 
-    const result = await this.prisma.$transaction(async (prisma) => {
-      const device = await prisma.device.create({
+    // 1. Создание в 3x-ui
+    const xuiResponse = await this.xuiApiService.addClient(1, {
+      uuid: clientUuid,
+      email: `user-${userId}-${Date.now()}`,
+      totalGb: 100,
+      expiryTime: expiresAt.getTime(),
+      tgUid: user.telegramId?.toString() || "0"
+    });
+
+    if (!xuiResponse || xuiResponse.success === false) {
+        throw new BadRequestException('Ошибка VPN панели: ' + (xuiResponse?.msg || 'Panel unreachable'));
+    }
+
+    // 2. Транзакция в БД
+    const result = await this.prisma.$transaction(async (tx) => {
+      const device = await tx.device.create({
         data: {
           userId,
           name: dto.name,
           customName: dto.customName || dto.name,
           type: dto.type,
-          configLink: this.generateConfigLink(),
+          uuid: clientUuid,
+          configLink: xuiResponse.subscriptionUrl || '',
           isActive: true,
           expiresAt,
         },
       });
 
-      const updatedUser = await prisma.user.update({
+      await tx.user.update({
         where: { id: userId },
-        data: {
-          balance: {
-            decrement: this.DEVICE_PRICE,
-          },
-        },
+        data: { balance: { decrement: this.DEVICE_PRICE } },
       });
 
-      const transaction = await prisma.transaction.create({
+      await tx.transaction.create({
         data: {
           userId,
           deviceId: device.id,
           amount: -this.DEVICE_PRICE,
           type: 'subscription',
-          description: `Подписка на устройство ${dto.customName || dto.name} (30 дней)`,
+          description: `Подписка: ${dto.customName || dto.name}`,
         },
       });
 
-      return { device, updatedUser, transaction };
+      return device;
     });
 
-    this.logger.log(`✅ Device created with id: ${result.device.id}, expires: ${expiresAt}`);
-    this.logger.log(`💰 New balance: ${result.updatedUser.balance}`);
+    return result;
+  }
+
+  async findAll() {
+    return this.prisma.device.findMany({ include: { user: true } });
+  }
+
+  async findOne(id: number) {
+    const device = await this.prisma.device.findUnique({ where: { id } });
+    if (!device) throw new NotFoundException('Устройство не найдено');
+    return device;
+  }
+
+  async remove(id: number) {
+    const device = await this.findOne(id);
+    if (device.uuid) {
+      await this.xuiApiService.deleteClient(1, device.uuid).catch(e => 
+        this.logger.error(`XUI Delete failed: ${e.message}`)
+      );
+    }
+    return this.prisma.device.delete({ where: { id } });
+  }
+
+  // --- ЛОГИКА ОБНОВЛЕНИЯ И ЗАМЕНЫ ---
+
+  async replaceDevice(deviceId: number, userId: number) {
+    this.logger.log(`🔄 Full replacement of device ${deviceId} for user ${userId}`);
+    
+    const device = await this.prisma.device.findFirst({ where: { id: deviceId, userId } });
+    if (!device) throw new NotFoundException('Device not found');
+
+    // 1. Удаляем старого клиента из 3x-ui
+    if (device.uuid) {
+      await this.xuiApiService.deleteClient(1, device.uuid).catch(() => {
+        this.logger.warn(`Could not delete old UUID ${device.uuid} from panel, proceeding...`);
+      });
+    }
+
+    // 2. Генерируем новые данные
+    const newUuid = uuidv4();
+    const newEmail = `user-${userId}-${Date.now()}`;
+    
+    // 3. Создаем нового клиента в 3x-ui
+    const xuiResponse = await this.xuiApiService.addClient(1, {
+      uuid: newUuid,
+      email: newEmail,
+      totalGb: 100,
+      expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
+    });
+
+    if (!xuiResponse || !xuiResponse.success) {
+      throw new BadRequestException('Failed to generate new link in VPN panel');
+    }
+
+    // 4. Обновляем запись в БД
+    const updated = await this.prisma.device.update({
+      where: { id: deviceId },
+      data: {
+        uuid: newUuid,
+        configLink: xuiResponse.subscriptionUrl || '',
+        updatedAt: new Date(),
+      },
+    });
 
     return {
-      id: result.device.id,
-      name: result.device.customName,
-      configLink: result.device.configLink,
-      isActive: result.device.isActive,
-      expiresAt: result.device.expiresAt,
-      daysLeft: 30,
-      balance: result.updatedUser.balance,
+      configLink: updated.configLink,
+      uuid: updated.uuid
     };
   }
 
-  async addDeviceByUsername(username: string, dto: any) {
+  async updateDeviceName(deviceId: number, userId: number, customName: string) {
+    const device = await this.prisma.device.findFirst({ where: { id: deviceId, userId } });
+    if (!device) throw new NotFoundException('Device not found');
+
+    return this.prisma.device.update({
+      where: { id: deviceId },
+      data: { customName, updatedAt: new Date() },
+    });
+  }
+
+  // --- WRAPPERS FOR USERNAME (CONTROLLER CALLS) ---
+
+  async getUserDevicesByUsername(username: string) {
     const user = await this.findUserByUsername(username);
-    return this.addDevice(user.id, dto);
-  }
-
-  async deactivateDevice(deviceId: number, userId: number) {
-    this.logger.log(`🔴 Deactivating device ${deviceId} for user ${userId}`);
-    
-    await this.prisma.device.updateMany({
-      where: { id: deviceId, userId },
-      data: { isActive: false },
+    const devices = await this.prisma.device.findMany({
+      where: { userId: user.id },
+      orderBy: { connectedAt: 'desc' },
     });
 
-    return { success: true };
+    return devices.map(d => ({
+      id: d.id,
+      name: d.customName || d.name,
+      model: d.name,
+      type: d.type,
+      date: d.connectedAt.toLocaleDateString('ru-RU'),
+      isActive: d.isActive,
+      daysLeft: d.expiresAt ? Math.max(0, Math.ceil((d.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
+      configLink: d.configLink,
+      uuid: d.uuid
+    }));
   }
 
-  async deleteDevice(deviceId: number, userId: number) {
-    this.logger.log(`🗑️ Deleting device ${deviceId} for user ${userId}`);
-    
-    await this.prisma.device.deleteMany({
-      where: { id: deviceId, userId },
-    });
-    
-    return { success: true };
+  async replaceDeviceByUsername(deviceId: number, username: string) {
+    const user = await this.findUserByUsername(username);
+    return this.replaceDevice(deviceId, user.id);
+  }
+
+  async updateDeviceNameByUsername(deviceId: number, username: string, customName: string) {
+    const user = await this.findUserByUsername(username);
+    return this.updateDeviceName(deviceId, user.id, customName);
   }
 
   async deleteDeviceByUsername(deviceId: number, username: string) {
     const user = await this.findUserByUsername(username);
-    return this.deleteDevice(deviceId, user.id);
+    return this.remove(deviceId);
   }
-
-// Добавь эти методы в класс DeviceService
-
-async replaceDeviceByUsername(deviceId: number, username: string) {
-  const user = await this.prisma.user.findFirst({
-    where: { 
-      username: {
-        equals: username,
-        mode: 'insensitive',
-      },
-    },
-  });
-
-  if (!user) throw new NotFoundException(`User @${username} not found`);
-  
-  return this.replaceDevice(deviceId, user.id);
-}
-
-async updateDeviceNameByUsername(deviceId: number, username: string, customName: string) {
-  const user = await this.prisma.user.findFirst({
-    where: { 
-      username: {
-        equals: username,
-        mode: 'insensitive',
-      },
-    },
-  });
-
-  if (!user) throw new NotFoundException(`User @${username} not found`);
-  
-  return this.updateDeviceName(deviceId, user.id, customName);
-}
-
-async replaceDevice(deviceId: number, userId: number) {
-  this.logger.log(`🔄 Replacing device ${deviceId} for user ${userId}`);
-  
-  const device = await this.prisma.device.findFirst({
-    where: { id: deviceId, userId },
-  });
-
-  if (!device) {
-    throw new NotFoundException('Device not found');
-  }
-
-  const updated = await this.prisma.device.update({
-    where: { id: deviceId },
-    data: {
-      configLink: this.generateConfigLink(),
-      updatedAt: new Date(),
-    },
-  });
-
-  this.logger.log(`✅ Device ${deviceId} replaced`);
-
-  return {
-    configLink: updated.configLink,
-  };
-}
-
-async updateDeviceName(deviceId: number, userId: number, customName: string) {
-  this.logger.log(`✏️ Updating device ${deviceId} name to: ${customName}`);
-  
-  const device = await this.prisma.device.findFirst({
-    where: { id: deviceId, userId },
-  });
-
-  if (!device) {
-    throw new NotFoundException('Device not found');
-  }
-
-  const updated = await this.prisma.device.update({
-    where: { id: deviceId },
-    data: {
-      customName,
-      updatedAt: new Date(),
-    },
-  });
-
-  this.logger.log(`✅ Device ${deviceId} name updated`);
-
-  return {
-    customName: updated.customName,
-  };
-}
-
 }

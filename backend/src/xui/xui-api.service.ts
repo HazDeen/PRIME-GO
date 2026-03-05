@@ -18,10 +18,12 @@ export class XuiApiService implements OnModuleInit {
   private readonly logger = new Logger(XuiApiService.name);
   private api: AxiosInstance;
   private isLoggedIn = false;
+  private axiosInstance: AxiosInstance;
+  private cookie: string = '';
   
-  private readonly panelUrl = process.env.XUI_PANEL_URL || 'http://171.22.16.17:2053';
-  private readonly username = process.env.XUI_USERNAME || 'api_user';
-  private readonly password = process.env.XUI_PASSWORD || 'your_password';
+  private readonly panelUrl = process.env.XUI_PANEL_URL;
+  private readonly username = process.env.XUI_USERNAME;
+  private readonly password = process.env.XUI_PASSWORD;
 
   async onModuleInit() {
     await this.login();
@@ -380,6 +382,49 @@ export class XuiApiService implements OnModuleInit {
       this.logger.error('❌ Ошибка замены ссылки:', error);
       throw error;
     }
-  } 
+  }
+
+  // Создать клиента
+async addClient(inboundId: number, clientData: any) {
+  if (!this.cookie) await this.login();
+
+  const client = {
+    id: clientData.uuid,
+    email: clientData.email,
+    flow: clientData.flow || 'xtls-rprx-vision',
+    limitIp: 2,
+    totalGB: clientData.totalGb * 1024 * 1024 * 1024,
+    expiryTime: clientData.expiryTime,
+    enable: true,
+    tgId: clientData.tgUid,
+    subId: clientData.email,
+  };
+
+  const payload = {
+    id: inboundId,
+    settings: JSON.stringify({ clients: [client] }),
+  };
+
+  const response = await this.axiosInstance.post('/panel/api/inbounds/addClient', payload, {
+    headers: { Cookie: this.cookie },
+  });
+  return response.data;
+}
+
+// Удалить клиента
+async deleteClient(inboundId: number, uuid: string) {
+  if (!this.cookie) await this.login();
+
+  // Удаление по UUID
+  const response = await this.axiosInstance.post(
+    `/panel/api/inbounds/client/${uuid}`, 
+    {}, 
+    {
+      headers: { Cookie: this.cookie },
+      params: { id: inboundId }
+    }
+  );
+  return response.data;
+}
   
 }

@@ -1,32 +1,54 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Headers, UnauthorizedException } from '@nestjs/common'; // 👈 ДОБАВИЛИ Put
+import { Controller, Get, Post, Body, Param, Delete, Headers, UnauthorizedException , Put} from '@nestjs/common';
 import { DeviceService } from './device.service';
+import { XuiApiService } from '../xui/xui-api.service'; // Импортируем сервис панели
+import { v4 as uuidv4 } from 'uuid'; // npm install uuid
 
 @Controller('devices')
 export class DeviceController {
-  constructor(private readonly deviceService: DeviceService) {}
-
-  @Get()
-  async getUserDevices(@Headers('x-username') username: string) {
-    if (!username) throw new UnauthorizedException('Username required');
-    return this.deviceService.getUserDevicesByUsername(username);
-  }
+  constructor(
+    private readonly deviceService: DeviceService,
+    private readonly xuiApiService: XuiApiService, // Внедряем сервис 3x-ui
+  ) {}
 
   @Post()
-  async addDevice(
-    @Headers('x-username') username: string,
-    @Body() body: any
-  ) {
-    if (!username) throw new UnauthorizedException('Username required');
-    return this.deviceService.addDeviceByUsername(username, body);
+  async create(@Body() createDeviceDto: any) {
+    // 1. Генерируем новый UUID для клиента
+    const clientUuid = uuidv4();
+    const email = `user-${createDeviceDto.userId}-${Date.now()}`;
+
+    // 2. Создаем клиента в панели 3x-ui
+    const xuiResponse = await this.xuiApiService.addClient(1, {
+      uuid: clientUuid,
+      email: email,
+      tgUid: createDeviceDto.tgUserId || "0",
+      totalGb: 100, // или берем из DTO
+      expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 дней
+    });
+
+    if (!xuiResponse.success) {
+      throw new Error(xuiResponse.msg || 'Ошибка при создании в панели 3x-ui');
+    }
+
+    // 3. Сохраняем в Postgres через твой DeviceService
+    // Добавляем полученные данные от XUI в объект для сохранения
+    return this.deviceService.create({
+      ...createDeviceDto,
+      uuid: clientUuid,
+      configLink: xuiResponse.subscriptionUrl || `vless://${clientUuid}@your-ip:port...`, // Формируй ссылку здесь или бери из ответа
+      isActive: true,
+    });
   }
 
   @Delete(':id')
-  async deleteDevice(
-    @Headers('x-username') username: string,
-    @Param('id') id: string
-  ) {
-    if (!username) throw new UnauthorizedException('Username required');
-    return this.deviceService.deleteDeviceByUsername(parseInt(id), username);
+  async remove(@Param('id') id: string) {
+    // 1. Сначала находим устройство в базе, чтобы узнать его UUID
+    const device = await this.deviceService.findOne(+id);
+    if (device && device.uuid) {
+      // 2. Удаляем из панели 3x-ui
+      await this.xuiApiService.deleteClient(1, device.uuid);
+    }
+    // 3. Удаляем из нашей базы
+    return this.deviceService.remove(+id);
   }
 
   // ✅ ИСПРАВЛЕННЫЙ МЕТОД ДЛЯ ЗАМЕНЫ ССЫЛКИ

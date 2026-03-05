@@ -32,11 +32,12 @@ model Device {
   customName  String?
   type        String
   configLink  String   @unique
+  uuid String? @unique
   isActive    Boolean  @default(false)
   expiresAt   DateTime?
   connectedAt DateTime @default(now()) @map("connected_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-
+  
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
