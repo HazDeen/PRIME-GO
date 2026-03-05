@@ -41,7 +41,7 @@ export class DeviceService {
     const clientUuid = uuidv4();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
-    const clientEmail = `${user.id}-${Math.random().toString(36).substring(7)}`;
+    const clientEmail = `${Math.random().toString(36).substring(7)}`;
 
     // 4. Создание в 3x-ui панели
     // totalGb: 100 GB в байтах. (100 * 1024^3)
@@ -161,13 +161,14 @@ export class DeviceService {
 
     // 2. Генерируем новый UUID
     const newUuid = uuidv4();
+    const clientEmail = `${Math.random().toString(36).substring(7)}`
     
     // 3. Создаем НОВОГО клиента в 3x-ui
     const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: newUuid,
       name: device.customName || device.name, // Используем текущее имя для ссылки
-      email: `ref-${device.userId}-${Date.now()}`,
-      totalGb: 100 * 1024 * 1024 * 1024,
+      email: clientEmail,
+      totalGb: 1000 * 1024 * 1024 * 1024,
       expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
     });
 
