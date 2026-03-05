@@ -143,29 +143,42 @@ export class XuiApiService implements OnModuleInit {
 
   async getInboundConfig(inboundId: number) {
     await this.ensureLogin();
+    
     try {
-      const response = await this.api.get(`/panel/inbound/get/${inboundId}`);
-      if (response.data?.success) {
-        const inbound = response.data.obj;
+      // Используем /list вместо /get — это работает стабильнее
+      const response = await this.api.get('/panel/inbound/list');
+      
+      if (response.data?.success && Array.isArray(response.data.obj)) {
+        const inbounds = response.data.obj;
+        
+        // Ищем нужный инбаунд. Используем == для сравнения (число/строка)
+        const inbound = inbounds.find((i: any) => i.id == inboundId);
+        
+        if (!inbound) {
+          this.logger.error(`❌ Inbound с ID ${inboundId} не найден в панели. Доступные ID: ${inbounds.map(i => i.id).join(', ')}`);
+          return null;
+        }
+
         const streamSettings = JSON.parse(inbound.streamSettings);
         
+        // Извлекаем параметры для VLESS + Reality + TCP
         return {
           port: inbound.port,
           protocol: inbound.protocol,
-          // Вытаскиваем ключи Reality
           pbk: streamSettings.realitySettings.publicKey,
-          sid: streamSettings.realitySettings.shortIds[0], // Берем первый доступный ID
+          sid: streamSettings.realitySettings.shortIds[0],
           sni: streamSettings.realitySettings.serverNames[0],
-          // Хост берем из домена панели или внешнего IP
-          host: this.configService.get('VLESS_HOST') || 'твой_ip' 
+          host: this.configService.get('VLESS_HOST')
         };
       }
-      throw new Error('Не удалось получить данные Inbound');
-    } catch (error) {
-      this.logger.error(`Ошибка получения конфига Inbound: ${error.message}`);
+      
+      this.logger.error(`❌ Панель вернула ошибку при запросе списка: ${JSON.stringify(response.data)}`);
+      return null;
+    } catch (error: any) {
+      this.logger.error(`❌ Критическая ошибка XUI API: ${error.message}`);
       return null;
     }
-    }
+  }
 
   // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
 

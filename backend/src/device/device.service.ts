@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
   private readonly DEVICE_PRICE = 300;
-  private readonly inboundId: number;
+  private readonly inboundId = this.configService.get<number>('XUI_INBOUND_ID');
 
   constructor(
     private prisma: PrismaService,
@@ -47,7 +47,7 @@ export class DeviceService {
     // totalGb: 100 GB в байтах. (100 * 1024^3)
     const totalGbBytes = 1000 * 1024 * 1024 * 1024;
 
-    const xuiResponse = await this.xuiApiService.addClient(2, {
+    const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: clientUuid,
       email: clientEmail,
       totalGb: totalGbBytes,
