@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
-import { api } from '../api/client';
 import { toast } from 'sonner';
 import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
 import { ReactComponent as Edit2 } from '../assets/icons/edit-2.svg';
@@ -37,18 +36,39 @@ export default function DeviceDetail() {
   const loadDevice = async () => {
     try {
       setLoading(true);
-      const devices = await api.devices.getAll();
+      
+      // 1. Получаем пользователя, как в useDevices
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        navigate('/');
+        return;
+      }
+      const user = JSON.parse(userStr);
+
+      // 2. Делаем прямой запрос к нашему новому эндпоинту
+      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/user/${user.telegramId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Ошибка сервера');
+
+      const devices = await response.json();
+      
+      // 3. Ищем конкретное устройство по ID из URL
       const currentDevice = devices.find((d: any) => d.id === deviceId);
+      
       if (currentDevice) {
         setDevice(currentDevice);
-        setDeviceName(currentDevice.name);
+        setDeviceName(currentDevice.name || currentDevice.customName);
       } else {
-        toast.error('Устройство не найдено');
+        toast.error('Устройство не найдено в вашем списке');
         navigate('/');
       }
     } catch (error) {
       console.error('Failed to load device:', error);
-      toast.error('Не удалось загрузить устройство');
+      toast.error('Не удалось загрузить данные');
     } finally {
       setLoading(false);
     }
@@ -68,71 +88,46 @@ export default function DeviceDetail() {
 
   // ✅ ЗАМЕНА ССЫЛКИ (ТОКЕНА)
   const handleReplaceLink = async () => {
-    if (!deviceId || !device) return;
-    
-    toast.loading('Генерируем новую ссылку...', { 
-      id: 'replace',
-      icon: '🔄'
-    });
+    if (!deviceId) return;
+    toast.loading('Генерируем новую ссылку...', { id: 'replace' });
     
     try {
-      const newLink = await api.devices.replace(
-        deviceId, 
-        device.inboundId, 
-        device.uuid
-      );
+      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}/replace`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await response.json();
       
-      if (newLink) {
-        setDevice({ ...device, configLink: newLink });
-        toast.success('✅ Новая ссылка сгенерирована!', { 
-          id: 'replace',
-          duration: 3000,
-          icon: '🔗'
-        });
+      if (response.ok) {
+        setDevice({ ...device, configLink: data.configLink });
+        toast.success('✅ Ссылка обновлена!', { id: 'replace' });
       }
     } catch (error) {
-      toast.error('❌ Ошибка при генерации ссылки', { 
-        id: 'replace',
-        duration: 3000
-      });
+      toast.error('❌ Ошибка обновления', { id: 'replace' });
     }
   };
 
   // ✅ СОХРАНЕНИЕ ИМЕНИ
   const handleSaveName = async () => {
-    if (!deviceId || !device) return;
-    if (!deviceName.trim()) {
-      toast.error('Имя не может быть пустым');
-      return;
-    }
-
-    toast.loading('Сохраняем название...', { 
-      id: 'rename',
-      icon: '✏️'
-    });
+    if (!deviceId || !deviceName.trim()) return;
     
     try {
-      const success = await api.devices.updateName(
-        deviceId, 
-        deviceName,
-        device.inboundId,
-        device.uuid
-      );
+      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}/name`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` 
+        },
+        body: JSON.stringify({ customName: deviceName })
+      });
       
-      if (success) {
+      if (response.ok) {
         setDevice({ ...device, name: deviceName });
         setIsEditing(false);
-        toast.success('✅ Название обновлено!', { 
-          id: 'rename',
-          duration: 2000,
-          icon: '✅'
-        });
+        toast.success('✅ Название сохранено');
       }
     } catch (error) {
-      toast.error('❌ Ошибка при сохранении', { 
-        id: 'rename',
-        duration: 3000
-      });
+      toast.error('❌ Ошибка сохранения');
     }
   };
 
@@ -157,26 +152,34 @@ const performDelete = async () => {
   if (!deviceId || !device || isDeleting) return;
   
   setIsDeleting(true);
+  toast.loading('Удаляем устройство...', { id: 'delete-device' });
   
   try {
-    const success = await api.devices.delete(
-      deviceId, 
-      device.inboundId, 
-      device.uuid
-    );
-    
-    if (success) {
-      toast.success('✅ Устройство удалено!', { 
-        duration: 2000,
-        icon: '✅'
-      });
-      
-      setTimeout(() => navigate('/'), 1000);
+    const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Ошибка при удалении');
     }
-  } catch (error) {
-    console.error('Delete error:', error);
-    toast.error('❌ Ошибка при удалении', { 
-      duration: 3000
+
+    toast.success('✅ Устройство успешно удалено!', { 
+      id: 'delete-device',
+      duration: 3000,
+      icon: '🗑️'
+    });
+    
+    // Перенаправляем на главную после удаления
+    setTimeout(() => navigate('/'), 1500);
+
+  } catch (error: any) {
+    console.error('❌ Delete error:', error);
+    toast.error(error.message || '❌ Не удалось удалить устройство', { 
+      id: 'delete-device' 
     });
   } finally {
     setIsDeleting(false);

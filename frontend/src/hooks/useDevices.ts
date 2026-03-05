@@ -1,135 +1,127 @@
-// frontend/src/hooks/useDevices.ts
-import { useState, useEffect } from 'react';
-import { api } from '../api/client';
-import type { DeviceType } from '../types/device';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
+import type { DeviceType } from '../types/device';
 
+// Убедись, что этот URL совпадает с твоим бэкендом на Railway
 const API_BASE_URL = 'https://vpn-production-702c.up.railway.app';
 
-interface Device {
+export interface Device {
   id: number;
-  name: string;
-  model: string;
+  name: string;      // Мы используем это как отображаемое имя
+  model: string;     // Добавь это поле
   type: DeviceType;
-  date: string;
-  isActive: boolean;
-  daysLeft?: number;
   configLink: string;
-  uuid: string;
-  inboundId: number;
-  comment?: string;
-  email?: string;
+  uuid?: string;
+  isActive: boolean;
+  expiresAt: string;
+  date: string;      // Добавь это поле (мы его мапим в сервисе из connectedAt)
+  daysLeft?: number;
 }
 
 export function useDevices() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchDevices = async () => {
-    setLoading(true);
+  // 1. Функция загрузки устройств
+  const fetchDevices = useCallback(async () => {
+    const userStr = localStorage.getItem('user');
+    if (!userStr) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const data = await api.devices.getAll();
-      setDevices(data);
+      const user = JSON.parse(userStr);
+      // Стучимся на новый эндпоинт: /devices/user/:tgId
+      const response = await fetch(`${API_BASE_URL}/devices/user/${user.telegramId}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Не удалось загрузить устройства');
+
+      const data = await response.json();
+      setDevices(Array.isArray(data) ? data : []);
     } catch (error) {
-      console.error('❌ Ошибка загрузки устройств:', error);
+      console.error('❌ Error fetching devices:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const addDevice = async (name: string, model: string, type: DeviceType) => {
+  // 2. Функция создания устройства (ОДИН ЗАПРОС)
+  const addDevice = async (name: string, customName: string, type: DeviceType) => {
     setLoading(true);
     try {
-      // 1. Получаем данные текущего юзера из localStorage
       const userStr = localStorage.getItem('user');
       if (!userStr) throw new Error('Пользователь не авторизован');
       const user = JSON.parse(userStr);
 
-      // 2. Создаем устройство в 3x-ui через наш API
-      // Бэкенд (XuiService) вернет нам UUID и Subscription URL
-      const xuiResponse = await api.devices.create({
-        name,
-        model,
-        type,
-        tgUserId: user.telegramId?.toString() || user.tgId?.toString() || "0"
-      });
-
-      if (!xuiResponse.success) {
-        throw new Error(xuiResponse.msg || 'Ошибка панели управления');
-      }
-
-      // 3. Теперь сохраняем это в твою Postgres БД (Prisma)
-      // ВАЖНО: передаем поля точно по твоей схеме Device
-      await fetch(`${API_BASE_URL}/devices`, {
+      // Отправляем данные на ОДИН эндпоинт /devices
+      const response = await fetch(`${API_BASE_URL}/devices`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify({
-          userId: user.id, // Твой Int ID из базы
-          name: `${type}: ${model}`,
-          type: type,
-          configLink: xuiResponse.data.subscriptionUrl, // Сопоставляем поля
-          isActive: true,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-        })
+          tgId: user.telegramId.toString(),
+          name: name,         // Модель (например, iPhone 15)
+          customName: customName, // Название (например, Мой телефон)
+          type: type          // Тип устройства
+        }),
       });
 
-      toast.success('Устройство успешно создано');
-      await fetchDevices(); // Обновляем список на экране
+      const result = await response.json();
+
+      if (!response.ok) {
+        // Если на бэкенде не хватило денег или ошибка в XUI, выкидываем ошибку
+        throw new Error(result.message || 'Ошибка при создании устройства');
+      }
+
+      toast.success('✅ Устройство успешно создано!');
+      
+      // Сразу обновляем список устройств, чтобы увидеть новое
+      await fetchDevices();
+      
     } catch (err: any) {
       toast.error(err.message || 'Не удалось создать устройство');
+      throw err; // Пробрасываем ошибку в модалку, чтобы она не закрылась
     } finally {
       setLoading(false);
     }
   };
 
+  // 3. Функция удаления устройства
   const deleteDevice = async (deviceId: number) => {
-    // Находим устройство в текущем списке, чтобы получить его UUID для 3x-ui
-    const device = devices.find(d => d.id === deviceId);
-    if (!device) return;
-
     try {
-      // 1. Удаляем из 3x-ui (нужен uuid и inboundId)
-      // Если в твоей БД нет UUID, его нужно будет добавить в схему Device!
-      await api.devices.delete(deviceId, 1, device.uuid); 
+      const response = await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-      // 2. Локально обновляем стейт
+      if (!response.ok) throw new Error('Ошибка при удалении');
+
       setDevices(prev => prev.filter(d => d.id !== deviceId));
       toast.success('Устройство удалено');
     } catch (err) {
-      toast.error('Ошибка при удалении');
+      toast.error('Не удалось удалить устройство');
     }
   };
 
-  const updateDeviceName = async (deviceId: number, newName: string, inboundId: number, uuid: string) => {
-    const success = await api.devices.updateName(deviceId, newName, inboundId, uuid);
-    if (success) {
-      await fetchDevices();
-    }
-    return success;
-  };
-
-  const replaceDeviceLink = async (deviceId: number, inboundId: number, uuid: string) => {
-    const newLink = await api.devices.replace(deviceId, inboundId, uuid);
-    if (newLink) {
-      await fetchDevices();
-    }
-    return newLink;
-  };
-
+  // Первичная загрузка при монтировании
   useEffect(() => {
     fetchDevices();
-  }, []);
+  }, [fetchDevices]);
 
   return {
     devices,
     loading,
     addDevice,
     deleteDevice,
-    updateDeviceName,
-    replaceDeviceLink,
     refetch: fetchDevices
   };
 }

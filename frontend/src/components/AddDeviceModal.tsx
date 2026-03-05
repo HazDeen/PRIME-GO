@@ -11,7 +11,7 @@ import type { DeviceType } from '../types/device';
 type Props = {
   onClose: () => void;
   // onAdd теперь принимает объект, который мы отправим на бэкенд
-  onAdd: (name: string, type: DeviceType, customName: string) => Promise<void>;
+  onAdd: (name: string, customName: string, type: DeviceType) => Promise<void>;
   tgUserId: string;
 };
 
@@ -48,16 +48,14 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
       // Вся логика (XUI + БД + Баланс) теперь внутри ОДНОГО вызова onAdd,
       // который обращается к нашему новому контроллеру на бэкенде.
       
-      await onAdd(name || customName, selectedType, customName || name);
+      await onAdd(name || customName, customName || name, selectedType);
       
       toast.success('✅ Устройство успешно добавлено!');
       
       // Небольшая задержка перед закрытием для красоты
       setTimeout(() => {
         handleClose();
-        // Можно убрать reload, если useDevices правильно обновляет стейт
-        window.location.reload(); 
-      }, 500);
+      }, 2000);
 
     } catch (error: any) {
       console.error('❌ Ошибка при добавлении:', error);

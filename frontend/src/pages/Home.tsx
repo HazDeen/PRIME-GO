@@ -23,13 +23,14 @@ export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
-  const handleAddDevice = async (name: string, type: DeviceType, customName: string) => {
+  const handleAddDevice = async (name: string, customName: string, type: DeviceType) => {
     try {
-      await addDevice(name, customName, type);
+      // Важно: здесь тоже проверь порядок вызова addDevice!
+      await addDevice(name, customName, type); 
       setShowAddModal(false);
       refetchBalance();
     } catch (error: any) {
-      // ошибка показывается в AddDeviceModal через toast
+      // Ошибка обработается внутри модалки
     }
   };
 
