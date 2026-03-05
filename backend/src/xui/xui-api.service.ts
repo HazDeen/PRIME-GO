@@ -80,11 +80,19 @@ export class XuiApiService implements OnModuleInit {
   async addClient(inboundId: number, clientData: any) {
     await this.ensureLogin();
 
+    // 1. Сначала берем актуальные настройки из панели
+    const inboundConfig = await this.getInboundConfig(inboundId);
+    if (!inboundConfig) {
+      return { success: false, msg: 'Ошибка получения настроек из панели' };
+    }
+
+    const clientUuid = clientData.uuid;
+    const clientEmail = `user-${clientData.userId}-${Math.random().toString(36).substring(7)}`;
     const client = {
-      id: clientData.uuid,
-      email: clientData.email,
-      flow: 'xtls-rprx-vision', // Для TCP Reality это поле обязательно
-      limitIp: 5,
+      id: clientUuid,
+      email: clientEmail,
+      flow: 'xtls-rprx-vision',
+      limitIp: 2,
       totalGB: clientData.totalGb || 0,
       expiryTime: clientData.expiryTime || 0,
       enable: true,
@@ -99,24 +107,23 @@ export class XuiApiService implements OnModuleInit {
 
     try {
       const response = await this.api.post('/panel/inbound/addClient', payload.toString(), {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-        }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
       });
 
       if (response.data?.success) {
-        // Генерируем прямую VLESS ссылку
-        const vlessLink = this.generateVlessLink(client.id, clientData.name || 'VPN');
-        
+        // 2. СОБИРАЕМ ССЫЛКУ НА ОСНОВЕ ДАННЫХ ИЗ ПАНЕЛИ
+        const remark = encodeURIComponent(clientData.name || 'VPN');
+        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&sni=${inboundConfig.sni}&fp=chrome&pbk=${inboundConfig.pbk}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#${clientEmail}`;
+
         return { 
           success: true, 
-          configLink: vlessLink, // <--- Это пойдет в БД
-          uuid: client.id 
+          configLink: vlessLink,
+          email: clientEmail,
+          uuid: clientUuid 
         };
       }
       return { success: false, msg: response.data?.msg };
     } catch (error: any) {
-      this.logger.error('Ошибка addClient:', error.message);
       return { success: false, msg: error.message };
     }
   }
@@ -133,6 +140,32 @@ export class XuiApiService implements OnModuleInit {
       return { success: false, msg: error.message };
     }
   }
+
+  async getInboundConfig(inboundId: number) {
+    await this.ensureLogin();
+    try {
+      const response = await this.api.get(`/panel/inbound/get/${inboundId}`);
+      if (response.data?.success) {
+        const inbound = response.data.obj;
+        const streamSettings = JSON.parse(inbound.streamSettings);
+        
+        return {
+          port: inbound.port,
+          protocol: inbound.protocol,
+          // Вытаскиваем ключи Reality
+          pbk: streamSettings.realitySettings.publicKey,
+          sid: streamSettings.realitySettings.shortIds[0], // Берем первый доступный ID
+          sni: streamSettings.realitySettings.serverNames[0],
+          // Хост берем из домена панели или внешнего IP
+          host: this.configService.get('VLESS_HOST') || 'твой_ip' 
+        };
+      }
+      throw new Error('Не удалось получить данные Inbound');
+    } catch (error) {
+      this.logger.error(`Ошибка получения конфига Inbound: ${error.message}`);
+      return null;
+    }
+    }
 
   // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
 

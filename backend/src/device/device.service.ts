@@ -41,6 +41,7 @@ export class DeviceService {
     const clientUuid = uuidv4();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
+    const clientEmail = `${user.id}-${Math.random().toString(36).substring(7)}`;
 
     // 4. Создание в 3x-ui панели
     // totalGb: 100 GB в байтах. (100 * 1024^3)
@@ -48,7 +49,7 @@ export class DeviceService {
 
     const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: clientUuid,
-      email: `${dto.type}-${user.id}-${Math.random().toString(36).substring(7)}`,
+      email: clientEmail,
       totalGb: totalGbBytes,
       expiryTime: expiresAt.getTime(),
       tgUid: user.telegramId.toString()
@@ -69,6 +70,7 @@ export class DeviceService {
           customName: dto.customName || dto.name,
           type: dto.type,
           uuid: clientUuid,
+          email: clientEmail,
           configLink: xuiResponse.configLink || '',
           isActive: true,
           expiresAt,

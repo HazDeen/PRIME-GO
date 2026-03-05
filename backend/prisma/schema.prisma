@@ -33,6 +33,7 @@ model Device {
   type        String
   configLink  String   @unique
   uuid String? @unique
+  email       String?   @unique
   isActive    Boolean  @default(false)
   expiresAt   DateTime?
   connectedAt DateTime @default(now()) @map("connected_at")
