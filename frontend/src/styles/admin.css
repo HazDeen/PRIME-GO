@@ -1,554 +1,186 @@
-/* ====== ADMIN PAGE ====== */
-.adminPage {
+:root {
+  /* Светлая тема (дефолт) */
+  --admin-bg: #f2f2f7;
+  --admin-card: #ffffff;
+  --admin-text: #000000;
+  --admin-subtext: #8e8e93;
+  --admin-border: rgba(0, 0, 0, 0.05);
+  --admin-accent: #007aff;
+  --admin-danger: #ff3b30;
+  --admin-modal-overlay: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme='dark'] {
+  /* Темная тема */
+  --admin-bg: #000000;
+  --admin-card: #1c1c1e;
+  --admin-text: #ffffff;
+  --admin-subtext: #8e8e93;
+  --admin-border: rgba(255, 255, 255, 0.1);
+  --admin-accent: #0a84ff;
+  --admin-danger: #ff453a;
+  --admin-modal-overlay: rgba(0, 0, 0, 0.7);
+}
+
+.adminContainer {
+  padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  background: var(--admin-bg);
   min-height: 100vh;
-  background: var(--bg-primary);
+  color: var(--admin-text);
+  transition: background 0.3s ease;
 }
 
-.adminHeader {
+/* Шапка */
+.adminHeaderRow {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  margin-bottom: 24px;
-  padding: 16px 0;
-  border-bottom: 1px solid var(--border-color);
+  align-items: center;
+  margin-bottom: 30px;
+  padding-top: 40px;
 }
 
-.adminHeader h1 {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0;
-}
+.mainTitle { font-size: 28px; font-weight: 700; }
 
-.refreshButton {
+.exitBtn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
   width: 44px;
   height: 44px;
-  border-radius: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s;
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--admin-danger);
+  z-index: 100;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
-.refreshButton:active {
-  transform: rotate(180deg);
-}
-
-.adminContent {
+/* Сетка */
+.adminGrid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
 
-/* Список пользователей */
-.usersList {
-  background: var(--bg-block);
-  border: 1px solid var(--border-color);
-  border-radius: 24px;
-  padding: 20px;
-  height: fit-content;
-  max-height: 80vh;
-  overflow-y: auto;
+@media (max-width: 900px) {
+  .adminGrid { grid-template-columns: 1fr; }
 }
 
-.usersList h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 16px;
+/* Карточки */
+.customCard {
+  background: var(--admin-card);
+  border-radius: 20px;
+  margin-bottom: 12px;
+  border: 1px solid var(--admin-border);
+  overflow: hidden;
 }
 
-.userCard {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  border-radius: 16px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  margin-bottom: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.userCard:hover {
-  background: var(--accent-alpha);
-  transform: translateX(4px);
-}
-
-.userCard.selected {
-  border-color: var(--accent);
-  background: var(--accent-alpha);
-}
-
-.userAvatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--accent-alpha);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--accent);
-  margin-right: 12px;
-}
-
-.userInfo {
-  flex: 1;
-}
-
-.userName {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.adminBadge {
-  background: var(--accent);
-  color: white;
-  font-size: 10px;
-  padding: 2px 8px;
-  border-radius: 30px;
-  font-weight: 500;
-}
-
-.userUsername {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-}
-
-.userBalance {
-  font-size: 13px;
-  color: var(--success);
-  font-weight: 600;
-}
-
-.userTelegramId {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  margin-left: 8px;
-}
-
-/* Детали пользователя */
-.userDetails {
-  background: var(--bg-block);
-  border: 1px solid var(--border-color);
-  border-radius: 24px;
-  padding: 20px;
-  height: fit-content;
-}
-
-.userDetails h2 {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 16px;
-}
-
-.userDetails h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 24px 0 16px;
-}
-
-.detailCard {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
+.cardMainRow {
   padding: 16px;
-  margin-bottom: 24px;
-}
-
-.detailRow {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--border-color);
+  gap: 15px;
+  cursor: pointer;
 }
 
-.detailRow:last-child {
-  border-bottom: none;
-}
-
-.detailLabel {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.detailValue {
-  font-size: 14px;
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-.balanceValue {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.balanceEdit {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.balanceInput {
-  width: 100px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-input);
-  background: var(--bg-input);
-  color: var(--text-primary);
-  font-size: 14px;
-}
-
-.saveBtn, .cancelBtn, .editBtn {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  border: none;
+.userIcon, .deviceIcon {
+  width: 40px;
+  height: 40px;
+  background: var(--admin-bg);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
+  color: var(--admin-accent);
 }
 
-.saveBtn {
-  background: var(--success);
-  color: white;
-}
+.primaryText { font-weight: 600; font-size: 16px; color: var(--admin-text); }
+.secondaryText { font-size: 13px; color: var(--admin-subtext); }
 
-.cancelBtn {
-  background: var(--danger);
-  color: white;
-}
-
-.editBtn {
-  background: var(--accent-alpha);
-  color: var(--accent);
-}
-
-.adminToggle {
-  display: flex;
-  align-items: center;
-}
-
-.switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 24px;
-}
-
-.switch input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-.slider {
-  position: absolute;
-  cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--bg-card);
-  transition: 0.2s;
-  border-radius: 24px;
-  border: 1px solid var(--border-color);
-}
-
-.slider:before {
-  position: absolute;
-  content: "";
-  height: 18px;
-  width: 18px;
-  left: 3px;
-  bottom: 2px;
-  background-color: var(--text-secondary);
-  transition: 0.2s;
-  border-radius: 50%;
-}
-
-input:checked + .slider {
-  background-color: var(--accent);
-}
-
-input:checked + .slider:before {
-  transform: translateX(26px);
-  background-color: white;
-}
-
-/* Устройства */
-.devicesList {
+/* Выпадающее меню внутри карты */
+.cardDropdown {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 8px;
+  border-top: 1px solid var(--admin-border);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
-.deviceItem {
+.dropItem {
+  background: transparent;
+  border: none;
+  color: var(--admin-text);
+  padding: 12px;
   display: flex;
   align-items: center;
-  padding: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
+  gap: 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  cursor: pointer;
+  width: 100%;
 }
 
-.deviceIcon {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--bg-card);
+.dropItem:hover { background: rgba(0, 0, 0, 0.05); }
+.dropItem.delete { color: var(--admin-danger); }
+
+/* Модалки (Центрированные) */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--admin-modal-overlay);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
-  margin-right: 12px;
+  z-index: 1000;
+  padding: 20px;
 }
 
-.deviceInfo {
-  flex: 1;
+.confirmModal {
+  background: var(--admin-card);
+  width: 100%;
+  max-width: 400px;
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid var(--admin-border);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
 }
 
-.deviceName {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 4px;
+.modalTitle { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+.modalSub { color: var(--admin-subtext); font-size: 14px; margin-bottom: 20px; }
+
+.modalInput {
+  width: 100%;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  padding: 14px;
+  border-radius: 12px;
+  color: var(--admin-text);
+  margin-bottom: 20px;
+  font-size: 16px;
 }
 
-.deviceModel {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-
-.deviceMeta {
+.modalBtnGroup {
   display: flex;
-  align-items: center;
   gap: 12px;
 }
 
-.status {
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 30px;
-  font-weight: 500;
-}
-
-.status.active {
-  background: rgba(52, 199, 89, 0.1);
-  color: var(--success);
-}
-
-.status.inactive {
-  background: rgba(142, 142, 147, 0.1);
-  color: var(--text-secondary);
-}
-
-.daysLeft {
-  font-size: 11px;
-  color: var(--text-secondary);
-}
-
-.deviceActions {
-  display: flex;
-  gap: 8px;
-}
-
-.configLinkBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--accent-alpha);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.configLinkBtn:active {
-  transform: scale(0.95);
-}
-
-.deleteDeviceBtn {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+.modalBtn {
+  flex: 1;
+  padding: 14px;
+  border-radius: 14px;
   border: none;
-  background: rgba(255, 77, 77, 0.1);
-  color: var(--danger);
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.deleteDeviceBtn:active {
-  transform: scale(0.95);
-  background: rgba(255, 77, 77, 0.2);
-}
-
-.noDevices {
-  text-align: center;
-  padding: 32px;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-secondary);
-}
-
-/* Футуристичный фон как в темном Telegram */
-.futuristic-bg {
-    background: radial-gradient(circle at top right, #1a1a2e, #16213e, #0f3460);
-    min-height: 100vh;
-    color: #fff;
-    font-family: 'Segoe UI', Roboto, sans-serif;
-}
-
-/* Эффект матового стекла (Glassmorphism) */
-.glass-card {
-    background: rgba(255, 255, 255, 0.05) !important;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    border-radius: 15px !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-}
-
-.cyber-title {
-    letter-spacing: 4px;
-    background: linear-gradient(to right, #00d2ff, #9d50bb);
-    -webkit-background-clip: text; /* Для Safari/Chrome */
-    background-clip: text;         /* Стандартное свойство (исправляет ошибку) */
-    -webkit-text-fill-color: transparent;
-    font-weight: bold;
-}
-
-/* Неоновое свечение для карточек */
-.glow-blue { border-bottom: 3px solid #00d2ff !important; }
-.glow-purple { border-bottom: 3px solid #9d50bb !important; }
-
-/* Кастомизация таблиц Ant Design под дарк-стиль */
-.ant-table {
-    background: transparent !important;
-    color: #fff !important;
-}
-.ant-table-thead > tr > th {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #00d2ff !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
-}
-.ant-table-cell { border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; }
-
-/* Кнопки в стиле Cyber */
-.action-btn {
-    background: transparent !important;
-    border: 1px solid #00d2ff !important;
-    color: #00d2ff !important;
-    transition: all 0.3s;
-}
-.action-btn:hover {
-    background: #00d2ff !important;
-    color: #000 !important;
-    box-shadow: 0 0 15px #00d2ff;
-}
-
-.adminPage {
-  padding: 16px;
-  background: var(--bg-color);
-  color: var(--text-color);
-}
-
-.userCard {
-  background: var(--secondary-bg-color);
-  border-radius: 12px;
-  padding: 12px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.userInfo {
-  display: flex;
-  flex-direction: column;
-}
-
-.userTg { font-weight: 600; font-size: 15px; }
-.userBalance { font-size: 13px; opacity: 0.6; }
-
-.addDeviceBtn {
-  background: var(--main-color);
-  color: #fff;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.sectionTitle {
-  font-size: 14px;
-  text-transform: uppercase;
-  opacity: 0.5;
-  margin: 20px 0 10px 4px;
-  letter-spacing: 1px;
-}
-
-.deviceCardMini {
-  background: var(--secondary-bg-color);
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-bottom: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.deviceEmail {
-  display: block;
-  font-size: 11px;
-  opacity: 0.4;
-  font-family: monospace;
-}
-
-.statusOn { color: #4cd964; text-shadow: 0 0 5px #4cd964; }
-.statusOff { color: #ff3b30; opacity: 0.5; }
-
-.loading-state {
-  opacity: 0.7;
-  pointer-events: none;
-  transition: opacity 0.3s;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-  .adminContent {
-    grid-template-columns: 1fr;
-  }
-}
+.modalBtn.primary { background: var(--admin-accent); color: #fff; }
+.modalBtn.secondary { background: var(--admin-bg); color: var(--admin-text); }
+.modalBtn.danger { background: var(--admin-danger); color: #fff; }
