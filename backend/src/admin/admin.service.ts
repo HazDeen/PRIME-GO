@@ -110,7 +110,7 @@ export class AdminService {
     const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
     if (!device) throw new NotFoundException('Device not found');
 
-    const INBOUND_ID = 1; // <-- ИСПРАВЛЕНИЕ: Используем инбаунд 1 по умолчанию
+    const INBOUND_ID = 2; // <-- ИСПРАВЛЕНИЕ: Используем инбаунд 1 по умолчанию
 
     // Пытаемся удалить из панели 3x-ui (проверяем только uuid)
     if (device.uuid) {
@@ -128,5 +128,91 @@ export class AdminService {
     });
 
     return { success: true, deletedId: deviceId };
+  }
+
+  // 1. Изменение никнейма
+  async updateUsername(userId: number, newUsername: string) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { username: newUsername },
+    });
+    return { success: true, username: user.username };
+  }
+
+  // 2. Перегенерация ссылки (Удалить старый XUI -> Создать новый XUI -> Обновить БД)
+  async regenerateDeviceLink(deviceId: number) {
+    const device = await this.prisma.device.findUnique({ where: { id: deviceId }, include: { user: true } });
+    if (!device) throw new NotFoundException('Device not found');
+
+    const INBOUND_ID = 2;
+
+    // Шаг 1: Удаляем старого клиента из панели 3x-ui
+    if (device.uuid) {
+      await this.xuiService.deleteClient(INBOUND_ID, device.uuid);
+    }
+
+    // Шаг 2: Генерируем новый UUID и создаем клиента в 3x-ui
+    const newUuid = crypto.randomUUID(); // Убедись, что 'crypto' импортирован или используй другой генератор
+    const xuiData = await this.xuiService.addClient(INBOUND_ID, {
+      uuid: newUuid,
+      name: device.customName || device.name,
+      tgUid: device.user.telegramId.toString(),
+      totalGb: 1000, // Безлимит, или возьми из логики
+      expiryTime: device.expiresAt ? device.expiresAt.getTime() : 0 
+    });
+
+    if (!xuiData.success) {
+      throw new Error(`Failed to regenerate link in 3x-ui: ${xuiData.msg}`);
+    }
+
+    // Шаг 3: Обновляем ссылку и uuid в нашей БД
+    const updatedDevice = await this.prisma.device.update({
+      where: { id: deviceId },
+      data: {
+        uuid: xuiData.uuid,
+        configLink: xuiData.configLink,
+        email: xuiData.email
+      }
+    });
+
+    return { success: true, newLink: updatedDevice.configLink };
+  }
+
+  // 3. Создание устройства админом (бесплатно)
+  async addDeviceByAdmin(userId: number, data: { name: string, type: string }) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const INBOUND_ID = 2;
+    const newUuid = crypto.randomUUID();
+    
+    // Создаем в 3x-ui
+    const xuiData = await this.xuiService.addClient(INBOUND_ID, {
+      uuid: newUuid,
+      name: data.name,
+      tgUid: user.telegramId.toString(),
+      totalGb: 1000, 
+      expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000 // +30 дней
+    });
+
+    if (!xuiData.success) throw new Error(`3x-ui error: ${xuiData.msg}`);
+
+    // Сохраняем в БД
+    const newDevice = await this.prisma.device.create({
+      data: {
+        userId: user.id,
+        name: data.name,
+        customName: data.name,
+        type: data.type,
+        uuid: xuiData.uuid,
+        configLink: xuiData.configLink,
+        email: xuiData.email,
+        isActive: true,
+        connectedAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      }
+    });
+
+    return { success: true, device: newDevice };
   }
 }
