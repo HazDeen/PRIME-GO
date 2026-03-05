@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Param, Body, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Put, Delete, Param, Body, Headers, UnauthorizedException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
@@ -42,5 +42,24 @@ export class AdminController {
     if (!username) throw new UnauthorizedException('Username required');
     await this.adminService.validateAdmin(username);
     return this.adminService.setAdminStatus(parseInt(userId), body.isAdmin);
+  }
+
+  // НОВЫЙ РОУТ: Получить все устройства для админки
+  @Get('devices')
+  async getAllDevices(@Headers('x-username') username: string) {
+    if (!username) throw new UnauthorizedException('Username required');
+    await this.adminService.validateAdmin(username);
+    return this.adminService.getAllDevices();
+  }
+
+  // НОВЫЙ РОУТ: Удалить устройство
+  @Delete('devices/:deviceId')
+  async deleteDevice(
+    @Headers('x-username') username: string,
+    @Param('deviceId') deviceId: string
+  ) {
+    if (!username) throw new UnauthorizedException('Username required');
+    await this.adminService.validateAdmin(username);
+    return this.adminService.deleteDevice(parseInt(deviceId));
   }
 }
