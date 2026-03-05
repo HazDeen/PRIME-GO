@@ -113,7 +113,7 @@ export class XuiApiService implements OnModuleInit {
       if (response.data?.success) {
         // 2. СОБИРАЕМ ССЫЛКУ НА ОСНОВЕ ДАННЫХ ИЗ ПАНЕЛИ
         const remark = encodeURIComponent(clientData.name || 'VPN');
-        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&sni=${inboundConfig.sni}&fp=chrome&pbk=${inboundConfig.pbk}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${clientEmail}`;
+        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&pbk=${inboundConfig.pbk}&fp=chrome&sni=${inboundConfig.sni}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${clientEmail}`;
 
         return { 
           success: true, 
