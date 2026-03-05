@@ -4,9 +4,37 @@ import type { DeviceType } from '../types/device';
 
 const API_BASE_URL = 'https://vpn-production-702c.up.railway.app';
 
+// Универсальная функция для заголовков (Токен + X-Username)
+const getHeaders = (includeJson = true) => {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  let username = '';
+
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      username = user.username || user.login || '';
+    } catch (e) {
+      console.error('❌ Ошибка парсинга данных пользователя');
+    }
+  }
+
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${token || ''}`,
+    'x-username': username, 
+  };
+
+  if (includeJson) {
+    headers['Content-Type'] = 'application/json';
+  }
+
+  return headers;
+};
+
+let isCreatingDevice = false;
 
 export const api = {
-  // 🔵 ВСЁ ЧТО СВЯЗАНО С ПОЛЬЗОВАТЕЛЯМИ - ОСТАЁТСЯ КАК ЕСТЬ
+  // --- АВТОРИЗАЦИЯ ---
   auth: {
     login: async (username: string, password: string) => {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -31,73 +59,59 @@ export const api = {
     }
   },
 
-  // 🔵 ВСЁ ЧТО СВЯЗАНО С ТРАНЗАКЦИЯМИ - ОСТАЁТСЯ КАК ЕСТЬ
+  // --- ТРАНЗАКЦИИ ---
   transactions: {
     getAll: async () => {
-      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/transactions`, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`
-        }
+        headers: getHeaders()
       });
       return response.json();
     },
     create: async (data: any) => {
-      const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/transactions`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || ''}`
-        },
+        headers: getHeaders(),
         body: JSON.stringify(data)
       });
       return response.json();
     }
   },
 
-  // 🔵 ВСЁ ЧТО СВЯЗАНО С БАЛАНСОМ - ОСТАЁТСЯ КАК ЕСТЬ
+  // --- БАЛАНС ---
   balance: {
     get: async () => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/balance`, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`
-        }
+      const response = await fetch(`${API_BASE_URL}/user/balance`, {
+        headers: getHeaders()
       });
       return response.json();
     },
     topup: async (amount: number) => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/balance/topup`, {
+      const response = await fetch(`${API_BASE_URL}/user/topup`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || ''}`
-        },
+        headers: getHeaders(),
         body: JSON.stringify({ amount })
       });
       return response.json();
     }
   },
 
-  // 🔴 УСТРОЙСТВА - ТЕПЕРЬ ПОЛУЧАЕМ С СЕРВЕРА 3X-UI, НО СОХРАНЯЕМ В БД ДЛЯ ИСТОРИИ
+  // --- УСТРОЙСТВА ---
+  // --- УСТРОЙСТВА (ИСПРАВЛЕНО: Добавлены updateName и replace) ---
   devices: {
-    // Получить все устройства пользователя (с сервера 3x-ui)
     getAll: async () => {
       try {
         const userStr = localStorage.getItem('user');
         if (!userStr) return [];
-        
         const user = JSON.parse(userStr);
         const tgUserId = user.telegramId || user.tgId || '0';
         
-        const response = await fetch(`${API_BASE_URL}/xui/user-devices/${tgUserId}`);
+        const response = await fetch(`${API_BASE_URL}/xui/user-devices/${tgUserId}`, {
+            headers: getHeaders()
+        });
         const data = await response.json();
         
         if (data.success) {
           localStorage.setItem('devices', JSON.stringify(data.data));
-          
           return data.data.map((device: any) => ({
             id: device.id || Date.now(),
             name: device.name || device.email?.split('-')[1] || 'Устройство',
@@ -109,33 +123,24 @@ export const api = {
             configLink: device.subscriptionUrl || '',
             uuid: device.uuid || '',
             inboundId: device.inboundId || 1,
-            comment: device.comment || '',
             email: device.email || '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
           }));
         }
-        
-        const cached = localStorage.getItem('devices');
-        return cached ? JSON.parse(cached) : [];
+        return [];
       } catch (error) {
-        console.error('❌ Ошибка загрузки устройств с сервера:', error);
+        console.error('❌ Ошибка загрузки устройств:', error);
         const cached = localStorage.getItem('devices');
         return cached ? JSON.parse(cached) : [];
       }
     },
 
-    // Создать устройство (и в 3x-ui, и в БД)
-    create: async (data: {
-      name: string;
-      model: string;
-      type: DeviceType;
-      tgUserId: string;
-    }) => {
+    create: async (data: { name: string; model: string; type: DeviceType; tgUserId: string; }) => {
+      if (isCreatingDevice) return;
+      isCreatingDevice = true;
       try {
         const response = await fetch(`${API_BASE_URL}/xui/client`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getHeaders(),
           body: JSON.stringify({
             inboundId: 1,
             tgUid: data.tgUserId,
@@ -148,220 +153,148 @@ export const api = {
         });
 
         const xuiResult = await response.json();
-        
-        if (!xuiResult.success) {
-          throw new Error(xuiResult.message || 'Ошибка создания в 3x-ui');
-        }
+        if (!xuiResult.success) throw new Error(xuiResult.message || 'Ошибка 3x-ui');
 
-        const token = localStorage.getItem('token');
-        if (token) {
-          await fetch(`${API_BASE_URL}/devices`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              name: data.name,
-              model: data.model,
-              type: data.type,
-              uuid: xuiResult.data.uuid,
-              subscriptionUrl: xuiResult.data.subscriptionUrl,
-              tgUserId: data.tgUserId
-            })
-          });
-        }
-        
-        const devices = await api.devices.getAll();
-        localStorage.setItem('devices', JSON.stringify(devices));
+        await fetch(`${API_BASE_URL}/devices`, {
+          method: 'POST',
+          headers: getHeaders(),
+          body: JSON.stringify({
+            name: data.name,
+            model: data.model,
+            type: data.type,
+            uuid: xuiResult.data.uuid,
+            subscriptionUrl: xuiResult.data.subscriptionUrl,
+            tgUserId: data.tgUserId
+          })
+        });
         
         return xuiResult;
-      } catch (error) {
-        console.error('❌ Ошибка создания устройства:', error);
-        throw error;
+      } finally {
+        isCreatingDevice = false;
       }
     },
 
-    // Удалить устройство (из 3x-ui и из БД)
     delete: async (deviceId: number, inboundId: number, uuid: string) => {
       try {
         const response = await fetch(`${API_BASE_URL}/xui/client/delete`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getHeaders(),
           body: JSON.stringify({ inboundId, uuid })
         });
-
         const xuiResult = await response.json();
-        
-        if (!xuiResult.success) {
-          throw new Error(xuiResult.message || 'Ошибка удаления из 3x-ui');
-        }
+        if (!xuiResult.success) throw new Error('Ошибка 3x-ui');
 
-        const token = localStorage.getItem('token');
-        if (token) {
-          await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
-            method: 'DELETE',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-        }
-
-        const devices = await api.devices.getAll();
-        localStorage.setItem('devices', JSON.stringify(devices));
-        
-        toast.success('✅ Устройство удалено из 3x-ui');
+        await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+          method: 'DELETE',
+          headers: getHeaders()
+        });
+        toast.success('✅ Устройство удалено');
         return true;
       } catch (error) {
-        console.error('❌ Ошибка удаления:', error);
-        toast.error('❌ Не удалось удалить устройство');
+        toast.error('❌ Ошибка удаления');
         return false;
       }
     },
 
-    // Обновить имя устройства (комментарий в 3x-ui и в БД)
+    // ВОТ ЭТИ МЕТОДЫ БЫЛИ ПРОПУЩЕНЫ:
     updateName: async (deviceId: number, newName: string, inboundId: number, uuid: string) => {
       try {
         const response = await fetch(`${API_BASE_URL}/xui/client/update`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            inboundId, 
-            uuid, 
-            comment: newName 
-          })
+          headers: getHeaders(),
+          body: JSON.stringify({ inboundId, uuid, comment: newName })
         });
-
         const xuiResult = await response.json();
-        
-        if (!xuiResult.success) {
-          throw new Error(xuiResult.message || 'Ошибка обновления в 3x-ui');
-        }
+        if (!xuiResult.success) throw new Error('Ошибка 3x-ui');
 
-        const token = localStorage.getItem('token');
-        if (token) {
-          await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ name: newName })
-          });
-        }
-
-        const devices = await api.devices.getAll();
-        localStorage.setItem('devices', JSON.stringify(devices));
-        
-        toast.success('✅ Название обновлено');
+        await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ name: newName })
+        });
         return true;
       } catch (error) {
-        console.error('❌ Ошибка обновления:', error);
-        toast.error('❌ Не удалось обновить название');
+        console.error(error);
         return false;
       }
     },
 
-    // Заменить ссылку (сгенерировать новый subId в 3x-ui)
     replace: async (deviceId: number, inboundId: number, uuid: string) => {
       try {
         const response = await fetch(`${API_BASE_URL}/xui/client/replace-link`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: getHeaders(),
           body: JSON.stringify({ inboundId, uuid })
         });
-
         const data = await response.json();
-        
-        if (data.success) {
-          const token = localStorage.getItem('token');
-          if (token) {
-            await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
-              method: 'PATCH',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-              },
-              body: JSON.stringify({ 
-                subscriptionUrl: data.data.newSubscriptionUrl 
-              })
-            });
-          }
+        if (!data.success) throw new Error('Ошибка 3x-ui');
 
-          const devices = await api.devices.getAll();
-          localStorage.setItem('devices', JSON.stringify(devices));
-          
-          toast.success('✅ Новая ссылка сгенерирована');
-          return data.data.newSubscriptionUrl;
-        } else {
-          toast.error(data.message || '❌ Ошибка генерации ссылки');
-          return null;
-        }
+        await fetch(`${API_BASE_URL}/devices/${deviceId}`, {
+          method: 'PATCH',
+          headers: getHeaders(),
+          body: JSON.stringify({ subscriptionUrl: data.data.newSubscriptionUrl })
+        });
+        return data.data.newSubscriptionUrl;
       } catch (error) {
-        console.error('❌ Ошибка замены ссылки:', error);
-        toast.error('❌ Не удалось подключиться к серверу');
+        console.error(error);
         return null;
       }
-    },
-
-    // Получить одно устройство
-    getById: async (deviceId: number) => {
-      const devices = await api.devices.getAll();
-      return devices.find((d: any) => d.id === deviceId);
     }
   },
 
-  // 🔵 ПОЛЬЗОВАТЕЛИ - ОСТАЁТСЯ КАК ЕСТЬ
+  // --- ПРОФИЛЬ ---
   users: {
     getProfile: async () => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/users/profile`, {
-        headers: {
-          'Authorization': `Bearer ${token || ''}`
-        }
+      const response = await fetch(`${API_BASE_URL}/user/profile`, {
+        headers: getHeaders()
       });
       return response.json();
     },
     updateProfile: async (data: any) => {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/users/profile`, {
+      const response = await fetch(`${API_BASE_URL}/user/profile`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token || ''}`
-        },
+        headers: getHeaders(),
         body: JSON.stringify(data)
       });
       return response.json();
     }
   },
 
-  // 🔵 АДМИНКА - ОСТАЁТСЯ КАК ЕСТЬ
+  // --- АДМИН ПАНЕЛЬ ---
   admin: {
-  getStats: async () => {
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/admin/stats`, {
-      headers: {
-        'Authorization': `Bearer ${token || ''}`
-      }
-    });
-    return response.json();
-  },
-  getUsers: async () => {  // 👈 ВМЕСТО getAllUsers
-    const token = localStorage.getItem('token');
-    const response = await fetch(`${API_BASE_URL}/admin/users`, {
-      headers: {
-        'Authorization': `Bearer ${token || ''}`
-      }
-    });
-    return response.json();
-  },
-  // Добавь другие методы по необходимости
-  getUserDevices: async (userId: number) => {
-    const devices = await api.devices.getAll();
-    // Фильтруем по userId если нужно
-    console.log('Загрузка устройств для пользователя:', userId);
-    return devices;
+    getStats: async () => {
+      const response = await fetch(`${API_BASE_URL}/admin/stats`, {
+        headers: getHeaders()
+      });
+      return response.json();
+    },
+    getUsers: async () => {
+      const response = await fetch(`${API_BASE_URL}/admin/users`, {
+        headers: getHeaders()
+      });
+      return response.json();
+    },
+    getUserDevices: async (userId: number) => {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/devices`, {
+        headers: getHeaders()
+      });
+      return response.json();
+    },
+    updateUserBalance: async (userId: number, balance: number) => {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/balance`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ balance })
+      });
+      return response.json();
+    },
+    setAdminStatus: async (userId: number, isAdmin: boolean) => {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/admin`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ isAdmin })
+      });
+      return response.json();
+    }
   }
-},
-}
+};
