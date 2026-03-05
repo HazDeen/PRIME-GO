@@ -423,6 +423,129 @@ input:checked + .slider:before {
   color: var(--text-secondary);
 }
 
+/* Футуристичный фон как в темном Telegram */
+.futuristic-bg {
+    background: radial-gradient(circle at top right, #1a1a2e, #16213e, #0f3460);
+    min-height: 100vh;
+    color: #fff;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Эффект матового стекла (Glassmorphism) */
+.glass-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.cyber-title {
+    letter-spacing: 4px;
+    background: linear-gradient(to right, #00d2ff, #9d50bb);
+    -webkit-background-clip: text; /* Для Safari/Chrome */
+    background-clip: text;         /* Стандартное свойство (исправляет ошибку) */
+    -webkit-text-fill-color: transparent;
+    font-weight: bold;
+}
+
+/* Неоновое свечение для карточек */
+.glow-blue { border-bottom: 3px solid #00d2ff !important; }
+.glow-purple { border-bottom: 3px solid #9d50bb !important; }
+
+/* Кастомизация таблиц Ant Design под дарк-стиль */
+.ant-table {
+    background: transparent !important;
+    color: #fff !important;
+}
+.ant-table-thead > tr > th {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: #00d2ff !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+.ant-table-cell { border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important; }
+
+/* Кнопки в стиле Cyber */
+.action-btn {
+    background: transparent !important;
+    border: 1px solid #00d2ff !important;
+    color: #00d2ff !important;
+    transition: all 0.3s;
+}
+.action-btn:hover {
+    background: #00d2ff !important;
+    color: #000 !important;
+    box-shadow: 0 0 15px #00d2ff;
+}
+
+.adminPage {
+  padding: 16px;
+  background: var(--bg-color);
+  color: var(--text-color);
+}
+
+.userCard {
+  background: var(--secondary-bg-color);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.userTg { font-weight: 600; font-size: 15px; }
+.userBalance { font-size: 13px; opacity: 0.6; }
+
+.addDeviceBtn {
+  background: var(--main-color);
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  text-transform: uppercase;
+  opacity: 0.5;
+  margin: 20px 0 10px 4px;
+  letter-spacing: 1px;
+}
+
+.deviceCardMini {
+  background: var(--secondary-bg-color);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.deviceEmail {
+  display: block;
+  font-size: 11px;
+  opacity: 0.4;
+  font-family: monospace;
+}
+
+.statusOn { color: #4cd964; text-shadow: 0 0 5px #4cd964; }
+.statusOff { color: #ff3b30; opacity: 0.5; }
+
+.loading-state {
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
   .adminContent {

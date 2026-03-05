@@ -1,137 +1,164 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Table, Button, Modal, Form, Input, Select, 
-  Tag, message, Card, Statistic, Row, Col 
-} from 'antd';
-import { client } from '../api/client'; 
+import { motion, AnimatePresence } from "framer-motion";
+import { client } from '../api/client';
+import { toast } from 'sonner';
+import { ReactComponent as Apple } from '../assets/icons/apple.svg';
+import { ReactComponent as Android } from '../assets/icons/android.svg';
+import { ReactComponent as Monitor } from '../assets/icons/monitor.svg';
+import '../styles/admin.css';
+import '../styles/app.css';
 
-const { Option } = Select;
+const DEVICE_TYPES = [
+  { id: "apple", label: "iPhone", icon: Apple },
+  { id: "android", label: "Android", icon: Android },
+  { id: "desktop", label: "PC/Mac", icon: Monitor },
+];
 
 const Admin: React.FC = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [devices, setDevices] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   
-  const [isUserModalVisible, setIsUserModalVisible] = useState(false);
-  const [isDeviceModalVisible, setIsDeviceModalVisible] = useState(false);
-  const [selectedUserTgId, setSelectedUserTgId] = useState<string>('');
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [showDeviceModal, setShowDeviceModal] = useState(false);
+  const [selectedTgId, setSelectedTgId] = useState('');
   
-  const [form] = Form.useForm();
-  const [deviceForm] = Form.useForm();
+  const [newTgId, setNewTgId] = useState('');
+  const [deviceName, setDeviceName] = useState('');
+  const [selectedType, setSelectedType] = useState('apple');
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Используем твою структуру объекта admin
-      const usersData = await client.admin.getUsers();
-      const devicesData = await client.admin.getAllDevices();
-      
-      setUsers(Array.isArray(usersData) ? usersData : []);
-      setDevices(Array.isArray(devicesData) ? devicesData : []);
-    } catch (error) {
-      console.error(error);
-      message.error('Ошибка загрузки данных');
+      const u = await client.admin.getUsers();
+      const d = await client.admin.getAllDevices();
+      setUsers(u || []);
+      setDevices(d || []);
+    } catch (e) {
+      toast.error("Ошибка загрузки данных");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleUserSubmit = async (values: any) => {
+  const handleCreateUser = async () => {
+    if(!newTgId) return toast.error("Введите ID");
+    setLoading(true);
     try {
-      await client.admin.createUser(values);
-      message.success('Пользователь создан');
-      setIsUserModalVisible(false);
-      form.resetFields();
-      fetchData(); 
-    } catch (error: any) {
-      message.error('Ошибка создания пользователя');
+      await client.admin.createUser({ telegramId: newTgId, balance: 0 });
+      toast.success("Пользователь добавлен");
+      setShowUserModal(false);
+      setNewTgId('');
+      fetchData();
+    } catch (e) { 
+      toast.error("Ошибка создания"); 
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeviceSubmit = async (values: any) => {
+  const handleCreateDevice = async () => {
+    if(!deviceName) return toast.error("Введите название");
+    setLoading(true);
     try {
-      await client.admin.createDevice({
-        ...values,
-        tgId: selectedUserTgId,
-      });
-      message.success('Устройство добавлено');
-      setIsDeviceModalVisible(false);
-      deviceForm.resetFields();
-      fetchData(); 
-    } catch (error: any) {
-      message.error('Ошибка создания устройства');
+      await client.admin.createDevice({ tgId: selectedTgId, name: deviceName, type: selectedType });
+      toast.success("Устройство добавлено");
+      setShowDeviceModal(false);
+      setDeviceName('');
+      fetchData();
+    } catch (e) { 
+      toast.error("Ошибка создания"); 
+    } finally {
+      setLoading(false);
     }
   };
-
-  // Колонки таблиц (остаются такими же, как в прошлом ответе)
-  const userColumns = [
-    { title: 'Telegram ID', dataIndex: 'telegramId', key: 'telegramId', render: (id: any) => <b>{id?.toString()}</b> },
-    { title: 'Баланс', dataIndex: 'balance', key: 'balance', render: (b: number) => `${b} ₽` },
-    {
-      title: 'Действие',
-      key: 'action',
-      render: (_: any, record: any) => (
-        <Button type="primary" size="small" onClick={() => {
-          setSelectedUserTgId(record.telegramId.toString());
-          setIsDeviceModalVisible(true);
-        }}>
-          + Добавить VPN
-        </Button>
-      ),
-    },
-  ];
-
-  const deviceColumns = [
-    { title: 'Email', dataIndex: 'email', key: 'email' },
-    { title: 'Название', dataIndex: 'name', key: 'name' },
-    { title: 'Тип', dataIndex: 'type', key: 'type', render: (t: string) => <Tag color="blue">{t?.toUpperCase()}</Tag> },
-    { title: 'Статус', dataIndex: 'isActive', key: 'isActive', render: (a: boolean) => a ? <Tag color="green">ONLINE</Tag> : <Tag color="red">OFFLINE</Tag> },
-  ];
 
   return (
-    <div style={{ padding: '24px', background: '#f5f5f5', minHeight: '100vh' }}>
-      <Row gutter={16} style={{ marginBottom: '24px' }}>
-        <Col span={8}><Card><Statistic title="Пользователи" value={users.length} /></Card></Col>
-        <Col span={8}><Card><Statistic title="Устройства" value={devices.length} /></Card></Col>
-        <Col span={8}>
-          <Button type="primary" size="large" block onClick={() => setIsUserModalVisible(true)} style={{ height: '100%' }}>
-            Создать пользователя
-          </Button>
-        </Col>
-      </Row>
+    <div className={`adminPage ${loading ? 'loading-state' : ''}`}>
+      <header className="adminHeader">
+        <h1>Админ-центр</h1>
+        <button className="mainBtn" disabled={loading} onClick={() => setShowUserModal(true)}>
+          {loading ? '...' : '+ Пользователь'}
+        </button>
+      </header>
 
-      <Card title="Пользователи" loading={loading} style={{ marginBottom: '24px' }}>
-        <Table dataSource={users} columns={userColumns} rowKey="id" />
-      </Card>
+      {/* Список пользователей */}
+      <section className="adminSection">
+        <h2 className="sectionTitle">Пользователи ({users.length})</h2>
+        <div className="userList">
+          {users.map(user => (
+            <div key={user.id} className="userCard">
+              <div className="userInfo">
+                <span className="userTg">ID: {user.telegramId}</span>
+                <span className="userBalance">{user.balance} ₽</span>
+              </div>
+              <button className="addDeviceBtn" onClick={() => {
+                setSelectedTgId(user.telegramId.toString());
+                setShowDeviceModal(true);
+              }}>+ VPN</button>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      <Card title="Устройства (VPN)" loading={loading}>
-        <Table dataSource={devices} columns={deviceColumns} rowKey="id" />
-      </Card>
+      {/* Список устройств — ТЕПЕРЬ ОН ИСПОЛЬЗУЕТ devices */}
+      <section className="adminSection">
+        <h2 className="sectionTitle">Активные VPN ({devices.length})</h2>
+        <div className="deviceList">
+          {devices.map(device => (
+            <div key={device.id} className="deviceCardMini">
+              <div className="deviceInfo">
+                <span className="deviceName">{device.name}</span>
+                <span className="deviceEmail">{device.email}</span>
+              </div>
+              <div className="deviceStatus">
+                {device.isActive ? <span className="statusOn">●</span> : <span className="statusOff">○</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
 
-      {/* Модалки (User и Device) точно такие же, как были выше */}
-      <Modal title="Новый пользователь" open={isUserModalVisible} onOk={() => form.submit()} onCancel={() => setIsUserModalVisible(false)} destroyOnClose>
-        <Form form={form} onFinish={handleUserSubmit} layout="vertical">
-          <Form.Item name="telegramId" label="Telegram ID" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="balance" label="Баланс" initialValue={0}><Input type="number" /></Form.Item>
-        </Form>
-      </Modal>
+      {/* Модалки остаются без изменений, но теперь логика создания использует setLoading(true/false) */}
+      <AnimatePresence>
+        {showUserModal && (
+          <div className="modalOverlay" onClick={() => setShowUserModal(false)}>
+            <motion.div className="modalSheet" initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} onClick={e => e.stopPropagation()}>
+              <div className="modalHandle" />
+              <h2 className="modalTitle">Новый пользователь</h2>
+              <input className="modalInput" placeholder="Telegram ID" value={newTgId} onChange={e => setNewTgId(e.target.value)} />
+              <button className="modalSubmitBtn" disabled={loading} onClick={handleCreateUser}>
+                {loading ? 'Создание...' : 'Подтвердить'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
-      <Modal title={`Добавить устройство (TG: ${selectedUserTgId})`} open={isDeviceModalVisible} onOk={() => deviceForm.submit()} onCancel={() => setIsDeviceModalVisible(false)} destroyOnClose>
-        <Form form={deviceForm} onFinish={handleDeviceSubmit} layout="vertical">
-          <Form.Item name="name" label="Название" rules={[{ required: true }]}><Input /></Form.Item>
-          <Form.Item name="type" label="ОС" rules={[{ required: true }]}>
-            <Select>
-              <Option value="apple">iOS</Option>
-              <Option value="android">Android</Option>
-              <Option value="desktop">PC</Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <AnimatePresence>
+        {showDeviceModal && (
+          <div className="modalOverlay" onClick={() => setShowDeviceModal(false)}>
+            <motion.div className="modalSheet" initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }} onClick={e => e.stopPropagation()}>
+              <div className="modalHandle" />
+              <h2 className="modalTitle">Добавить устройство</h2>
+              <input className="modalInput" placeholder="Название" value={deviceName} onChange={e => setDeviceName(e.target.value)} />
+              <div className="deviceTypeGrid">
+                {DEVICE_TYPES.map(t => (
+                  <button key={t.id} className={`deviceTypeBtn ${selectedType === t.id ? 'active' : ''}`} onClick={() => setSelectedType(t.id)}>
+                    <t.icon />
+                    <span>{t.label}</span>
+                  </button>
+                ))}
+              </div>
+              <button className="modalSubmitBtn" disabled={loading} onClick={handleCreateDevice}>
+                {loading ? 'Связываюсь с 3x-ui...' : 'Добавить'}
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
