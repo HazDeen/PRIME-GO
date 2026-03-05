@@ -1,8 +1,40 @@
 // frontend/src/api/client.ts
 import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
+import axios, { AxiosInstance } from 'axios';
 
 const API_BASE_URL = 'https://vpn-production-702c.up.railway.app';
+
+export class Client {
+  public api: AxiosInstance;
+
+  constructor(baseURL: string) {
+    this.api = axios.create({
+      baseURL,
+      withCredentials: true,
+    });
+  }
+
+  // --- Методы для пользователей ---
+  async getUsers() {
+    return this.api.get('/users');
+  }
+
+  async createUser(data: { telegramId: string; balance: number }) {
+    return this.api.post('/users', data);
+  }
+
+  async getAllDevices() {
+    return this.api.get('/devices/admin/all');
+  }
+
+  async createDevice(data: { tgId: string; name: string; type: string }) {
+    return this.api.post('/devices', data);
+  }
+
+  
+}
+
 
 // Универсальная функция для заголовков (Токен + X-Username)
 const getHeaders = (includeJson = true) => {
@@ -262,8 +294,12 @@ export const api = {
       return response.json();
     }
   },
+};
+
 
   // --- АДМИН ПАНЕЛЬ ---
+export const client = {
+  // Твои существующие админские функции + новые
   admin: {
     getStats: async () => {
       const response = await fetch(`${API_BASE_URL}/admin/stats`, {
@@ -273,6 +309,13 @@ export const api = {
     },
     getUsers: async () => {
       const response = await fetch(`${API_BASE_URL}/admin/users`, {
+        headers: getHeaders()
+      });
+      return response.json();
+    },
+    // НОВАЯ ФУНКЦИЯ: Получить вообще все устройства в системе
+    getAllDevices: async () => {
+      const response = await fetch(`${API_BASE_URL}/devices/admin/all`, {
         headers: getHeaders()
       });
       return response.json();
@@ -296,6 +339,24 @@ export const api = {
         method: 'PUT',
         headers: getHeaders(),
         body: JSON.stringify({ isAdmin })
+      });
+      return response.json();
+    },
+    // НОВАЯ ФУНКЦИЯ: Создать пользователя
+    createUser: async (data: { telegramId: string; balance: number }) => {
+      const response = await fetch(`${API_BASE_URL}/users`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      });
+      return response.json();
+    },
+    // НОВАЯ ФУНКЦИЯ: Создать устройство (через наш новый бэкенд с tgId)
+    createDevice: async (data: { tgId: string; name: string; type: string }) => {
+      const response = await fetch(`${API_BASE_URL}/devices`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
       });
       return response.json();
     }
