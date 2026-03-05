@@ -105,7 +105,7 @@ export const api = {
         const user = JSON.parse(userStr);
         const tgUserId = user.telegramId || user.tgId || '0';
         
-        const response = await fetch(`${API_BASE_URL}/xui/user-devices/${tgUserId}`, {
+        const response = await fetch(`${API_BASE_URL}/devices/user/${tgUserId}`, {
             headers: getHeaders()
         });
         const data = await response.json();
