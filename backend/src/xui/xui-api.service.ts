@@ -165,7 +165,7 @@ export class XuiApiService implements OnModuleInit {
         return {
           port: inbound.port,
           protocol: inbound.protocol,
-          pbk: streamSettings.realitySettings.publicKey,
+          pbk: streamSettings.realitySettings.settings?.publicKey || streamSettings.realitySettings.publicKey,
           sid: streamSettings.realitySettings.shortIds[0],
           sni: streamSettings.realitySettings.serverNames[0],
           host: this.configService.get('VLESS_HOST')
