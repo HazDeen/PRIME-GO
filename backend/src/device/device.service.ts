@@ -44,7 +44,7 @@ export class DeviceService {
 
     // 4. Создание в 3x-ui панели
     // totalGb: 100 GB в байтах. (100 * 1024^3)
-    const totalGbBytes = 100 * 1024 * 1024 * 1024;
+    const totalGbBytes = 1000 * 1024 * 1024 * 1024;
 
     const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: clientUuid,
@@ -69,7 +69,7 @@ export class DeviceService {
           customName: dto.customName || dto.name,
           type: dto.type,
           uuid: clientUuid,
-          configLink: xuiResponse.subscriptionUrl || '',
+          configLink: xuiResponse.configLink || '',
           isActive: true,
           expiresAt,
         },
@@ -143,34 +143,52 @@ export class DeviceService {
     });
   }
 
-  async replaceDevice(deviceId: number) {
-    const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
-    if (!device) throw new NotFoundException('Device not found');
 
-    // Удаляем старый
+  async replaceDevice(deviceId: number) {
+    this.logger.log(`🔄 Полная замена конфигурации для устройства ID: ${deviceId}`);
+    
+    const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
+    if (!device) throw new NotFoundException('Устройство не найдено');
+
+    // 1. Удаляем старого клиента из 3x-ui
     if (device.uuid) {
-      await this.xuiApiService.deleteClient(this.inboundId, device.uuid).catch(() => {});
+      await this.xuiApiService.deleteClient(this.inboundId, device.uuid).catch(() => {
+        this.logger.warn(`Не удалось удалить старый UUID ${device.uuid} из панели, продолжаем...`);
+      });
     }
 
-    // Новый конфиг
+    // 2. Генерируем новый UUID
     const newUuid = uuidv4();
+    
+    // 3. Создаем НОВОГО клиента в 3x-ui
     const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: newUuid,
+      name: device.customName || device.name, // Используем текущее имя для ссылки
       email: `ref-${device.userId}-${Date.now()}`,
       totalGb: 100 * 1024 * 1024 * 1024,
       expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
     });
 
-    if (!xuiResponse?.success) throw new BadRequestException('XUI Error during replacement');
+    if (!xuiResponse || !xuiResponse.success) {
+      throw new BadRequestException('Ошибка при генерации новой ссылки в VPN панели');
+    }
 
-    return this.prisma.device.update({
+    // 4. Обновляем запись в БД новой VLESS ссылкой
+    const updated = await this.prisma.device.update({
       where: { id: deviceId },
       data: {
         uuid: newUuid,
-        configLink: xuiResponse.subscriptionUrl || '',
+        configLink: xuiResponse.configLink, // <--- Сюда придет vless://...
         updatedAt: new Date(),
       },
     });
+
+    this.logger.log(`✅ Ссылка для устройства ${deviceId} успешно заменена на VLESS`);
+
+    return {
+      configLink: updated.configLink,
+      uuid: updated.uuid
+    };
   }
 
   async findAll() {

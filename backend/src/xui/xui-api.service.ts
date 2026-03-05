@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import axios, { AxiosInstance } from 'axios'; // Добавили импорт axios
 import * as https from 'https'; // Добавили импорт https
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class XuiApiService implements OnModuleInit {
@@ -8,9 +9,27 @@ export class XuiApiService implements OnModuleInit {
   private api: AxiosInstance; // Будем использовать только это имя
   private isLoggedIn = false;
   
+  constructor(
+      private readonly configService: ConfigService, // 2. Внедряем его здесь
+      // ... если здесь были другие сервисы (например HttpService), оставь их
+    ) {}
+
   private readonly panelUrl = process.env.XUI_PANEL_URL;
   private readonly username = process.env.XUI_USERNAME;
   private readonly password = process.env.XUI_PASSWORD;
+
+  private generateVlessLink(uuid: string, name: string): string {
+    const host = this.configService.get('VLESS_HOST');
+    const port = this.configService.get('VLESS_PORT');
+    const pbk = this.configService.get('VLESS_PUBLIC_KEY');
+    const sni = this.configService.get('VLESS_SNI');
+    const sid = this.configService.get('VLESS_SID');
+    const flow = 'xtls-rprx-vision'; 
+    
+    const remark = encodeURIComponent(name);
+    // Формат ссылки для TCP + Reality + Vision
+    return `vless://${uuid}@${host}:${port}?security=reality&sni=${sni}&fp=chrome&pbk=${pbk}&sid=${sid}&flow=${flow}&type=tcp#${remark}`;
+  }
 
   async onModuleInit() {
     await this.login();
@@ -64,13 +83,13 @@ export class XuiApiService implements OnModuleInit {
     const client = {
       id: clientData.uuid,
       email: clientData.email,
-      flow: clientData.flow || 'xtls-rprx-vision',
-      limitIp: 2,
-      totalGB: clientData.totalGb || 0, // уже должно быть в байтах из сервиса
+      flow: 'xtls-rprx-vision', // Для TCP Reality это поле обязательно
+      limitIp: 5,
+      totalGB: clientData.totalGb || 0,
       expiryTime: clientData.expiryTime || 0,
       enable: true,
       tgId: clientData.tgUid || "",
-      subId: this.generateSubId(), // Генерируем случайный subId для ссылки
+      subId: this.generateSubId(),
     };
 
     const payload = new URLSearchParams({
@@ -86,11 +105,12 @@ export class XuiApiService implements OnModuleInit {
       });
 
       if (response.data?.success) {
-        // Формируем ссылку на подписку
-        const subscriptionUrl = this.formatSubUrl(client.subId);
+        // Генерируем прямую VLESS ссылку
+        const vlessLink = this.generateVlessLink(client.id, clientData.name || 'VPN');
+        
         return { 
           success: true, 
-          subscriptionUrl,
+          configLink: vlessLink, // <--- Это пойдет в БД
           uuid: client.id 
         };
       }
