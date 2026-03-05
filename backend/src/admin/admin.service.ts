@@ -157,7 +157,7 @@ export class AdminService {
       uuid: newUuid,
       name: device.customName || device.name,
       tgUid: device.user.telegramId.toString(),
-      totalGb: 1000, // Безлимит, или возьми из логики
+      totalGb: 1000*1024*1024*1024, // Безлимит, или возьми из логики
       expiryTime: device.expiresAt ? device.expiresAt.getTime() : 0 
     });
 
@@ -191,7 +191,7 @@ export class AdminService {
       uuid: newUuid,
       name: data.name,
       tgUid: user.telegramId.toString(),
-      totalGb: 1000, 
+      totalGb: 1000*1024*1024*1024, 
       expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000 // +30 дней
     });
 
