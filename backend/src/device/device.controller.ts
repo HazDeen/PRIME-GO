@@ -87,10 +87,10 @@ export class DeviceController {
   /**
    * Системный метод: получить вообще все устройства (для админа)
    */
-  @Get()
+  @Get('admin/all')
   async findAll() {
     return this.deviceService.findAll();
   }
-
+  
   
 }
