@@ -47,7 +47,7 @@ export class DeviceService {
     // totalGb: 100 GB в байтах. (100 * 1024^3)
     const totalGbBytes = 1000 * 1024 * 1024 * 1024;
 
-    const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
+    const xuiResponse = await this.xuiApiService.addClient(2, {
       uuid: clientUuid,
       email: clientEmail,
       totalGb: totalGbBytes,
