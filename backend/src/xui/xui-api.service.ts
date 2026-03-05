@@ -87,7 +87,7 @@ export class XuiApiService implements OnModuleInit {
     }
 
     const clientUuid = clientData.uuid;
-    const clientEmail = `user-${clientData.userId}-${Math.random().toString(36).substring(7)}`;
+    const clientEmail = `${Math.random().toString(36).substring(7)}`;
     const client = {
       id: clientUuid,
       email: clientEmail,
@@ -113,7 +113,7 @@ export class XuiApiService implements OnModuleInit {
       if (response.data?.success) {
         // 2. СОБИРАЕМ ССЫЛКУ НА ОСНОВЕ ДАННЫХ ИЗ ПАНЕЛИ
         const remark = encodeURIComponent(clientData.name || 'VPN');
-        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&sni=${inboundConfig.sni}&fp=chrome&pbk=${inboundConfig.pbk}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#${clientEmail}`;
+        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&sni=${inboundConfig.sni}&fp=chrome&pbk=${inboundConfig.pbk}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${clientEmail}`;
 
         return { 
           success: true, 
