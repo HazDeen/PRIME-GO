@@ -5,6 +5,10 @@ BigInt.prototype.toJSON = function() {
   return Number(this);
 };
 
+(BigInt.prototype as any).toJSON = function () {
+  return this.toString();
+};
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   

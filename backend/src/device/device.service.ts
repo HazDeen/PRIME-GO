@@ -210,4 +210,22 @@ export class DeviceService {
     const user = await this.findUserByUsername(username);
     return this.remove(deviceId);
   }
+
+  async getUserDevicesByTgId(tgId: string) {
+    // Ищем пользователя, конвертируя строку в BigInt
+    const user = await this.prisma.user.findUnique({
+      where: { telegramId: BigInt(tgId) },
+      include: { devices: true } // Сразу подтягиваем устройства
+    });
+
+    if (!user) return [];
+
+    // Форматируем для фронтенда (BigInt в JSON не лезет, поэтому мапим)
+    return user.devices.map(d => ({
+      ...d,
+      id: d.id,
+      name: d.customName || d.name,
+      daysLeft: d.expiresAt ? Math.max(0, Math.ceil((d.expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0,
+    }));
+  }
 }

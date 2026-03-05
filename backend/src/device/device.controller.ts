@@ -72,4 +72,9 @@ export class DeviceController {
     if (!customName) throw new UnauthorizedException('customName required');
     return this.deviceService.updateDeviceNameByUsername(parseInt(id), username, customName);
   }
+
+  @Get('user/:tgId')
+  async getDevices(@Param('tgId') tgId: string) {
+    return this.deviceService.getUserDevicesByTgId(tgId);
+  }
 }
