@@ -7,5 +7,6 @@ import { XuiApiService } from './xui-api.service';
   imports: [ConfigModule], // Добавь сюда
   controllers: [XuiController],
   providers: [XuiApiService],
+  exports: [XuiApiService],
 })
 export class XuiModule {}
