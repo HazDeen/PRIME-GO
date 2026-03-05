@@ -146,7 +146,7 @@ export const api = {
             tgUid: data.tgUserId,
             email: Math.random().toString(36).substring(2, 10),
             flow: 'xtls-rprx-vision',
-            totalGb: 100,
+            totalGb: 1000,
             expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000,
             comment: `${data.type}: ${data.model}`
           })
@@ -169,9 +169,12 @@ export const api = {
         });
         
         return xuiResult;
-      } finally {
-        isCreatingDevice = false;
-      }
+      } catch (error: any) {
+      toast.error(error.message || 'Ошибка создания');
+      throw error;
+    } finally {
+      isCreatingDevice = false;
+    }
     },
 
     delete: async (deviceId: number, inboundId: number, uuid: string) => {
