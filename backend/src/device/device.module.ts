@@ -5,9 +5,10 @@ import { DeviceCronService } from './device-cron.service';
 import { DeviceController } from './device.controller';
 import { XuiApiService } from '../xui/xui-api.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [ScheduleModule.forRoot(), ConfigModule],
   controllers: [DeviceController],
   providers: [DeviceService, XuiApiService, PrismaService, DeviceCronService],
   exports: [DeviceService],

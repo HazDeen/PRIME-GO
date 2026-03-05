@@ -2,16 +2,23 @@ import { Injectable, BadRequestException, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { XuiApiService } from '../xui/xui-api.service';
 import { v4 as uuidv4 } from 'uuid';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
   private readonly DEVICE_PRICE = 300;
+  private readonly inboundId: number;
 
   constructor(
     private prisma: PrismaService,
     private xuiApiService: XuiApiService,
-  ) {}
+    private configService: ConfigService, // Внедряем ConfigService
+  ) {
+    // Получаем ID из .env, преобразуем в число. Если нет в .env, ставим 1 по умолчанию.
+    this.inboundId = this.configService.get<number>('XUI_INBOUND_ID') || 2;
+  }
+  
 
   private async findUserByUsername(username: string) {
     const user = await this.prisma.user.findFirst({
@@ -42,16 +49,16 @@ export class DeviceService {
     expiresAt.setDate(expiresAt.getDate() + 30);
 
     // 1. Создание в 3x-ui
-    const xuiResponse = await this.xuiApiService.addClient(1, {
+    const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: clientUuid,
       email: `user-${userId}-${Date.now()}`,
-      totalGb: 100,
+      totalGb: 1000 * 1024 * 1024 * 1024, // 100 GB
       expiryTime: expiresAt.getTime(),
       tgUid: user.telegramId?.toString() || "0"
     });
 
-    if (!xuiResponse || xuiResponse.success === false) {
-        throw new BadRequestException('Ошибка VPN панели: ' + (xuiResponse?.msg || 'Panel unreachable'));
+    if (!xuiResponse || !xuiResponse.success) {
+      throw new BadRequestException('Ошибка VPN панели: ' + (xuiResponse?.msg || 'Check logs'));
     }
 
     // 2. Транзакция в БД
@@ -103,7 +110,7 @@ export class DeviceService {
   async remove(id: number) {
     const device = await this.findOne(id);
     if (device.uuid) {
-      await this.xuiApiService.deleteClient(1, device.uuid).catch(e => 
+      await this.xuiApiService.deleteClient(this.inboundId, device.uuid).catch(e => 
         this.logger.error(`XUI Delete failed: ${e.message}`)
       );
     }
@@ -120,7 +127,7 @@ export class DeviceService {
 
     // 1. Удаляем старого клиента из 3x-ui
     if (device.uuid) {
-      await this.xuiApiService.deleteClient(1, device.uuid).catch(() => {
+      await this.xuiApiService.deleteClient(this.inboundId, device.uuid).catch(() => {
         this.logger.warn(`Could not delete old UUID ${device.uuid} from panel, proceeding...`);
       });
     }
@@ -130,10 +137,10 @@ export class DeviceService {
     const newEmail = `user-${userId}-${Date.now()}`;
     
     // 3. Создаем нового клиента в 3x-ui
-    const xuiResponse = await this.xuiApiService.addClient(1, {
+    const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
       uuid: newUuid,
       email: newEmail,
-      totalGb: 100,
+      totalGb: 1000 * 1024 * 1024 * 1024,
       expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
     });
 
