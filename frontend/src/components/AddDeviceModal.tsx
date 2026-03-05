@@ -10,6 +10,7 @@ import type { DeviceType } from '../types/device';
 
 type Props = {
   onClose: () => void;
+  // onAdd теперь принимает объект, который мы отправим на бэкенд
   onAdd: (name: string, type: DeviceType, customName: string) => Promise<void>;
   tgUserId: string;
 };
@@ -22,21 +23,12 @@ const DEVICE_TYPES: { id: DeviceType; label: string; icon: any }[] = [
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
-export default function AddDeviceModal({ onClose, onAdd, tgUserId }: Props) {
+export default function AddDeviceModal({ onClose, onAdd}: Props) {
   const [name, setName] = useState("");
   const [customName, setCustomName] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("iPhone");
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const generateRandomEmail = (): string => {
-    const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    let result = '';
-    for (let i = 0; i < 8; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
 
   const handleClose = () => {
     if (isClosing) return;
@@ -45,65 +37,36 @@ export default function AddDeviceModal({ onClose, onAdd, tgUserId }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
+    if (!name.trim() && !customName.trim()) {
       toast.error('Введите название устройства');
       return;
     }
 
     setLoading(true);
     try {
-      const response = await fetch('https://vpn-production-702c.up.railway.app/xui/client', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          inboundId: 1,
-          tgUid: tgUserId,
-          email: generateRandomEmail(),
-          flow: "xtls-rprx-vision",
-          totalGb: 100*1024*1024*1024,
-          expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000,
-          comment: `${selectedType}: ${customName || name}`
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success('✅ Устройство добавлено!');
-        
-        if (data.data?.subscriptionUrl) {
-          localStorage.setItem(`sub_${data.data.email}`, data.data.subscriptionUrl);
-          
-          toast.success('Ссылка для подключения готова', {
-            duration: 5000,
-            action: {
-              label: '📋 Копировать',
-              onClick: () => {
-                navigator.clipboard.writeText(data.data.subscriptionUrl);
-                toast.success('Ссылка скопирована!');
-              }
-            }
-          });
-        }
-
-        await onAdd(name, selectedType, customName || name);
-        
-        setTimeout(() => {
-          window.location.reload();
-        }, 1000);
-        
+      // ВАЖНО: Мы больше не делаем здесь fetch к /xui/client.
+      // Вся логика (XUI + БД + Баланс) теперь внутри ОДНОГО вызова onAdd,
+      // который обращается к нашему новому контроллеру на бэкенде.
+      
+      await onAdd(name || customName, selectedType, customName || name);
+      
+      toast.success('✅ Устройство успешно добавлено!');
+      
+      // Небольшая задержка перед закрытием для красоты
+      setTimeout(() => {
         handleClose();
-      } else {
-        throw new Error(data.message || 'Ошибка создания');
-      }
+        // Можно убрать reload, если useDevices правильно обновляет стейт
+        window.location.reload(); 
+      }, 500);
+
     } catch (error: any) {
-      console.error('❌ Ошибка:', error);
+      console.error('❌ Ошибка при добавлении:', error);
+      // Ошибку (например, "Недостаточно средств") прокинет бэкенд
       toast.error(error.message || '❌ Не удалось добавить устройство');
     } finally {
       setLoading(false);
     }
   };
-
 
   return (
     <motion.div 
@@ -150,6 +113,7 @@ export default function AddDeviceModal({ onClose, onAdd, tgUserId }: Props) {
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
             autoFocus
+            disabled={loading}
           />
         </div>
 
@@ -160,6 +124,7 @@ export default function AddDeviceModal({ onClose, onAdd, tgUserId }: Props) {
             placeholder="Например: iPhone 15"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            disabled={loading}
           />
         </div>
 
@@ -171,10 +136,12 @@ export default function AddDeviceModal({ onClose, onAdd, tgUserId }: Props) {
               return (
                 <motion.button
                   key={type.id}
+                  type="button"
                   className={`deviceTypeBtn ${selectedType === type.id ? "active" : ""}`}
                   onClick={() => setSelectedType(type.id)}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  disabled={loading}
                 >
                   <Icon size={24} />
                   <span>{type.label}</span>
