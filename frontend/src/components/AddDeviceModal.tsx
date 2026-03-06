@@ -74,7 +74,7 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
       exit={{ opacity: 0 }}
       onClick={handleClose}
     >
-      <div className="modalBackdrop" />
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)' }} />
       
       <motion.div
         className="modalSheet"
@@ -110,7 +110,6 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
             placeholder="Например: Мой iPhone"
             value={customName}
             onChange={(e) => setCustomName(e.target.value)}
-            autoFocus
             disabled={loading}
           />
         </div>

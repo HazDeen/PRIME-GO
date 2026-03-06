@@ -313,8 +313,8 @@ export const client = {
       });
       return response.json();
     },
-    // НОВАЯ ФУНКЦИЯ: Получить вообще все устройства в системе
     getAllDevices: async () => {
+      // Оставляю твой роут, но убедись, что на бэкенде он совпадает!
       const response = await fetch(`${API_BASE_URL}/devices/admin/all`, {
         headers: getHeaders()
       });
@@ -342,7 +342,6 @@ export const client = {
       });
       return response.json();
     },
-    // НОВАЯ ФУНКЦИЯ: Создать пользователя
     createUser: async (data: { telegramId: string; balance: number }) => {
       const response = await fetch(`${API_BASE_URL}/users`, {
         method: 'POST',
@@ -351,13 +350,57 @@ export const client = {
       });
       return response.json();
     },
-    // НОВАЯ ФУНКЦИЯ: Создать устройство (через наш новый бэкенд с tgId)
     createDevice: async (data: { tgId: string; name: string; type: string }) => {
       const response = await fetch(`${API_BASE_URL}/devices`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data)
       });
+      return response.json();
+    },
+
+    // Изменить никнейм
+    updateUsername: async (userId: number, newUsername: string) => {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/username`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ newUsername })
+      });
+      return response.json();
+    },
+    
+    // Перегенерировать ссылку
+    regenerateLink: async (deviceId: number) => {
+      const response = await fetch(`${API_BASE_URL}/admin/devices/${deviceId}/regenerate`, {
+        method: 'POST',
+        headers: getHeaders()
+      });
+      return response.json();
+    },
+
+    // Добавить устройство от лица админа
+    addDeviceForUser: async (userId: number, data: { name: string, type: string }) => {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/devices`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      });
+      return response.json();
+    },
+
+    // ------------------------------------------------------------------
+    // НОВАЯ ФУНКЦИЯ: Удаление устройства админом
+    // ------------------------------------------------------------------
+    deleteDevice: async (deviceId: number) => {
+      const response = await fetch(`${API_BASE_URL}/admin/devices/${deviceId}`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+      
+      // Добавим небольшую проверку на случай, если бэк вернет не JSON при ошибке
+      if (!response.ok) {
+        throw new Error(`Ошибка удаления: ${response.status}`);
+      }
       return response.json();
     }
   }

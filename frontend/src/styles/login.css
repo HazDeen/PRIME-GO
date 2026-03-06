@@ -1,0 +1,254 @@
+/* ====== login.css ====== */
+
+.loginPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  /* Глубокий черный фон с легким паттерном "в точку" (техно-стиль) */
+  background-color: #050505;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.loginContainer {
+  width: 100%;
+  max-width: 380px;
+}
+
+/* Карточка: темное матовое стекло */
+.loginCard {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 28px;
+  padding: 40px 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+  position: relative;
+  overflow: hidden;
+}
+
+.loginHeader {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+/* Иконка сверху (сделали акцентной, но строгой) */
+.loginIconWrapper {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #2a2a2a, #111111);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+
+.loginHeaderIcon {
+  color: #ffffff;
+}
+
+.loginTitle {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #ffffff;
+  letter-spacing: -0.5px;
+}
+
+.loginDescription {
+  font-size: 14px;
+  color: #888888;
+  margin: 0;
+}
+
+.loginForm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inputGroup {
+  position: relative;
+  width: 100%;
+}
+
+.inputIconWrapper {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #555555;
+  pointer-events: none;
+  transition: color 0.3s;
+}
+
+/* --- ИНПУТЫ --- */
+.loginInput {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  /* Отступы, чтобы текст не наезжал на иконки */
+  padding: 16px 44px; 
+  color: #fff;
+  font-size: 15px;
+  transition: all 0.3s ease;
+  outline: none;
+  text-align: center; /* ВОТ ОНО! Текст и плейсхолдер теперь ровно по центру */
+}
+
+.loginInput::placeholder {
+  color: #555555;
+}
+
+.loginInput:focus {
+  border-color: #555555;
+  background: rgba(20, 20, 20, 0.8);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.03);
+}
+
+.loginInput:focus + .inputIconWrapper,
+.inputGroup:focus-within .inputIconWrapper {
+  color: #ffffff;
+}
+
+/* Глазик пароля */
+.eyeButton {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #555555;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s;
+}
+
+.eyeButton:hover {
+  color: #fff;
+}
+
+/* Кнопка "Войти" */
+.loginButton {
+  background: #ffffff; /* Белая кнопка на черном фоне смотрится очень дорого */
+  color: #000000;
+  border: none;
+  border-radius: 16px;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: transform 0.2s, opacity 0.2s;
+}
+
+.loginButton:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.loginButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Анимация загрузки на кнопке */
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-radius: 50%;
+  border-top-color: #000;
+  animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Подвал (ссылка на бота) */
+.loginFooter {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 13px;
+  color: #777777;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.botButton {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.botButton:active {
+  background: rgba(255,255,255,0.1);
+  transform: scale(0.95);
+}
+
+/* Состояние успеха */
+.successState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+  text-align: center;
+}
+
+.successCircle {
+  width: 72px;
+  height: 72px;
+  background: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
+}
+
+.checkIcon {
+  width: 32px;
+  height: 32px;
+  color: #000000;
+}
+
+.successState h2 {
+  font-size: 22px;
+  margin: 0 0 8px 0;
+  color: #fff;
+}
+
+.successState p {
+  color: #888888;
+  margin: 0;
+  font-size: 14px;
+}
