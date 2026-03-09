@@ -1,4 +1,3 @@
-// frontend/src/api/client.ts
 import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
 import axios, { AxiosInstance } from 'axios';
@@ -15,7 +14,6 @@ export class Client {
     });
   }
 
-  // --- Методы для пользователей ---
   async getUsers() {
     return this.api.get('/users');
   }
@@ -31,12 +29,9 @@ export class Client {
   async createDevice(data: { tgId: string; name: string; type: string }) {
     return this.api.post('/devices', data);
   }
-
-  
 }
 
-
-// Универсальная функция для заголовков (Токен + X-Username)
+// Универсальная функция для заголовков
 const getHeaders = (includeJson = true) => {
   const token = localStorage.getItem('token');
   const userStr = localStorage.getItem('user');
@@ -65,7 +60,18 @@ const getHeaders = (includeJson = true) => {
 
 let isCreatingDevice = false;
 
-export const api = {
+// 👇 ТЕПЕРЬ ВСЁ НАХОДИТСЯ В ОДНОМ ОБЪЕКТЕ CLIENT 👇
+export const client = {
+  
+  // --- СИСТЕМА (Тех. работы) ---
+  system: {
+    getStatus: async () => {
+      const res = await fetch(`${API_BASE_URL}/admin/status`); 
+      if (!res.ok) throw new Error('Ошибка получения статуса системы');
+      return res.json(); 
+    }
+  },
+
   // --- АВТОРИЗАЦИЯ ---
   auth: {
     login: async (username: string, password: string) => {
@@ -128,7 +134,6 @@ export const api = {
   },
 
   // --- УСТРОЙСТВА ---
-  // --- УСТРОЙСТВА (ИСПРАВЛЕНО: Добавлены updateName и replace) ---
   devices: {
     getAll: async () => {
       try {
@@ -185,9 +190,11 @@ export const api = {
         });
 
         const xuiResult = await response.json();
-        if (!xuiResult.success) throw new Error(xuiResult.message || 'Ошибка 3x-ui');
+        if (!response.ok || !xuiResult.success) {
+          throw new Error(xuiResult.message || 'Ошибка 3x-ui');
+        }
 
-        await fetch(`${API_BASE_URL}/devices`, {
+        const dbRes = await fetch(`${API_BASE_URL}/devices`, {
           method: 'POST',
           headers: getHeaders(),
           body: JSON.stringify({
@@ -200,13 +207,18 @@ export const api = {
           })
         });
         
+        const dbResult = await dbRes.json();
+        // 🚨 Если бэкенд отбил запрос (например, сработала блокировка)
+        if (!dbRes.ok) {
+          throw new Error(dbResult.message || 'Ошибка сохранения устройства');
+        }
+        
         return xuiResult;
       } catch (error: any) {
-      toast.error(error.message || 'Ошибка создания');
-      throw error;
-    } finally {
-      isCreatingDevice = false;
-    }
+        throw error;
+      } finally {
+        isCreatingDevice = false;
+      }
     },
 
     delete: async (deviceId: number, inboundId: number, uuid: string) => {
@@ -231,7 +243,6 @@ export const api = {
       }
     },
 
-    // ВОТ ЭТИ МЕТОДЫ БЫЛИ ПРОПУЩЕНЫ:
     updateName: async (deviceId: number, newName: string, inboundId: number, uuid: string) => {
       try {
         const response = await fetch(`${API_BASE_URL}/xui/client/update`, {
@@ -294,12 +305,8 @@ export const api = {
       return response.json();
     }
   },
-};
-
 
   // --- АДМИН ПАНЕЛЬ ---
-export const client = {
-  // Твои существующие админские функции + новые
   admin: {
     getStats: async () => {
       const response = await fetch(`${API_BASE_URL}/admin/stats`, {
@@ -314,7 +321,6 @@ export const client = {
       return response.json();
     },
     getAllDevices: async () => {
-      // Оставляю твой роут, но убедись, что на бэкенде он совпадает!
       const response = await fetch(`${API_BASE_URL}/devices/admin/all`, {
         headers: getHeaders()
       });
@@ -356,10 +362,13 @@ export const client = {
         headers: getHeaders(),
         body: JSON.stringify(data)
       });
-      return response.json();
+      const result = await response.json();
+      
+      // 🚨 Жестко выбрасываем ошибку, чтобы остановить зеленый тост
+      if (!response.ok) throw new Error(result.message || 'Ошибка создания устройства');
+      
+      return result;
     },
-
-    // Изменить никнейм
     updateUsername: async (userId: number, newUsername: string) => {
       const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/username`, {
         method: 'PUT',
@@ -368,8 +377,6 @@ export const client = {
       });
       return response.json();
     },
-    
-    // Перегенерировать ссылку
     regenerateLink: async (deviceId: number) => {
       const response = await fetch(`${API_BASE_URL}/admin/devices/${deviceId}/regenerate`, {
         method: 'POST',
@@ -377,31 +384,63 @@ export const client = {
       });
       return response.json();
     },
-
-    // Добавить устройство от лица админа
     addDeviceForUser: async (userId: number, data: { name: string, type: string }) => {
       const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/devices`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data)
       });
-      return response.json();
+      const result = await response.json();
+      
+      // 🚨 Аналогичная проверка для модалки админа
+      if (!response.ok) throw new Error(result.message || 'Ошибка создания устройства');
+      
+      return result;
     },
-
-    // ------------------------------------------------------------------
-    // НОВАЯ ФУНКЦИЯ: Удаление устройства админом
-    // ------------------------------------------------------------------
     deleteDevice: async (deviceId: number) => {
       const response = await fetch(`${API_BASE_URL}/admin/devices/${deviceId}`, {
         method: 'DELETE',
         headers: getHeaders()
       });
-      
-      // Добавим небольшую проверку на случай, если бэк вернет не JSON при ошибке
       if (!response.ok) {
         throw new Error(`Ошибка удаления: ${response.status}`);
       }
       return response.json();
+    },
+    getSettings: async () => {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const adminUsername = user?.username || '';
+
+      const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-username': adminUsername 
+        }
+      });
+      
+      if (!res.ok) throw new Error('Ошибка получения настроек');
+      return res.json();
+    },
+    updateSettings: async (settings: { all: boolean, users: boolean, admins: boolean, maintenance: boolean }) => {
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const adminUsername = user?.username || '';
+
+      const res = await fetch(`${API_BASE_URL}/admin/settings`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-username': adminUsername
+        },
+        body: JSON.stringify(settings)
+      });
+      if (!res.ok) throw new Error('Ошибка сохранения настроек');
+      return res.json();
     }
   }
 };
+
+// Экспортируем api как алиас для client, чтобы не сломать импорты в других местах, если они были
+export const api = client;

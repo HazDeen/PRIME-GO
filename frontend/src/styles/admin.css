@@ -384,3 +384,160 @@
   height: 24px !important;
   flex-shrink: 0;
 }
+
+/* Группа кнопок в заголовке */
+.adminActionGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Панель ограничений */
+.extraSettingsPanel {
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.restrictionItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* --- ПРЕМИУМ ТУМБЛЕР (SWITCH) --- */
+.premiumSwitch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.premiumSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--bg-input);
+  transition: .4s;
+  border: 1px solid var(--border-color);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+input:checked + .slider {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+[data-theme="light"] input:checked + .slider {
+  background-color: #10b981;
+}
+
+/* Если стоит "Запретить всем", красим в красный */
+.restrictionItem:first-child input:checked + .slider {
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--success);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* -------------------------------------------- */
+/* ВЕРХНЯЯ ПАНЕЛЬ УПРАВЛЕНИЯ (ГЛОБАЛЬНАЯ)       */
+/* -------------------------------------------- */
+
+.topRightControls {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+}
+
+/* Переопределяем кнопку выхода, чтобы она не ломала flex-контейнер */
+.topRightControls .exitBtn {
+  position: relative;
+  top: auto;
+  right: auto;
+}
+
+/* Кнопка щита под стиль кнопки выхода */
+.topRightControls .settingsToggleBtn {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.topRightControls .settingsToggleBtn:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-tertiary);
+}
+
+/* Парящее выпадающее меню с тумблерами */
+.globalSettingsDropdown {
+  position: absolute;
+  top: 56px; /* Опускаем ровно под кнопки */
+  right: 0;
+  width: 280px;
+  background: var(--bg-block);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow);
+  z-index: 101;
+  transform-origin: top right; /* Анимация будет открываться от кнопки */
+}

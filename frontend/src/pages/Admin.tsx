@@ -52,29 +52,74 @@ const Admin: React.FC = () => {
 
   const [confirmModal, setConfirmModal] = useState<ModalState | null>(null);
 
+  const [restrictions, setRestrictions] = useState({
+    all: false,
+    users: false,
+    admins: false,
+    maintenance: false,
+  });
+  const [isExtraSettingsOpen, setIsExtraSettingsOpen] = useState(false);
+
+  const toggleRestriction = async (target: 'all' | 'users' | 'admins' | 'maintenance') => {
+    let newRestrictions = { ...restrictions };
+    
+    newRestrictions[target] = !newRestrictions[target];
+    
+    if (target === 'all' && newRestrictions.all) {
+      newRestrictions.users = true;
+      newRestrictions.admins = true;
+    } else if ((target === 'users' || target === 'admins') && !newRestrictions[target]) {
+      newRestrictions.all = false;
+    }
+    
+    setRestrictions(newRestrictions);
+
+    try {
+      await client.admin.updateSettings(newRestrictions);
+      
+      // Выбираем ТОЛЬКО ОДНО уведомление для показа
+      if (target === 'maintenance') {
+        if (newRestrictions.maintenance) {
+          toast.warning('Режим тех. работ ВКЛЮЧЕН');
+        } else {
+          toast.success('Режим тех. работ ВЫКЛЮЧЕН');
+        }
+      } else {
+        // Показываем стандартный тост, только если это были другие тумблеры
+        toast.success('Настройки безопасности обновлены');
+      }
+      
+    } catch (error) {
+      toast.error('Ошибка сохранения на сервере');
+      fetchData(); 
+    }
+  };
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [usersRes, devicesRes] = await Promise.allSettled([
+      const [usersRes, devicesRes, settingsRes] = await Promise.allSettled([
         client.admin.getUsers(),
-        client.admin.getAllDevices()
+        client.admin.getAllDevices(),
+        client.admin.getSettings()
       ]);
-
+      
       if (usersRes.status === 'fulfilled') {
         setUsers(usersRes.value || []);
       } else {
-        console.error("Ошибка API (пользователи):", usersRes.reason);
         toast.error("Не удалось загрузить пользователей");
       }
 
       if (devicesRes.status === 'fulfilled') {
         setDevices(devicesRes.value || []);
       } else {
-        console.error("Ошибка API (устройства):", devicesRes.reason);
         toast.error("Не удалось загрузить устройства");
       }
+
+      if (settingsRes.status === 'fulfilled' && settingsRes.value) {
+        setRestrictions(settingsRes.value);
+      }
     } catch (e) { 
-      console.error("Критическая ошибка:", e);
       toast.error("Сбой соединения с сервером"); 
     } finally { 
       setLoading(false); 
@@ -135,7 +180,6 @@ const Admin: React.FC = () => {
     }
   };
 
-  // Анимация появления страницы
   const pageVariants = {
     initial: { opacity: 0, y: 20 },
     in: { opacity: 1, y: 0 },
@@ -151,21 +195,95 @@ const Admin: React.FC = () => {
       variants={pageVariants}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
-      <motion.button 
-        className="exitBtn" 
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }} 
-        onClick={() => navigate('/')}
-      >
-        <LogOut size={20} />
-      </motion.button>
+      
+      {/* ========================================== */}
+      {/* 🛡️ ГЛОБАЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ (СПРАВА СВЕРХУ) */}
+      {/* ========================================== */}
+      <div className="topRightControls">
+        <motion.button 
+          className="settingsToggleBtn"
+          onClick={() => setIsExtraSettingsOpen(!isExtraSettingsOpen)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ShieldAlert size={20} color={restrictions.all ? "var(--danger)" : "var(--text-secondary)"} />
+        </motion.button>
+
+        <motion.button 
+          className="exitBtn" 
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }} 
+          onClick={() => navigate('/')}
+        >
+          <LogOut size={20} />
+        </motion.button>
+
+        {/* Выпадающее меню блокировок */}
+        <AnimatePresence>
+          {isExtraSettingsOpen && (
+            <motion.div 
+              className="globalSettingsDropdown"
+              initial={{ opacity: 0, scale: 0.9, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="restrictionItem" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '4px' }}>
+                <span style={{ color: 'var(--warning)', fontWeight: 700 }}>Режим "Тех. работы"</span>
+                <label className="premiumSwitch">
+                  <input 
+                    type="checkbox" 
+                    checked={restrictions.maintenance} 
+                    onChange={() => toggleRestriction('maintenance')} 
+                  />
+                  <span className="slider round" style={{ borderColor: restrictions.maintenance ? 'var(--warning)' : '' }}></span>
+                </label>
+              </div>
+              <div className="restrictionItem">
+                <span>Запретить всем (Global)</span>
+                <label className="premiumSwitch">
+                  <input 
+                    type="checkbox" 
+                    checked={restrictions.all} 
+                    onChange={() => toggleRestriction('all')} 
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+              <div className="restrictionItem">
+                <span>Запретить пользователям</span>
+                <label className="premiumSwitch">
+                  <input 
+                    type="checkbox" 
+                    checked={restrictions.users} 
+                    onChange={() => toggleRestriction('users')} 
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+              <div className="restrictionItem">
+                <span>Запретить админам</span>
+                <label className="premiumSwitch">
+                  <input 
+                    type="checkbox" 
+                    checked={restrictions.admins} 
+                    onChange={() => toggleRestriction('admins')} 
+                  />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+      {/* ========================================== */}
 
       <div className="adminHeaderRow">
         <h1 className="mainTitle">Админ-панель</h1>
       </div>
 
       <div className="adminGrid">
-        {/* Пользователи */}
+        {/* === КОЛОНКА ПОЛЬЗОВАТЕЛИ === */}
         <div className="adminColumn">
           <div className="columnHeaderRow">
             <div className="headerTitleGroup" onClick={() => setIsUsersOpen(!isUsersOpen)}>
@@ -225,7 +343,7 @@ const Admin: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Устройства */}
+        {/* === КОЛОНКА УСТРОЙСТВА === */}
         <div className="adminColumn">
           <div className="columnHeaderRow">
             <div className="headerTitleGroup" onClick={() => setIsDevicesOpen(!isDevicesOpen)}>
@@ -234,16 +352,21 @@ const Admin: React.FC = () => {
                 <ChevronDown size={20}/>
               </motion.div>
             </div>
-            <motion.button 
-              className="addBtnCompact" 
-              onClick={() => setConfirmModal({ type: 'addDevice', title: 'Новое устройство' })}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Plus size={18} /> <span>Добавить VPN</span>
-            </motion.button>
+            
+            {/* Кнопка "Добавить VPN" осталась на своем месте */}
+            <div className="adminActionGroup">
+              <motion.button 
+                className="addBtnCompact" 
+                onClick={() => setConfirmModal({ type: 'addDevice', title: 'Новое устройство' })}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Plus size={18} /> <span>Добавить VPN</span>
+              </motion.button>
+            </div>
           </div>
 
+          {/* Список устройств */}
           <AnimatePresence>
             {isDevicesOpen && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
@@ -352,6 +475,7 @@ const Admin: React.FC = () => {
         {confirmModal?.type === 'addDevice' && (
           <AdminAddDeviceModal 
             users={users} 
+            isBlocked={restrictions.all || restrictions.admins}
             onClose={() => setConfirmModal(null)} 
             onAdd={async (userId: number, name: string, type: string) => {
               await client.admin.addDeviceForUser(userId, { name, type });

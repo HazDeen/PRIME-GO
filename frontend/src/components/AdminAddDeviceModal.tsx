@@ -8,6 +8,7 @@ type Props = {
   onClose: () => void;
   onAdd: (userId: number, name: string, type: string) => Promise<void>;
   users: any[];
+  isBlocked?: boolean
 };
 
 const DEVICE_TYPES = [
@@ -18,7 +19,7 @@ const DEVICE_TYPES = [
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
-export default function AdminAddDeviceModal({ onClose, onAdd, users }: Props) {
+export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }: Props) {
   const [name, setName] = useState("");
   const [selectedType, setSelectedType] = useState("iPhone");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
@@ -35,6 +36,10 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (isBlocked) {
+      return toast.error('Создание VPN сейчас запрещено настройками');
+    }
+
     if (!selectedUserId) return toast.error('Выберите пользователя');
     if (!name.trim()) return toast.error('Введите название устройства');
 

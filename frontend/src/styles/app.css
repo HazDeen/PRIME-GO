@@ -507,7 +507,7 @@ body {
 }
 
 .modalField {
-  margin-bottom: 24px;
+  margin-bottom: 0px;
 }
 
 .modalLabel {
@@ -528,7 +528,7 @@ body {
   color: var(--text-primary);
   font-size: 15px;
   transition: all 0.2s;
-  margin-bottom: 0px;
+  margin-bottom: 18px;
 }
 
 .modalInput:focus {

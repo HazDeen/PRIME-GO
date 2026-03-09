@@ -1,9 +1,9 @@
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
-// 1. Убираем импорт старого Toaster из sonner
-// 2. Импортируем наш собственный компонент Toast (проверь, чтобы путь совпадал с тем, где ты его создал!)
 import { Toast } from "./components/Toast"; 
+import Maintenance from "./pages/Maintenance";
+import { useState, useEffect } from "react";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
@@ -13,8 +13,40 @@ import DeviceDetail from "./pages/DeviceDetail";
 import Admin from "./pages/Admin";
 import "./styles/app.css";
 import "./styles/admin.css";
+import { client } from "./api/client";
 
 function App() {
+  const [isMaintenance, setIsMaintenance] = useState(false);
+  const [loading, setLoading] = useState(true);
+  
+  const userStr = localStorage.getItem('user');
+  const user = userStr ? JSON.parse(userStr) : null;
+  const currentPath = window.location.hash || window.location.pathname;
+
+  useEffect(() => {
+    client.system.getStatus()
+      .then((res: any) => {
+        // Если тех. работы ВКЛЮЧЕНЫ, и пользователь НЕ админ
+        if (res.maintenance && !user?.isAdmin) {
+          setIsMaintenance(true);
+        }
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (loading) return null; // Или красивый полноэкранный лоадер
+
+  // 🚨 ПЕРЕХВАТЧИК: Если тех. работы, и мы не пытаемся открыть /login
+  if (isMaintenance && !currentPath.includes('/login')) {
+    return (
+      <ThemeProvider>
+        <Maintenance />
+      </ThemeProvider>
+    );
+  }
+
+  // 🌟 ОСНОВНОЕ ПРИЛОЖЕНИЕ (Отображается в обычном режиме)
   return (
     <ThemeProvider>
       <AuthProvider>

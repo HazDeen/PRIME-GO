@@ -9,6 +9,7 @@ type Props = {
   onClose: () => void;
   onAdd: (name: string, customName: string, type: DeviceType) => Promise<void>;
   tgUserId: string;
+  isBlocked?: boolean
 };
 
 // 🔥 Заменили иконки в массиве
@@ -20,7 +21,7 @@ const DEVICE_TYPES: { id: DeviceType; label: string; icon: any }[] = [
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
-export default function AddDeviceModal({ onClose, onAdd }: Props) {
+export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
   const [name, setName] = useState("");
   const [customName, setCustomName] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("iPhone");
@@ -34,6 +35,11 @@ export default function AddDeviceModal({ onClose, onAdd }: Props) {
   };
 
   const handleSubmit = async () => {
+    if (isBlocked) {
+      toast.error('Создание новых подключений временно приостановлено');
+      return;
+    }
+
     if (!name.trim() && !customName.trim()) {
       toast.error('Введите название устройства');
       return;
