@@ -16,6 +16,7 @@ model User {
   password    String?
   balance     Float    @default(0)
   isAdmin     Boolean  @default(false)
+  notificationsEnabled Boolean @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
