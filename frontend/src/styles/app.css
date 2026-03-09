@@ -1508,3 +1508,48 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.1);
   color: #64748b;
 }
+
+/* -------------------------------------------- */
+/* 9. ДЕСКТОПНАЯ ВЕРСИЯ (Парящий интерфейс)     */
+/* -------------------------------------------- */
+@media (min-width: 768px) {
+  /* Делаем из контейнера красивый макет телефона по центру экрана */
+  .container {
+    margin: 5vh auto; /* Отступ сверху и снизу */
+    min-height: auto;
+    height: 85vh; /* Ограничиваем высоту */
+    max-height: 850px;
+    border-radius: 40px; /* Скругляем углы как у смартфона */
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5); /* Глубокая тень */
+    overflow-y: auto; /* Включаем внутренний скролл */
+    position: relative;
+  }
+
+  /* Смягчаем тень для светлой темы */
+  [data-theme="light"] .container {
+    box-shadow: 0 40px 80px rgba(0,0,0,0.1);
+  }
+
+  /* Прячем ползунок скролла внутри нашего "телефона" */
+  .container::-webkit-scrollbar { display: none; }
+  .container { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* * УМНЫЕ МОДАЛКИ:
+   * На телефоне модалка выезжает снизу (шторка).
+   * На компьютере мы делаем её классическим окном по центру.
+   */
+  .modalOverlay {
+    align-items: center !important; /* Отменяем прилипание к низу */
+    padding: 20px;
+  }
+
+  .modalSheet {
+    border-radius: 32px !important;
+    border-bottom: 1px solid var(--border-color) !important; /* Возвращаем нижнюю рамку */
+    max-height: 80vh;
+    margin: auto;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1);
+  }
+}

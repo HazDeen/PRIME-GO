@@ -541,3 +541,65 @@ input:checked + .slider:before {
   z-index: 101;
   transform-origin: top right; /* Анимация будет открываться от кнопки */
 }
+
+/* -------------------------------------------- */
+/* ДЕСКТОПНАЯ ВЕРСИЯ АДМИНКИ (ДАШБОРД)          */
+/* -------------------------------------------- */
+@media (min-width: 900px) {
+  .adminContainer {
+    padding: 40px 20px;
+    max-width: 1400px; /* Делаем админку еще шире для больших мониторов */
+  }
+
+  .adminHeaderRow {
+    padding-top: 0;
+  }
+
+  .adminGrid {
+    gap: 32px;
+    align-items: start; /* Чтобы колонки не растягивали друг друга по высоте */
+  }
+
+  /* Превращаем каждую колонку в полноценный виджет-панель */
+  .adminColumn {
+    background: var(--bg-card);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border-color);
+    border-radius: 32px;
+    padding: 24px;
+    box-shadow: var(--shadow);
+    
+    /* Делаем им независимый скролл. 
+       Теперь шапка сайта стоит на месте, а списки прокручиваются внутри панелей! */
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+  }
+
+  /* Прячем ползунки скролла у панелей для красоты */
+  .adminColumn::-webkit-scrollbar { display: none; }
+  .adminColumn { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* Так как колонки теперь сами стеклянные, карточкам внутри 
+     мы убираем обводки и тени, чтобы не было "мыла" и перегруза */
+  .customCard {
+    background: var(--bg-secondary);
+    box-shadow: none;
+    border: 1px solid transparent;
+  }
+  
+  .customCard:hover {
+    border-color: var(--border-color);
+  }
+
+  /* Центрируем модалку добавления устройства (шторку) */
+  .modalOverlay:not(.center) {
+    align-items: center !important;
+  }
+
+  .modalSheet {
+    border-radius: 32px !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    margin: auto;
+  }
+}
