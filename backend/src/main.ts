@@ -12,6 +12,7 @@ async function bootstrap() {
     return this.toString();
   };
 
+  app.enableShutdownHooks();
 
   app.enableCors({
     origin: true,

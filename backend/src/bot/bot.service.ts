@@ -17,6 +17,11 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.bot = new Telegraf(botToken);
   }
 
+  async onApplicationShutdown(signal?: string) {
+    console.log(`Остановка Telegraf бота... Сигнал: ${signal}`);
+    this.bot.stop(signal);
+  }
+
   async onModuleInit() {
     try {
       this.logger.log('🚀 Бот запускается...');
