@@ -65,5 +65,6 @@ model Settings {
   blockAll     Boolean  @default(false)
   blockUsers   Boolean  @default(false)
   blockAdmins  Boolean  @default(false)
+  maintenanceMode Boolean  @default(false)
   updatedAt    DateTime @updatedAt
 }

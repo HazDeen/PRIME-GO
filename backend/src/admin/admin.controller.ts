@@ -107,23 +107,30 @@ export class AdminController {
 
     let settings = await prisma.settings.findFirst();
     
+    // Если записей еще нет, создаем дефолтную (включая maintenanceMode)
     if (!settings) {
       settings = await prisma.settings.create({
-        data: { blockAll: false, blockUsers: false, blockAdmins: false }
+        data: { 
+          blockAll: false, 
+          blockUsers: false, 
+          blockAdmins: false, 
+          maintenanceMode: false // 👈 Добавили
+        }
       });
     }
 
     return {
       all: settings.blockAll,
       users: settings.blockUsers,
-      admins: settings.blockAdmins
+      admins: settings.blockAdmins,
+      maintenance: settings.maintenanceMode // 👈 Возвращаем на фронтенд
     };
   }
 
   @Put('settings')
   async updateSettings(
     @Headers('x-username') adminUsername: string,
-    @Body() body: { all: boolean, users: boolean, admins: boolean }
+    @Body() body: { all: boolean, users: boolean, admins: boolean, maintenance: boolean }
   ) {
     if (!adminUsername) throw new UnauthorizedException('Username required');
     await this.adminService.validateAdmin(adminUsername);
@@ -133,18 +140,41 @@ export class AdminController {
     if (settings) {
       settings = await prisma.settings.update({
         where: { id: settings.id },
-        data: { blockAll: body.all, blockUsers: body.users, blockAdmins: body.admins }
+        data: { 
+          blockAll: body.all, 
+          blockUsers: body.users, 
+          blockAdmins: body.admins,
+          maintenanceMode: body.maintenance // 👈 Сохраняем в БД
+        }
       });
     } else {
       settings = await prisma.settings.create({
-        data: { blockAll: body.all, blockUsers: body.users, blockAdmins: body.admins }
+        data: { 
+          blockAll: body.all, 
+          blockUsers: body.users, 
+          blockAdmins: body.admins,
+          maintenanceMode: body.maintenance // 👈 Сохраняем в БД, если создаем с нуля
+        }
       });
     }
 
+    // Возвращаем актуальное состояние прямо из базы
     return {
       all: settings.blockAll,
       users: settings.blockUsers,
-      admins: settings.blockAdmins
+      admins: settings.blockAdmins,
+      maintenance: settings.maintenanceMode 
     };
+  }
+
+  @Get('status')
+  async getSystemStatus() {
+    let settings = await prisma.settings.findFirst();
+    if (!settings) {
+      settings = await prisma.settings.create({
+        data: { blockAll: false, blockUsers: false, blockAdmins: false, maintenanceMode: false }
+      });
+    }
+    return { maintenance: settings.maintenanceMode };
   }
 }
