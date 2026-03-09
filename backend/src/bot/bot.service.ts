@@ -173,9 +173,90 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       await ctx.answerCbQuery(); // Убираем часики загрузки на кнопке
     });
 
+    // ==========================================
+    // СПИСОК УСТРОЙСТВ ПОЛЬЗОВАТЕЛЯ
+    // ==========================================
     this.bot.action('menu_devices', async (ctx) => {
-      await ctx.answerCbQuery('Тут будет список конфигов!', { show_alert: true });
-      // Позже здесь сделаешь запрос в БД для получения активных устройств и выведешь их текстом
+      const telegramId = ctx.from.id;
+      
+      const user = await this.prisma.user.findUnique({
+        where: { telegramId: BigInt(telegramId) },
+        include: { devices: true }, // Подтягиваем все устройства юзера
+      });
+
+      // Если устройств нет
+      if (!user || user.devices.length === 0) {
+        await ctx.editMessageText(
+          '📭 <b>У тебя пока нет устройств</b>\n\nТы можешь создать новый VPN в нашем приложении!',
+          {
+            parse_mode: 'HTML',
+            ...Markup.inlineKeyboard([
+              [Markup.button.webApp('🚀 Открыть приложение', 'https://hazdeen.github.io/VPN/')],
+              [Markup.button.callback('🔙 Назад', 'menu_main')]
+            ])
+          }
+        );
+        return;
+      }
+
+      // Генерация кнопок для каждого устройства
+      const deviceButtons = user.devices.map(device => [
+        Markup.button.callback(
+          `${device.isActive ? '🟢' : '🔴'} ${device.name}`, 
+          `device_${device.id}` // Передаем ID устройства в callback_data
+        )
+      ]);
+
+      // Добавляем кнопку "Назад" в самый низ
+      deviceButtons.push([Markup.button.callback('🔙 Назад', 'menu_main')]);
+
+      await ctx.editMessageText(
+        '📱 <b>Мои устройства</b>\n\nВыбери устройство из списка ниже, чтобы получить ссылку для подключения:',
+        {
+          parse_mode: 'HTML',
+          ...Markup.inlineKeyboard(deviceButtons)
+        }
+      );
+    });
+
+    // ==========================================
+    // ДЕТАЛИ КОНКРЕТНОГО УСТРОЙСТВА И КОНФИГ
+    // ==========================================
+    // Используем регулярное выражение, чтобы ловить клики по device_1, device_2 и т.д.
+    this.bot.action(/^device_(\d+)$/, async (ctx) => {
+      const deviceId = parseInt(ctx.match[1], 10);
+      const telegramId = ctx.from.id;
+
+      const device = await this.prisma.device.findUnique({
+        where: { id: deviceId },
+        include: { user: true }
+      });
+
+      // Проверка безопасности: существует ли устройство и принадлежит ли оно этому юзеру
+      if (!device || device.user.telegramId !== BigInt(telegramId)) {
+        await ctx.answerCbQuery('Устройство не найдено!', { show_alert: true });
+        return;
+      }
+
+      const status = device.isActive ? '🟢 Активно' : '🔴 Неактивно (пополните баланс)';
+      
+      // Делаем ссылку моноширинной (в теге <code>), чтобы в Telegram она копировалась по 1 клику
+      const configLink = device.configLink 
+        ? `<code>${device.configLink}</code>` 
+        : '<i>Ссылка недоступна или генерируется...</i>';
+
+      const text = `📱 <b>Устройство:</b> ${device.name}\n` +
+                   `📊 <b>Статус:</b> ${status}\n\n` +
+                   `🔗 <b>Твоя ссылка для подключения (VLESS):</b>\n${configLink}\n\n` +
+                   `<i>👆 Нажми на ссылку, чтобы скопировать её, и вставь в приложение v2rayNG (Android) или Vibe/Foxray (iOS).</i>`;
+
+      await ctx.editMessageText(text, {
+        parse_mode: 'HTML',
+        ...Markup.inlineKeyboard([
+          [Markup.button.callback('🔙 К списку устройств', 'menu_devices')],
+          [Markup.button.callback('🏠 В главное меню', 'menu_main')]
+        ])
+      });
     });
 
     this.bot.action('menu_topup', async (ctx) => {
