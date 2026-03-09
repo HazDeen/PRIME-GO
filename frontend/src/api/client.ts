@@ -2,7 +2,7 @@ import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
 import axios, { AxiosInstance } from 'axios';
 
-const API_BASE_URL = 'https://vpn-production-702c.up.railway.app';
+const API_BASE_URL = 'https://h4zdeen.up.railway.app';
 
 export class Client {
   public api: AxiosInstance;

@@ -73,7 +73,7 @@
   --text-tertiary: #94a3b8;
 
   /* Рамки: белые блики для объема */
-  --border-color: rgba(255, 255, 255, 0.6);
+  --border-color: rgba(0, 0, 0, 0.6);
   --border-input: rgba(0, 0, 0, 0.08);
   --border-accent: rgba(30, 41, 59, 0.2);
 
@@ -1507,6 +1507,259 @@ body {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.1);
   color: #64748b;
+}
+
+/* Специальные фиксы для светлой темы хаба сервисов */
+[data-theme="light"] .servicesHeader {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Четкая линия под хедером */
+  padding-bottom: 20px;
+}
+
+[data-theme="light"] .serviceCard {
+  background: #f5f5f5; /* Делаем фон карт чуть более кремовым */
+  border: 1px solid rgba(0, 0, 0, 0.08); /* Четкая тонкая серая обводка */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Легкая тень для объема */
+}
+
+/* 🔥 Улучшаем иконку для светлой темы */
+[data-theme="light"] .serviceIconWrapper {
+  border: 2px solid rgba(0, 0, 0, 0.1); /* Усиливаем обводку иконки */
+}
+
+/* 🚀 Оформление "в разработке" */
+[data-theme="light"] .statusBadge.inDevelopment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-alpha); /* Полупрозрачный фиолетовый */
+  color: var(--accent); /* Четкий фиолетовый */
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 10px;
+  border: 1px solid var(--border-accent);
+}
+
+/* 🌟 Анимированная иконка (Пульсация) */
+[data-theme="light"] .inDevelopment svg {
+  animation: developingPulse 1.5s infinite;
+}
+
+@keyframes developingPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
+/* -------------------------------------------- */
+/* СТРАНИЦА PRIME GO SERVICES                   */
+/* -------------------------------------------- */
+
+.servicesHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 40px;
+  position: relative;
+}
+
+.logoGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.primeGoTitle {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+  margin: 0;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.primeGoSubtitle {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 3px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+}
+
+/* Круглая кнопка профиля */
+.profileMenuContainer {
+  position: relative;
+}
+
+.profileCircleBtn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s;
+}
+
+.profileCircleBtn:hover {
+  border-color: var(--accent);
+}
+
+/* Выпадающее меню профиля */
+.menuBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+}
+
+.profileDropdown {
+  position: absolute;
+  top: 64px;
+  right: 0;
+  width: 260px;
+  background: var(--bg-block);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  z-index: 101;
+  transform-origin: top right;
+}
+
+.dropdownHeader {
+  padding: 12px 16px;
+}
+
+.dropdownName {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.dropdownId {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  font-family: monospace;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 8px 0;
+}
+
+.dropdownItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdownItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.dropdownItem.admin { color: var(--warning); }
+.dropdownItem.admin:hover { background: var(--warning-alpha); }
+
+.dropdownItem.logout { color: var(--danger); }
+.dropdownItem.logout:hover { background: var(--danger-alpha); }
+
+/* Сетка сервисов */
+.servicesGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.serviceCard {
+  background: var(--bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-color);
+  border-radius: 28px;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.serviceCard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.serviceCard:hover::before { opacity: 1; }
+
+.serviceIconWrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-primary); /* Иконка цвета фона */
+  background: var(--text-primary); /* Белый/Темный фон иконки */
+  flex-shrink: 0;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.serviceIconWrapper.ai {
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  color: white;
+}
+
+.serviceContent { flex: 1; }
+
+.serviceContent h2 {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+}
+
+.serviceContent p {
+  font-size: 14px;
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.serviceArrow {
+  color: var(--text-tertiary);
+  transition: transform 0.2s;
+}
+
+.serviceCard:hover .serviceArrow {
+  transform: translateX(4px);
+  color: var(--text-primary);
 }
 
 /* -------------------------------------------- */

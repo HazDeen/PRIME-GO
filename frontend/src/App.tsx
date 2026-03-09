@@ -11,6 +11,7 @@ import TopUp from "./pages/TopUp";
 import History from "./pages/History";
 import DeviceDetail from "./pages/DeviceDetail";
 import Admin from "./pages/Admin";
+import Services from "./pages/Services";
 import "./styles/app.css";
 import "./styles/admin.css";
 import { client } from "./api/client";
@@ -55,7 +56,8 @@ function App() {
         
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/" element={<Home />} />
+          <Route path="/vpn" element={<Home />} />
+          <Route path="/" element={<Services />} />
           <Route path="/topup" element={<TopUp />} />
           <Route path="/history" element={<History />} />
           <Route path="/device/:id" element={<DeviceDetail />} />
