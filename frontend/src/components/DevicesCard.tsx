@@ -1,6 +1,6 @@
 import { useDevices } from '../hooks/useDevices';
 import DeviceCard from './DeviceCard';
-import { ReactComponent as Plus } from '../assets/icons/plus.svg';
+import { Plus} from 'lucide-react';
 
 
 type Props = {

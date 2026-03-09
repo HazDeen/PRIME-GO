@@ -1,10 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { ReactComponent as ChevronRight } from '../assets/icons/chevron-right.svg';
-import { ReactComponent as Apple } from '../assets/icons/apple.svg';
-import { ReactComponent as Android } from '../assets/icons/android.svg';
-import { ReactComponent as Laptop } from '../assets/icons/laptop.svg';
-import { ReactComponent as Monitor } from '../assets/icons/monitor.svg';
-import { ReactComponent as Cpu } from '../assets/icons/cpu.svg';
+import { Smartphone, Bot, Laptop, Monitor, Cpu, Timer} from 'lucide-react';
 import type { DeviceType } from '../types/device';
 
 type Props = {
@@ -21,9 +17,9 @@ type Props = {
 const getDeviceIcon = (type: DeviceType) => {
   switch (type) {
     case 'iPhone':
-      return Apple;
+      return Smartphone;
     case 'Android':
-      return Android;
+      return Bot;
     case 'Mac':
       return Laptop;
     case 'PC':
@@ -31,7 +27,7 @@ const getDeviceIcon = (type: DeviceType) => {
     case 'Other':
       return Cpu;
     default:
-      return Apple;
+      return Smartphone;
   }
 };
 
@@ -54,16 +50,14 @@ export default function DeviceCard({ id, name, model, type, date, isActive, days
             <span className="deviceName">{name}</span>
             <span className="deviceOriginalName">{model}</span>
           </div>
-          {isActive ? (
-            <span className="activeDot" title="Активно" />
-          ) : (
-            <span className="inactiveDot" title="Не активно" />
-          )}
         </div>
         <div className="deviceMeta">
           <span className="deviceDate">{date}</span>
           {isActive && daysLeft > 0 && (
-            <span className="deviceDaysLeft">⏳ {daysLeft} дн.</span>
+            <span className="daysBadge">
+              <Timer size={14} /> 
+              {daysLeft || 30} дн.
+            </span>
           )}
         </div>
       </div>

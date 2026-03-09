@@ -1,29 +1,26 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { ReactComponent as Apple } from '../assets/icons/apple.svg';
-import { ReactComponent as Android } from '../assets/icons/android.svg';
-import { ReactComponent as Laptop } from '../assets/icons/laptop.svg';
-import { ReactComponent as Monitor } from '../assets/icons/monitor.svg';
-import { ReactComponent as Cpu } from '../assets/icons/cpu.svg';
+// 🔥 Импортируем иконки из lucide-react вместо старых SVG
+import { Smartphone, Bot, Laptop, Monitor, Cpu, X } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
 
 type Props = {
   onClose: () => void;
-  // onAdd теперь принимает объект, который мы отправим на бэкенд
   onAdd: (name: string, customName: string, type: DeviceType) => Promise<void>;
   tgUserId: string;
 };
 
+// 🔥 Заменили иконки в массиве
 const DEVICE_TYPES: { id: DeviceType; label: string; icon: any }[] = [
-  { id: "iPhone", label: "iPhone", icon: Apple },
-  { id: "Android", label: "Android", icon: Android },
+  { id: "iPhone", label: "iPhone", icon: Smartphone },
+  { id: "Android", label: "Android", icon: Bot },
   { id: "Mac", label: "Mac", icon: Laptop },
   { id: "PC", label: "PC", icon: Monitor },
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
-export default function AddDeviceModal({ onClose, onAdd}: Props) {
+export default function AddDeviceModal({ onClose, onAdd }: Props) {
   const [name, setName] = useState("");
   const [customName, setCustomName] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("iPhone");
@@ -44,23 +41,17 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
 
     setLoading(true);
     try {
-      // ВАЖНО: Мы больше не делаем здесь fetch к /xui/client.
-      // Вся логика (XUI + БД + Баланс) теперь внутри ОДНОГО вызова onAdd,
-      // который обращается к нашему новому контроллеру на бэкенде.
-      
       await onAdd(name || customName, customName || name, selectedType);
       
-      toast.success('✅ Устройство успешно добавлено!');
+      toast.success('Устройство успешно добавлено!');
       
-      // Небольшая задержка перед закрытием для красоты
       setTimeout(() => {
         handleClose();
       }, 2000);
 
     } catch (error: any) {
-      console.error('❌ Ошибка при добавлении:', error);
-      // Ошибку (например, "Недостаточно средств") прокинет бэкенд
-      toast.error(error.message || '❌ Не удалось добавить устройство');
+      console.error('Ошибка при добавлении:', error);
+      toast.error(error.message || 'Не удалось добавить устройство');
     } finally {
       setLoading(false);
     }
@@ -68,20 +59,18 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
 
   return (
     <motion.div 
-      className="modalOverlay"
+      className="modalOverlay bottom" // 🔥 Используем класс из app.css
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       onClick={handleClose}
     >
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(5px)' }} />
-      
       <motion.div
         className="modalSheet"
         onClick={(e) => e.stopPropagation()}
         initial={{ y: "100%" }}
         animate={{ y: isClosing ? "100%" : 0 }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
         <motion.div 
           className="modalHandle" 
@@ -140,7 +129,8 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
                   whileTap={{ scale: 0.95 }}
                   disabled={loading}
                 >
-                  <Icon size={24} />
+                  {/* Иконка lucide сама возьмет нужный размер и толщину из CSS */}
+                  <Icon /> 
                   <span>{type.label}</span>
                 </motion.button>
               );
@@ -166,7 +156,7 @@ export default function AddDeviceModal({ onClose, onAdd}: Props) {
             whileTap={{ scale: 0.98 }}
             disabled={loading}
           >
-            × Отмена
+            <X size={18} style={{ marginRight: '6px' }} /> Отмена
           </motion.button>
         </div>
       </motion.div>

@@ -1,11 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { ChevronDown, Check } from "lucide-react"; // Добавили иконки для селекта
-import { ReactComponent as Apple } from '../assets/icons/apple.svg';
-import { ReactComponent as Android } from '../assets/icons/android.svg';
-import { ReactComponent as Laptop } from '../assets/icons/laptop.svg';
-import { ReactComponent as Monitor } from '../assets/icons/monitor.svg';
-import { ReactComponent as Cpu } from '../assets/icons/cpu.svg';
+import { Smartphone, Bot, Laptop, Monitor, Cpu} from 'lucide-react';
 import { toast } from 'sonner';
 
 type Props = {
@@ -15,8 +11,8 @@ type Props = {
 };
 
 const DEVICE_TYPES = [
-  { id: "iPhone", label: "iPhone", icon: Apple },
-  { id: "Android", label: "Android", icon: Android },
+  { id: "iPhone", label: "iPhone", icon: Smartphone },
+  { id: "Android", label: "Android", icon: Bot },
   { id: "Mac", label: "Mac", icon: Laptop },
   { id: "PC", label: "PC", icon: Monitor },
   { id: "Other", label: "Другое", icon: Cpu },

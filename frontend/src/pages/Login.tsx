@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { api } from '../api/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LogIn, Eye, EyeOff, Lock, User, ShieldCheck } from 'lucide-react';
+import { LogIn, Eye, EyeOff, Lock, User, ShieldCheck, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext'; // Подключаем хук темы
 import '../styles/login.css'; 
 
 export default function Login() {
@@ -11,6 +12,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { theme, toggleTheme } = useTheme(); // Достаем текущую тему и функцию переключения
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,8 +49,17 @@ export default function Login() {
 
   return (
     <div className="loginPage">
+      {/* Кнопка смены темы (абсолютно позиционирована) */}
+      <motion.button 
+        className="loginThemeBtn"
+        onClick={toggleTheme}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
+        {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+      </motion.button>
+
       <div className="loginContainer">
-        
         <motion.div 
           className="loginCard"
           initial={{ opacity: 0, y: 20 }}
@@ -132,12 +143,12 @@ export default function Login() {
                 <div className="loginFooter">
                   <span>Нет пароля? Напишите боту:</span>
                   <a 
-                    href="https://t.me/banana_vpnihe_bot" 
+                    href="https://t.me/primego_vpn_bot" 
                     target="_blank"
                     rel="noopener noreferrer"
                     className="botButton"
                   >
-                    @banana_vpnihe_bot
+                    @primego_vpn_bot
                   </a>
                 </div>
               </motion.div>

@@ -1,8 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
-import { ReactComponent as ArrowDownCircle } from '../assets/icons/arrow-down-circle.svg';
-import { ReactComponent as RefreshCw } from '../assets/icons/refresh-cw.svg';
-import { ReactComponent as PlusCircle } from '../assets/icons/plus-circle.svg';
+import { motion } from 'framer-motion';
+import { ChevronLeft, ArrowDownToLine, RefreshCcw, Plus } from 'lucide-react';
 import { useTransactions } from '../hooks/useTransactions';
 import { useBalance } from '../hooks/useBalance';
 
@@ -11,59 +9,92 @@ export default function History() {
   const { transactions, loading: transactionsLoading } = useTransactions();
   const { balance, loading: balanceLoading } = useBalance();
 
+  // Анимация страницы
+  const pageVariants = {
+    initial: { opacity: 0, x: 20 },
+    in: { opacity: 1, x: 0 },
+    out: { opacity: 0, x: -20 }
+  };
+
   if (transactionsLoading || balanceLoading) {
     return (
-      <div className="historyPage">
+      <div className="historyPage container">
         <div className="historyHeader">
           <button className="backButton" onClick={() => navigate(-1)}>
-            <ArrowLeft width={24} height={24} />
+            <ChevronLeft size={24} />
           </button>
-          <h1>История платежей</h1>
+          <h1>История</h1>
           <button className="topupSmallButton" onClick={() => navigate('/topup')}>
-            <PlusCircle width={20} height={20} />
+            <Plus size={18} />
             <span>{balance} ₽</span>
           </button>
         </div>
-        <div style={{ textAlign: 'center', marginTop: '40px', color: 'rgba(255,255,255,0.5)' }}>
-          Загрузка...
+        <div className="loadingMessage" style={{ background: 'transparent', marginTop: '40px' }}>
+          ⏳ Загрузка истории...
         </div>
       </div>
     );
   }
 
   return (
-    <div className="historyPage">
+    <motion.div 
+      className="historyPage container"
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
       <div className="historyHeader">
-        <button className="backButton" onClick={() => navigate(-1)}>
-          <ArrowLeft width={24} height={24} />
-        </button>
-        <h1>История платежей</h1>
-        <button className="topupSmallButton" onClick={() => navigate('/topup')}>
-          <PlusCircle width={20} height={20} />
+        <motion.button 
+          className="backButton" 
+          onClick={() => navigate(-1)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronLeft size={24} />
+        </motion.button>
+        <h1>История</h1>
+        <motion.button 
+          className="topupSmallButton" 
+          onClick={() => navigate('/topup')}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Plus size={18} />
           <span>{balance} ₽</span>
-        </button>
+        </motion.button>
       </div>
 
       <div className="transactionsList">
-        {Object.entries(transactions).map(([date, items]: [string, any[]]) => (
-          <div key={date} className="transactionGroup">
+        {Object.entries(transactions).map(([date, items]: [string, any[]], groupIdx) => (
+          <motion.div 
+            key={date} 
+            className="transactionGroup"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: groupIdx * 0.1 }}
+          >
             <div className="transactionDate">{date}</div>
             {items.map((item, itemIdx) => {
-              // Определяем иконку в зависимости от типа операции
               const isTopup = item.description.includes('Пополнение');
-              
-              let Icon = RefreshCw;
-              let iconColor = '#FF9F0A';
-              
-              if (isTopup) {
-                Icon = ArrowDownCircle;
-                iconColor = '#34C759';
-              }
+              const Icon = isTopup ? ArrowDownToLine : RefreshCcw;
               
               return (
-                <div key={itemIdx} className="transactionRow">
-                  <div className="transactionIcon" style={{ background: `${iconColor}10` }}>
-                    <Icon width={20} height={20} color={iconColor} />
+                <motion.div 
+                  key={itemIdx} 
+                  className="transactionRow"
+                  whileHover={{ scale: 1.01, x: 4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <div 
+                    className="transactionIcon" 
+                    style={{ 
+                      background: isTopup ? 'var(--success-alpha)' : 'var(--danger-alpha)',
+                      color: isTopup ? 'var(--success)' : 'var(--danger)'
+                    }}
+                  >
+                    <Icon size={20} />
                   </div>
                   <div className="transactionInfo">
                     <span className="transactionDesc">{item.description}</span>
@@ -74,18 +105,22 @@ export default function History() {
                       {item.amount > 0 ? '+' : ''}{item.amount} ₽
                     </span>
                   )}
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         ))}
         
         {Object.keys(transactions).length === 0 && (
-          <div style={{ textAlign: 'center', marginTop: '40px', color: 'rgba(255,255,255,0.5)' }}>
-            Нет операций
-          </div>
+          <motion.div 
+            initial={{ opacity: 0 }} 
+            animate={{ opacity: 1 }} 
+            style={{ textAlign: 'center', marginTop: '60px', color: 'var(--text-tertiary)' }}
+          >
+            История операций пуста
+          </motion.div>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }

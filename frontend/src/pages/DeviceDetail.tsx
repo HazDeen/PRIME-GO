@@ -1,15 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
-import { ReactComponent as ArrowLeft } from '../assets/icons/arrow-left.svg';
-import { ReactComponent as Edit2 } from '../assets/icons/edit-2.svg';
-import { ReactComponent as Trash2 } from '../assets/icons/trash-2.svg';
-import { ReactComponent as Apple } from '../assets/icons/apple.svg';
-import { ReactComponent as Check } from '../assets/icons/check.svg';
-import { ReactComponent as AlertCircle } from '../assets/icons/alert-circle.svg';
-import { ReactComponent as AlertTriangle } from '../assets/icons/alert-triangle.svg';
-import { ReactComponent as Copy } from '../assets/icons/clipboard.svg';
-import { ReactComponent as RefreshCw } from '../assets/icons/refresh-cw.svg';
+import { motion } from 'framer-motion';
+import { 
+  ChevronLeft, Edit2, Trash2, Smartphone, 
+  Check, AlertCircle, AlertTriangle, Copy, RefreshCw, X, Timer 
+} from 'lucide-react';
 
 export default function DeviceDetail() {
   const { id } = useParams();
@@ -37,7 +33,6 @@ export default function DeviceDetail() {
     try {
       setLoading(true);
       
-      // 1. Получаем пользователя, как в useDevices
       const userStr = localStorage.getItem('user');
       if (!userStr) {
         navigate('/');
@@ -45,7 +40,6 @@ export default function DeviceDetail() {
       }
       const user = JSON.parse(userStr);
 
-      // 2. Делаем прямой запрос к нашему новому эндпоинту
       const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/user/${user.telegramId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -56,7 +50,6 @@ export default function DeviceDetail() {
 
       const devices = await response.json();
       
-      // 3. Ищем конкретное устройство по ID из URL
       const currentDevice = devices.find((d: any) => d.id === deviceId);
       
       if (currentDevice) {
@@ -86,7 +79,6 @@ export default function DeviceDetail() {
     }
   };
 
-  // ✅ ЗАМЕНА ССЫЛКИ (ТОКЕНА)
   const handleReplaceLink = async () => {
     if (!deviceId) return;
     toast.loading('Генерируем новую ссылку...', { id: 'replace' });
@@ -100,14 +92,13 @@ export default function DeviceDetail() {
       
       if (response.ok) {
         setDevice({ ...device, configLink: data.configLink });
-        toast.success('✅ Ссылка обновлена!', { id: 'replace' });
+        toast.success('Ссылка обновлена!', { id: 'replace' });
       }
     } catch (error) {
-      toast.error('❌ Ошибка обновления', { id: 'replace' });
+      toast.error('Ошибка обновления', { id: 'replace' });
     }
   };
 
-  // ✅ СОХРАНЕНИЕ ИМЕНИ
   const handleSaveName = async () => {
     if (!deviceId || !deviceName.trim()) return;
     
@@ -124,77 +115,70 @@ export default function DeviceDetail() {
       if (response.ok) {
         setDevice({ ...device, name: deviceName });
         setIsEditing(false);
-        toast.success('✅ Название сохранено');
+        toast.success('Название сохранено');
       }
     } catch (error) {
-      toast.error('❌ Ошибка сохранения');
+      toast.error('Ошибка сохранения');
     }
   };
 
-  // ✅ УДАЛЕНИЕ УСТРОЙСТВА ИЗ БД
   const handleDeleteClick = () => {
-  if (!confirmDelete) {
-    // Первый клик - показываем подтверждение
-    setConfirmDelete(true);
-    
-    // Автоматически сбрасываем через 5 секунд, если не подтвердили
-    setTimeout(() => {
-      setConfirmDelete(false);
-    }, 5000);
-  } else {
-    // Второй клик - удаляем
-    performDelete();
-  }
-};
-
-// Функция удаления
-const performDelete = async () => {
-  if (!deviceId || !device || isDeleting) return;
-  
-  setIsDeleting(true);
-  toast.loading('Удаляем устройство...', { id: 'delete-device' });
-  
-  try {
-    const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Ошибка при удалении');
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => {
+        setConfirmDelete(false);
+      }, 5000);
+    } else {
+      performDelete();
     }
+  };
 
-    toast.success('✅ Устройство успешно удалено!', { 
-      id: 'delete-device',
-      duration: 3000,
-      icon: '🗑️'
-    });
+  const performDelete = async () => {
+    if (!deviceId || !device || isDeleting) return;
     
-    // Перенаправляем на главную после удаления
-    setTimeout(() => navigate('/'), 1500);
+    setIsDeleting(true);
+    toast.loading('Удаляем устройство...', { id: 'delete-device' });
+    
+    try {
+      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
 
-  } catch (error: any) {
-    console.error('❌ Delete error:', error);
-    toast.error(error.message || '❌ Не удалось удалить устройство', { 
-      id: 'delete-device' 
-    });
-  } finally {
-    setIsDeleting(false);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Ошибка при удалении');
+      }
+
+      toast.success('Устройство успешно удалено!', { id: 'delete-device' });
+      
+      setTimeout(() => navigate('/'), 1500);
+
+    } catch (error: any) {
+      console.error('❌ Delete error:', error);
+      toast.error(error.message || 'Не удалось удалить устройство', { id: 'delete-device' });
+    } finally {
+      setIsDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
+
+  const cancelDelete = () => {
     setConfirmDelete(false);
-  }
-};
+  };
 
-// Отмена подтверждения (если нужно)
-const cancelDelete = () => {
-  setConfirmDelete(false);
-};
+  // Анимация появления страницы
+  const pageVariants = {
+    initial: { opacity: 0, x: 20 },
+    in: { opacity: 1, x: 0 },
+    out: { opacity: 0, x: -20 }
+  };
 
   if (loading) {
     return (
-      <div className="deviceDetailPage">
+      <div className="deviceDetailPage container">
         <div className="loadingScreen">
           <div className="loadingSpinner"></div>
           <p>Загрузка устройства...</p>
@@ -205,29 +189,51 @@ const cancelDelete = () => {
 
   if (!device) {
     return (
-      <div className="deviceDetailPage">
+      <div className="deviceDetailPage container">
         <div className="errorScreen">
-          <AlertCircle width={48} height={48} />
+          <AlertCircle size={48} />
           <h2>Устройство не найдено</h2>
-          <button onClick={() => navigate(-1)}>Вернуться назад</button>
+          <motion.button 
+            onClick={() => navigate(-1)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            Вернуться назад
+          </motion.button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="deviceDetailPage">
+    <motion.div 
+      className="deviceDetailPage container"
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
       <div className="deviceDetailHeader">
-        <button className="backButton" onClick={() => navigate(-1)}>
-          <ArrowLeft width={24} height={24} />
-        </button>
+        <motion.button 
+          className="backButton" 
+          onClick={() => navigate(-1)}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ChevronLeft size={24} />
+        </motion.button>
         <h1>Настройки устройства</h1>
       </div>
 
-      {/* Карточка устройства с редактированием имени */}
-      <div className="deviceProfileCard">
+      {/* Карточка профиля устройства */}
+      <motion.div 
+        className="deviceProfileCard"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         <div className="deviceProfileIcon">
-          <Apple width={48} height={48} />
+          <Smartphone size={36} />
         </div>
         <div className="deviceProfileInfo">
           {isEditing ? (
@@ -241,32 +247,50 @@ const cancelDelete = () => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
                 placeholder="Введите название"
               />
-              <button onClick={handleSaveName} className="saveNameBtn">
-                <Check width={18} height={18} />
-              </button>
+              <motion.button 
+                onClick={handleSaveName} 
+                className="saveNameBtn"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Check size={16} />
+              </motion.button>
             </div>
           ) : (
             <div className="deviceNameDisplay">
               <h2>{device.name}</h2>
-              <button onClick={() => setIsEditing(true)} className="editNameBtn">
-                <Edit2 width={16} height={16} />
-              </button>
+              <motion.button 
+                onClick={() => setIsEditing(true)} 
+                className="editNameBtn"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+              >
+                <Edit2 size={14} />
+              </motion.button>
             </div>
           )}
-          <p className="deviceProfileModel">{device.model}</p>
+          <p className="deviceProfileModel">{device.model || 'VPN Устройство'}</p>
           <div className="deviceProfileStatus">
             <span className={`statusBadge ${device.isActive ? 'active' : 'inactive'}`}>
               {device.isActive ? '● Активно' : '○ Неактивно'}
             </span>
             {device.isActive && (
-              <span className="daysBadge">⏳ {device.daysLeft || 30} дн.</span>
+              <span className="daysBadge">
+                <Timer size={14} /> 
+                {device.daysLeft || 30} дн.
+              </span>
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Блок с ссылкой и кнопкой замены */}
-      <div className="configCard">
+      {/* Карточка Конфигурации */}
+      <motion.div 
+        className="configCard"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+      >
         <h3 className="configCardTitle">Конфигурация</h3>
         <p className="configCardDescription">
           Скопируйте ссылку и вставьте в приложение HitProxy или HitVPN
@@ -275,68 +299,80 @@ const cancelDelete = () => {
         <div className="configLinkContainer">
           <code className="configLinkCode">{device.configLink}</code>
           <div className="configActions">
-            <button 
+            <motion.button 
               className={`copyLinkBtn ${copied ? 'copied' : ''}`} 
               onClick={handleCopy}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <Copy width={18} height={18} />
+              <Copy size={18} />
               {copied ? 'Скопировано!' : 'Копировать'}
-            </button>
-            <button 
+            </motion.button>
+            <motion.button 
               className="replaceLinkBtn"
               onClick={handleReplaceLink}
               title="Сгенерировать новую ссылку"
+              whileHover={{ scale: 1.05, rotate: 15 }}
+              whileTap={{ scale: 0.95, rotate: -15 }}
             >
-              <RefreshCw width={18} height={18} />
-            </button>
+              <RefreshCw size={18} />
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Кнопка удаления с подтверждением */}
-<div 
-  className={`deleteCard ${confirmDelete ? 'confirm' : ''} ${isDeleting ? 'deleting' : ''}`} 
-  onClick={!isDeleting ? handleDeleteClick : undefined}
->
-  <div className="deleteCardIcon">
-    {isDeleting ? (
-      <div className="spinner-small" />
-    ) : confirmDelete ? (
-      <AlertTriangle width={24} height={24} />
-    ) : (
-      <Trash2 width={24} height={24} />
-    )}
-  </div>
-  <div className="deleteCardContent">
-    <h4>
-      {isDeleting ? 'Удаление...' : 
-       confirmDelete ? 'Подтвердите удаление' : 
-       'Удалить устройство'}
-    </h4>
-    <p>
-      {isDeleting ? 'Пожалуйста, подождите' :
-       confirmDelete ? 'Нажмите ещё раз для подтверждения' : 
-       'Это действие нельзя отменить'}
-    </p>
-  </div>
-  {confirmDelete && !isDeleting && (
-    <button 
-      className="cancelDeleteBtn"
-      onClick={(e) => {
-        e.stopPropagation();
-        cancelDelete();
-      }}
-    >
-      ✕
-    </button>
-  )}
-</div>
+      {/* Кнопка удаления */}
+      <motion.div 
+        className={`deleteCard ${confirmDelete ? 'confirm' : ''} ${isDeleting ? 'deleting' : ''}`} 
+        onClick={!isDeleting ? handleDeleteClick : undefined}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        whileHover={{ scale: isDeleting ? 1 : 1.01 }}
+        whileTap={{ scale: isDeleting ? 1 : 0.98 }}
+      >
+        <div className="deleteCardIcon">
+          {isDeleting ? (
+            <div className="spinner-small" />
+          ) : confirmDelete ? (
+            <AlertTriangle size={24} />
+          ) : (
+            <Trash2 size={24} />
+          )}
+        </div>
+        <div className="deleteCardContent">
+          <h4>
+            {isDeleting ? 'Удаление...' : 
+             confirmDelete ? 'Подтвердите удаление' : 
+             'Удалить устройство'}
+          </h4>
+          <p>
+            {isDeleting ? 'Пожалуйста, подождите' :
+             confirmDelete ? 'Нажмите ещё раз для подтверждения' : 
+             'Это действие нельзя отменить'}
+          </p>
+        </div>
+        {confirmDelete && !isDeleting && (
+          <motion.button 
+            className="cancelDeleteBtn"
+            onClick={(e) => {
+              e.stopPropagation();
+              cancelDelete();
+            }}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <X size={16} />
+          </motion.button>
+        )}
+      </motion.div>
 
-      {/* Дополнительная информация */}
       <div className="deviceInfoFooter">
-        <p>Подключено: {device.date || '12.02.26'}</p>
+        <p>Подключено: {device.date || 'Неизвестно'}</p>
         <p>ID: {deviceId}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }

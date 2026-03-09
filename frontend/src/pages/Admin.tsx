@@ -26,7 +26,7 @@ export interface Device {
   configLink: string;
   uuid?: string;
   inboundId?: number;
-  userId?: number; // Добавили для связи устройства с пользователем
+  userId?: number; 
 }
 
 export interface ModalState {
@@ -55,7 +55,6 @@ const Admin: React.FC = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Используем allSettled: если один запрос упадет, второй всё равно загрузит данные
       const [usersRes, devicesRes] = await Promise.allSettled([
         client.admin.getUsers(),
         client.admin.getAllDevices()
@@ -84,26 +83,20 @@ const Admin: React.FC = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Фильтрация пользователей
   const filteredUsers = users.filter(u => 
     u.username?.toLowerCase().includes(searchUser.toLowerCase()) || 
     String(u.telegramId).includes(searchUser)
   );
 
-  // Фильтрация устройств (теперь ищет и по никнейму владельца!)
   const filteredDevices = devices.filter(d => {
     const search = searchDevice.toLowerCase();
-    
-    // Пытаемся найти владельца по userId или если email это Telegram ID
     const linkedUser = users.find(u => u.id === d.userId || String(u.telegramId) === d.email);
-    
     const nameMatch = d.name?.toLowerCase().includes(search);
     const emailMatch = d.email?.toLowerCase().includes(search);
     const userMatch = linkedUser && (
       linkedUser.username?.toLowerCase().includes(search) || 
       String(linkedUser.telegramId).includes(search)
     );
-
     return nameMatch || emailMatch || userMatch;
   });
 
@@ -142,9 +135,28 @@ const Admin: React.FC = () => {
     }
   };
 
+  // Анимация появления страницы
+  const pageVariants = {
+    initial: { opacity: 0, y: 20 },
+    in: { opacity: 1, y: 0 },
+    out: { opacity: 0, y: -20 }
+  };
+
   return (
-    <div className="adminContainer">
-      <motion.button className="exitBtn" whileTap={{ scale: 0.9 }} onClick={() => navigate('/')}>
+    <motion.div 
+      className="adminContainer"
+      initial="initial"
+      animate="in"
+      exit="out"
+      variants={pageVariants}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+    >
+      <motion.button 
+        className="exitBtn" 
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }} 
+        onClick={() => navigate('/')}
+      >
         <LogOut size={20} />
       </motion.button>
 
@@ -170,13 +182,19 @@ const Admin: React.FC = () => {
                 <input 
                   type="text" 
                   className="adminSearchInput" 
-                  placeholder="Поиск по @никнейму или ID..." 
+                  placeholder="Поиск по никнейму или ID..." 
                   value={searchUser}
                   onChange={e => setSearchUser(e.target.value)}
                 />
 
-                {filteredUsers.map(user => (
-                  <div key={user.id} className="customCard">
+                {filteredUsers.map((user, idx) => (
+                  <motion.div 
+                    key={user.id} 
+                    className="customCard"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                  >
                     <div className="cardMainRow" onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}>
                       <div className="userIcon">{user.isAdmin ? <ShieldCheck size={20}/> : <Smartphone size={20}/>}</div>
                       <div className="cardInfo">
@@ -187,7 +205,7 @@ const Admin: React.FC = () => {
                     </div>
                     <AnimatePresence>
                       {expandedUser === user.id && (
-                        <motion.div className="cardDropdown" initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}>
+                        <motion.div className="cardDropdown" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                           <button className="dropItem" onClick={() => setConfirmModal({ type: 'rename', title: 'Изменить никнейм', data: user, inputValue: user.username })}>
                             <Edit2 size={14}/> Изменить никнейм
                           </button>
@@ -200,7 +218,7 @@ const Admin: React.FC = () => {
                         </motion.div>
                       )}
                     </AnimatePresence>
-                  </div>
+                  </motion.div>
                 ))}
               </motion.div>
             )}
@@ -216,9 +234,14 @@ const Admin: React.FC = () => {
                 <ChevronDown size={20}/>
               </motion.div>
             </div>
-            <button className="addBtnCompact" onClick={() => setConfirmModal({ type: 'addDevice', title: 'Новое устройство' })}>
+            <motion.button 
+              className="addBtnCompact" 
+              onClick={() => setConfirmModal({ type: 'addDevice', title: 'Новое устройство' })}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <Plus size={18} /> <span>Добавить VPN</span>
-            </button>
+            </motion.button>
           </div>
 
           <AnimatePresence>
@@ -227,17 +250,22 @@ const Admin: React.FC = () => {
                 <input 
                   type="text" 
                   className="adminSearchInput" 
-                  placeholder="Поиск по названию, email или владельцу..." 
+                  placeholder="Поиск по названию или владельцу..." 
                   value={searchDevice}
                   onChange={e => setSearchDevice(e.target.value)}
                 />
 
-                {filteredDevices.map(device => {
-                  // Находим владельца
+                {filteredDevices.map((device, idx) => {
                   const linkedUser = users.find(u => u.id === device.userId || String(u.telegramId) === device.email);
 
                   return (
-                    <div key={device.id} className="customCard">
+                    <motion.div 
+                      key={device.id} 
+                      className="customCard"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                    >
                       <div className="cardMainRow" onClick={() => setExpandedDevice(expandedDevice === device.id ? null : device.id)}>
                         <div className="deviceIcon"><Monitor size={20}/></div>
                         <div className="cardInfo">
@@ -245,8 +273,8 @@ const Admin: React.FC = () => {
                           <div className="secondaryText">
                             {device.email} 
                             {linkedUser && (
-                              <span style={{ color: 'var(--accent)', marginLeft: '6px', fontWeight: 500 }}>
-                                • Владелец: {linkedUser.username || `@id${linkedUser.telegramId}`}
+                              <span style={{ color: 'var(--text-primary)', marginLeft: '6px', fontWeight: 600 }}>
+                                • {linkedUser.username || `@id${linkedUser.telegramId}`}
                               </span>
                             )}
                           </div>
@@ -255,7 +283,7 @@ const Admin: React.FC = () => {
                       </div>
                       <AnimatePresence>
                         {expandedDevice === device.id && (
-                          <motion.div className="cardDropdown" initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}>
+                          <motion.div className="cardDropdown" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}>
                             <button className="dropItem" onClick={() => setConfirmModal({ type: 'regenerate', title: 'Сменить ключ?', data: device })}>
                               <RefreshCw size={14}/> Перегенерировать ссылку
                             </button>
@@ -271,7 +299,7 @@ const Admin: React.FC = () => {
                           </motion.div>
                         )}
                       </AnimatePresence>
-                    </div>
+                    </motion.div>
                   )
                 })}
               </motion.div>
@@ -280,7 +308,7 @@ const Admin: React.FC = () => {
         </div>
       </div>
 
-      {/* Центральные модалки подтверждения (изменение, удаление и т.д.) */}
+      {/* Центральные модалки подтверждения */}
       <AnimatePresence>
         {confirmModal && confirmModal.type !== 'addDevice' && (
           <div className="modalOverlay center" onClick={() => setConfirmModal(null)}>
@@ -319,7 +347,7 @@ const Admin: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Модалка добавления VPN (если она не имеет своего Overlay, она отрендерится тут) */}
+      {/* Модалка добавления VPN */}
       <AnimatePresence>
         {confirmModal?.type === 'addDevice' && (
           <AdminAddDeviceModal 
@@ -332,7 +360,7 @@ const Admin: React.FC = () => {
           />
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };
 
