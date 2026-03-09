@@ -8,9 +8,13 @@ import {
   Put, 
   NotFoundException, 
   BadRequestException,
+  ForbiddenException, // 👈 Импортировали ошибку доступа
   Logger 
 } from '@nestjs/common';
 import { DeviceService } from './device.service';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 @Controller('devices')
 export class DeviceController {
@@ -36,18 +40,47 @@ export class DeviceController {
     }
 
     try {
-      // Вызываем метод сервиса, который делает ВСЁ: 
-      // Проверяет баланс -> Создает в XUI -> Сохраняет в БД -> Списывает баланс
+      // ==========================================
+      // 🚨 ЖЕСТКАЯ ПРОВЕРКА БЛОКИРОВКИ (ТУМБЛЕРЫ)
+      // ==========================================
+      const settings = await prisma.settings.findFirst();
+      
+      if (settings) {
+        // 1. Проверяем глобальную блокировку
+        if (settings.blockAll) {
+          throw new ForbiddenException('⛔️ Создание новых VPN временно приостановлено сервером.');
+        }
+
+        // Ищем пользователя, чтобы понять, админ он или нет
+        // (Обычно telegramId в базе это BigInt. Если у тебя Int или String, убери BigInt)
+        const user = await prisma.user.findFirst({
+          where: { telegramId: BigInt(body.tgId) } 
+        });
+
+        if (user) {
+          // 2. Если юзер НЕ админ, и стоит запрет для пользователей
+          if (settings.blockUsers && !user.isAdmin) {
+            throw new ForbiddenException('⛔️ Создание VPN для обычных пользователей закрыто.');
+          }
+          
+          // 3. Если юзер АДМИН, и стоит запрет для админов
+          if (settings.blockAdmins && user.isAdmin) {
+            throw new ForbiddenException('⛔️ Создание VPN для администраторов закрыто.');
+          }
+        }
+      }
+      // ==========================================
+
+      // Вызываем метод сервиса, который делает ВСЁ остальное
       return await this.deviceService.create(body);
     } catch (error) {
       this.logger.error(`❌ Ошибка создания: ${error.message}`);
-      throw error;
+      throw error; // Ошибка улетит на фронтенд и покажется в Toast
     }
   }
 
   /**
    * Получение всех устройств пользователя по его Telegram ID
-   * URL: GET /devices/user/1314191617
    */
   @Get('user/:tgId')
   async getByTgId(@Param('tgId') tgId: string) {
@@ -57,7 +90,6 @@ export class DeviceController {
 
   /**
    * Удаление устройства
-   * URL: DELETE /devices/1
    */
   @Delete(':id')
   async remove(@Param('id') id: string) {
@@ -80,7 +112,6 @@ export class DeviceController {
    */
   @Post(':id/replace')
   async replace(@Param('id') id: string) {
-    // В сервисе метод должен принимать id устройства
     return this.deviceService.replaceDevice(+id);
   }
 
@@ -91,6 +122,4 @@ export class DeviceController {
   async findAll() {
     return this.deviceService.findAll();
   }
-  
-  
 }

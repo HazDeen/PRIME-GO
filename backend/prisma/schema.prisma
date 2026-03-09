@@ -59,3 +59,11 @@ model Transaction {
 
   @@map("transactions")
 }
+
+model Settings {
+  id           Int      @id @default(autoincrement())
+  blockAll     Boolean  @default(false)
+  blockUsers   Boolean  @default(false)
+  blockAdmins  Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
