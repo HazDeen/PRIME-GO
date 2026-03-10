@@ -8,6 +8,28 @@ const prisma = new PrismaClient();
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
+  // 🔥 Вспомогательная функция для отправки сообщений в ТГ
+  private async sendTelegramMessage(chatId: string | number | bigint, text: string) {
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    if (!token) {
+      console.warn('TELEGRAM_BOT_TOKEN не задан в .env!');
+      return;
+    }
+    try {
+      await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          chat_id: chatId.toString(), 
+          text: text, 
+          parse_mode: 'HTML' 
+        })
+      });
+    } catch (err) {
+      console.error(`Ошибка отправки ТГ сообщения юзеру ${chatId}:`, err);
+    }
+  }
+
   @Get('users')
   async getAllUsers(@Headers('x-username') username: string) {
     if (!username) throw new UnauthorizedException('Username required');
@@ -97,7 +119,7 @@ export class AdminController {
   }
 
   // ==========================================
-  // 🚨 НОВЫЕ РОУТЫ ДЛЯ ТУМБЛЕРОВ БЕЗОПАСНОСТИ
+  // РОУТЫ ДЛЯ ТУМБЛЕРОВ БЕЗОПАСНОСТИ
   // ==========================================
   
   @Get('settings')
@@ -107,14 +129,13 @@ export class AdminController {
 
     let settings = await prisma.settings.findFirst();
     
-    // Если записей еще нет, создаем дефолтную (включая maintenanceMode)
     if (!settings) {
       settings = await prisma.settings.create({
         data: { 
           blockAll: false, 
           blockUsers: false, 
           blockAdmins: false, 
-          maintenanceMode: false // 👈 Добавили
+          maintenanceMode: false 
         }
       });
     }
@@ -123,7 +144,7 @@ export class AdminController {
       all: settings.blockAll,
       users: settings.blockUsers,
       admins: settings.blockAdmins,
-      maintenance: settings.maintenanceMode // 👈 Возвращаем на фронтенд
+      maintenance: settings.maintenanceMode 
     };
   }
 
@@ -137,6 +158,13 @@ export class AdminController {
 
     let settings = await prisma.settings.findFirst();
     
+    // Проверяем прошлые состояния
+    const wasMaintenanceOff = settings ? !settings.maintenanceMode : true;
+    
+    // Флаги изменений
+    const isTurningMaintenanceOn = body.maintenance === true && wasMaintenanceOff;
+    const isTurningMaintenanceOff = body.maintenance === false && !wasMaintenanceOff; // 👈 Новый флаг окончания работ
+
     if (settings) {
       settings = await prisma.settings.update({
         where: { id: settings.id },
@@ -144,7 +172,7 @@ export class AdminController {
           blockAll: body.all, 
           blockUsers: body.users, 
           blockAdmins: body.admins,
-          maintenanceMode: body.maintenance // 👈 Сохраняем в БД
+          maintenanceMode: body.maintenance 
         }
       });
     } else {
@@ -153,12 +181,37 @@ export class AdminController {
           blockAll: body.all, 
           blockUsers: body.users, 
           blockAdmins: body.admins,
-          maintenanceMode: body.maintenance // 👈 Сохраняем в БД, если создаем с нуля
+          maintenanceMode: body.maintenance 
         }
       });
     }
 
-    // Возвращаем актуальное состояние прямо из базы
+    // 🔥 РАССЫЛКА ПОЛЬЗОВАТЕЛЯМ 🔥
+    if (isTurningMaintenanceOn) {
+      try {
+        const users = await prisma.user.findMany();
+        const messageText = `⚙️ <b>Технические работы</b>\n\nВ данный момент на серверах VPN проводятся технические работы для улучшения качества связи.\n\nНекоторые функции приложения могут быть временно недоступны. Приносим извинения за временные неудобства!`;
+        
+        users.forEach(user => {
+          this.sendTelegramMessage(user.telegramId, messageText);
+        });
+      } catch (error) {
+        console.error('Ошибка при рассылке о начале тех. работ:', error);
+      }
+    } else if (isTurningMaintenanceOff) {
+      // 👈 НОВАЯ ЛОГИКА: Рассылка об окончании
+      try {
+        const users = await prisma.user.findMany();
+        const messageText = `✅ <b>Технические работы завершены!</b>\n\nВсе сервисы VPN снова работают в штатном режиме.\n\nСпасибо за ваше терпение! Приятного пользования.`;
+        
+        users.forEach(user => {
+          this.sendTelegramMessage(user.telegramId, messageText);
+        });
+      } catch (error) {
+        console.error('Ошибка при рассылке об окончании тех. работ:', error);
+      }
+    }
+
     return {
       all: settings.blockAll,
       users: settings.blockUsers,
