@@ -22,6 +22,7 @@ model User {
 
   devices     Device[]
   transactions Transaction[]
+  tickets Ticket[]
 
   @@map("users")
 }
@@ -69,3 +70,24 @@ model Settings {
   maintenanceMode Boolean  @default(false)
   updatedAt    DateTime @updatedAt
 }
+
+model Ticket {
+  id          Int             @id @default(autoincrement())
+  userId      BigInt          // Чей это тикет (связь с таблицей User)
+  user        User            @relation(fields: [userId], references: [telegramId])
+  topic       String          // Тема из выпадающего списка (например, "Оплата", "Ошибка")
+  status      String          @default("OPEN") // Статус: OPEN, ANSWERED, CLOSED
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  messages    TicketMessage[] // Связь с сообщениями
+}
+
+model TicketMessage {
+  id          Int      @id @default(autoincrement())
+  ticketId    Int
+  ticket      Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  text        String   // Сам текст сообщения
+  isAdmin     Boolean  @default(false) // Кто написал: false = юзер, true = админ
+  createdAt   DateTime @default(now())
+}
+

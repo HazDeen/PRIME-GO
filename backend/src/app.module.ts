@@ -10,6 +10,7 @@ import { LoggerModule } from './logger/logger.module';
 import { BotModule } from './bot/bot.module';
 import { AdminModule } from './admin/admin.module';
 import { XuiModule } from './xui/xui.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { XuiModule } from './xui/xui.module';
     BotModule,
     AdminModule,
     XuiModule,
+    TicketsModule,
   ],
 })
 export class AppModule {}
