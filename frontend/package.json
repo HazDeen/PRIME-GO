@@ -2,7 +2,7 @@
   "name": "vpn-miniapp",
   "private": true,
   "version": "0.0.0",
-  "homepage": "https://hazdeen.github.io/VPN",
+  "homepage": "https://hazdeen.github.io/PRIME-GO",
   "type": "module",
   "scripts": {
     "dev": "vite",
