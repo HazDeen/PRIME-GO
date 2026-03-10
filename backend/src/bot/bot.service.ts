@@ -3,10 +3,13 @@ import { Telegraf, Markup } from 'telegraf';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 
+const API_URL = 'https://hazdeen.github.io/PRIME-GO/';
+
 @Injectable()
 export class BotService implements OnModuleInit, OnModuleDestroy {
   private bot: Telegraf;
   private readonly logger = new Logger(BotService.name);
+  
   
   // Храним состояние: ждем ли мы пароль от пользователя
   private waitingForPassword = new Map<number, 'set' | 'reset'>();
@@ -66,12 +69,14 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       where: { telegramId: BigInt(telegramId) },
     });
 
+    
+
     if (!user) return { text: '❌ Ошибка. Напиши /start', keyboard: null };
 
     const text = `🌟 <b>PRIME GO СЕРВИСЫ</b> 🌟\n\n👤 Привет, <b>${user.firstName}</b>!\n💰 Баланс: <b>${user.balance} ₽</b>\n\n👇 Выбери нужное действие:`;
 
     const keyboard = Markup.inlineKeyboard([
-      [Markup.button.webApp('🚀 Открыть PRIME GO', 'https://hazdeen.github.io/VPN/')],
+      [Markup.button.webApp('🚀 Открыть PRIME GO', `${API_URL}`)],
       [
         Markup.button.callback('📱 Мои устройства', 'menu_devices'),
         Markup.button.callback('💰 Пополнить баланс', 'menu_topup')
@@ -191,7 +196,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
           {
             parse_mode: 'HTML',
             ...Markup.inlineKeyboard([
-              [Markup.button.webApp('🚀 Открыть приложение', 'https://hazdeen.github.io/VPN/')],
+              [Markup.button.webApp('🚀 Открыть приложение', `${API_URL}`)],
               [Markup.button.callback('🔙 Назад', 'menu_main')]
             ])
           }
@@ -266,7 +271,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         {
           parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
-            [Markup.button.webApp('🚀 Открыть приложение', 'https://hazdeen.github.io/VPN/')],
+            [Markup.button.webApp('🚀 Открыть приложение', `${API_URL}`)],
             [Markup.button.callback('🔙 Назад', 'menu_main')]
           ])
         }
@@ -294,7 +299,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
         {
           parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
-            [Markup.button.url('Отрыть панель (Web)', 'https://hazdeen.github.io/VPN/#/admin')],
+            [Markup.button.url('Отрыть панель (Web)', `${API_URL}#/admin`)],
             [Markup.button.callback('🔙 Назад', 'menu_main')]
           ])
         }
