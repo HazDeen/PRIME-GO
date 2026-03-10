@@ -3,7 +3,7 @@ import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
 
 // Убедись, что этот URL совпадает с твоим бэкендом на Railway
-const API_BASE_URL = 'https://vpn-production-702c.up.railway.app';
+const API_BASE_URL = 'https://h4zdeen.up.railway.app';
 
 export interface Device {
   id: number;
