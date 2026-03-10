@@ -397,6 +397,9 @@ body {
   padding: 2px 8px;
   border-radius: 12px;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .activeDot {
@@ -459,6 +462,7 @@ body {
   background: var(--bg-secondary);
   border-radius: 32px 32px 0 0;
   padding: 24px;
+  padding-bottom: calc(40px + env(safe-area-inset-bottom, 16px)) !important;
   border-top: 1px solid var(--border-color);
   box-shadow: var(--shadow);
   z-index: 1002;
@@ -554,16 +558,15 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 14px 4px; /* Уменьшил боковые отступы, чтобы всё влезло */
+  padding: 14px 4px;
   border-radius: 16px;
   border: 1px solid var(--border-input);
-  background: var(--bg-input); /* Легкий полупрозрачный фон */
+  background: var(--bg-input);
   color: var(--text-secondary);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
-/* 🔥 ВОТ ОНО! Жёстко фиксируем размер иконок, чтобы они не раздувались */
 .deviceTypeBtn svg {
   width: 24px !important;
   height: 24px !important;
@@ -571,7 +574,7 @@ body {
 }
 
 .deviceTypeBtn span {
-  font-size: 11px; /* Чуть мельче, чтобы длинные слова (Android) точно влезали */
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -579,7 +582,6 @@ body {
   background: var(--bg-hover);
 }
 
-/* Состояние выбранной кнопки (Белый фон, темный текст) */
 .deviceTypeBtn.active {
   border-color: var(--text-primary);
   background: var(--text-primary);
@@ -587,7 +589,7 @@ body {
 }
 
 /* -------------------------------------------- */
-/* 6. ОСТАЛЬНЫЕ УТИЛИТЫ И АДАПТИВ (не трогаем!) */
+/* 6. ОСТАЛЬНЫЕ УТИЛИТЫ И АДАПТИВ */
 /* -------------------------------------------- */
 @media (max-width: 380px) {
   .devicesCardHeader { flex-wrap: nowrap; gap: 8px; }
@@ -598,7 +600,7 @@ body {
 }
 
 /* -------------------------------------------- */
-/* СТРАНИЦА ПОПОЛНЕНИЯ (Premium Dark)           */
+/* СТРАНИЦА ПОПОЛНЕНИЯ */
 /* -------------------------------------------- */
 .topupPage {
   padding: 20px 16px;
@@ -664,7 +666,7 @@ body {
 .previewAmount {
   font-size: 32px;
   font-weight: 700;
-  color: var(--text-primary); /* Белый цвет, строго и дорого */
+  color: var(--text-primary);
   letter-spacing: -1px;
 }
 
@@ -710,8 +712,8 @@ body {
 }
 
 .amountChip.active, .customChip.active {
-  background: var(--text-primary); /* Белый фон для активного */
-  color: var(--bg-primary); /* Черный текст */
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border-color: var(--text-primary);
 }
 
@@ -726,7 +728,7 @@ body {
   font-weight: 500;
   outline: none;
   transition: all 0.2s;
-  text-align: center; /* Центрируем текст как в логине */
+  text-align: center;
 }
 
 .customAmountInput:focus {
@@ -738,7 +740,6 @@ body {
   color: var(--text-tertiary);
 }
 
-/* Информационный блок */
 .infoMessage {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -759,14 +760,13 @@ body {
   margin-top: 2px;
 }
 
-/* Главная кнопка оплаты */
 .payButton {
   width: 100%;
   padding: 18px;
   border-radius: 20px;
   border: none;
-  background: var(--text-primary); /* Белая кнопка */
-  color: var(--bg-primary); /* Черный текст */
+  background: var(--text-primary);
+  color: var(--bg-primary);
   font-size: 16px;
   font-weight: 700;
   cursor: pointer;
@@ -790,10 +790,10 @@ body {
 }
 
 /* -------------------------------------------- */
-/* 7. СТРАНИЦА ИСТОРИИ (Premium Dark)           */
+/* 7. СТРАНИЦА ИСТОРИИ */
 /* -------------------------------------------- */
 .historyPage {
-  padding: 20px 16px; /* Отступы по бокам берет контейнер */
+  padding: 20px 16px;
 }
 
 .historyHeader {
@@ -816,8 +816,8 @@ body {
   align-items: center;
   gap: 6px;
   padding: 10px 16px;
-  background: var(--text-primary); /* Белая кнопка для акцента */
-  color: var(--bg-primary); /* Черный текст */
+  background: var(--text-primary);
+  color: var(--bg-primary);
   border: none;
   border-radius: 20px;
   font-size: 15px;
@@ -912,7 +912,7 @@ body {
 }
 
 /* -------------------------------------------- */
-/* 8. СТРАНИЦА ДЕТАЛЕЙ УСТРОЙСТВА (Premium Dark)*/
+/* 8. СТРАНИЦА ДЕТАЛЕЙ УСТРОЙСТВА */
 /* -------------------------------------------- */
 .deviceDetailPage {
   padding: 20px 16px;
@@ -933,7 +933,6 @@ body {
   color: var(--text-primary);
 }
 
-/* Загрузка и ошибки */
 .loadingScreen, .errorScreen {
   display: flex;
   flex-direction: column;
@@ -963,7 +962,6 @@ body {
   cursor: pointer;
 }
 
-/* Профиль устройства */
 .deviceProfileCard {
   background: var(--bg-block);
   backdrop-filter: blur(var(--glass-blur));
@@ -1054,8 +1052,8 @@ body {
   height: 40px;
   border-radius: 14px;
   border: none;
-  background: var(--text-primary); /* Белая кнопка сохранения */
-  color: var(--bg-primary); /* Черная иконка */
+  background: var(--text-primary);
+  color: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1095,10 +1093,12 @@ body {
 
 .daysBadge {
   background: var(--accent-alpha);
-  color: var(--text-primary); /* Белый текст дней */
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* Карточка конфигурации */
 .configCard {
   background: var(--bg-block);
   backdrop-filter: blur(var(--glass-blur));
@@ -1133,14 +1133,14 @@ body {
 .configLinkCode {
   display: block;
   font-size: 13px;
-  color: var(--text-primary); /* Сделали текст ярким */
+  color: var(--text-primary);
   word-break: break-all;
   margin-bottom: 16px;
   font-family: monospace;
   line-height: 1.6;
-  padding: 16px; /* Чуть больше воздуха внутри */
-  background: var(--bg-input); /* Подстраивается под тему */
-  border: 1px solid var(--border-color); /* Добавили аккуратную рамку */
+  padding: 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
   border-radius: 16px;
 }
 
@@ -1184,9 +1184,8 @@ body {
   height: 52px;
 }
 
-/* Карточка удаления */
 .deleteCard {
-  background: rgba(239, 68, 68, 0.05); /* Легкий красный оттенок */
+  background: rgba(239, 68, 68, 0.05);
   backdrop-filter: blur(var(--glass-blur));
   border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 28px;
@@ -1203,6 +1202,7 @@ body {
 .deleteCard.confirm {
   background: rgba(239, 68, 68, 0.1);
   border-color: var(--danger);
+  animation: pulse 1.5s infinite;
 }
 
 .deleteCardIcon {
@@ -1215,6 +1215,12 @@ body {
   justify-content: center;
   color: var(--danger);
   flex-shrink: 0;
+}
+
+.deleteCard.confirm .deleteCardIcon {
+  background: rgba(239, 68, 68, 0.25);
+  color: var(--danger);
+  animation: shake 0.4s ease-in-out;
 }
 
 .deleteCardContent {
@@ -1264,32 +1270,10 @@ body {
   color: var(--text-tertiary);
 }
 
-/* Состояние подтверждения удаления */
-.deleteCard.confirm {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: var(--danger);
-  /* Добавляем пульсацию самой карточке */
-  animation: pulse 1.5s infinite;
-}
-
-/* Добавляем дрожание иконке при подтверждении */
-.deleteCard.confirm .deleteCardIcon {
-  background: rgba(239, 68, 68, 0.25);
-  color: var(--danger);
-  animation: shake 0.4s ease-in-out;
-}
-
-/* --- АНИМАЦИИ --- */
 @keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
 }
 
 @keyframes shake {
@@ -1299,111 +1283,19 @@ body {
   75% { transform: translateX(-4px); }
 }
 
-/* Анимация загрузки для Toast уведомлений */
-.toast-spinner {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-/* Скрываем стандартную кнопку закрытия Sonner, если она выбивается из дизайна */
-.premium-toast [data-close-button] {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-
-/* -------------------------------------------- */
-/* КНОПКИ В МОДАЛКЕ ДОБАВЛЕНИЯ УСТРОЙСТВА       */
-/* -------------------------------------------- */
-
-.modalActionsRow {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px; /* Хороший отступ от сетки иконок */
-  width: 100%;
-}
-
-/* Главная кнопка "Добавить" (Белая, премиальная) */
-.modalSubmitBtn {
-  flex: 2; /* Занимает больше места (2/3) */
-  padding: 16px 20px;
-  border-radius: 20px;
-  border: none;
-  background: var(--text-primary); 
-  color: var(--bg-primary); 
-  font-size: 16px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
-}
-
-.modalSubmitBtn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* Кнопка "Отмена" */
-.modalCancelBtn {
-  flex: 1; /* Занимает меньше места (1/3) */
-  padding: 16px 20px;
-  border-radius: 20px;
-  border: 1px solid var(--border-input);
-  background: var(--bg-card);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  color: var(--text-secondary);
-  font-size: 16px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.modalCancelBtn:hover {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-/* -------------------------------------------- */
-/* ФИКС ОБРЕЗАНИЯ НИЗА МОДАЛКИ                  */
-/* -------------------------------------------- */
-
-/* Добавим побольше отступа снизу, чтобы скролл всегда доходил до конца */
-.modalSheet {
-  padding-bottom: calc(40px + env(safe-area-inset-bottom, 16px)) !important;
-}
-
-/* -------------------------------------------- */
-/* ПРЯЧЕМ ВСЕ СКРОЛЛБАРЫ (Нативный внешний вид) */
-/* -------------------------------------------- */
-
-/* Для Chrome, Safari и Opera */
+/* Скрываем скроллбары */
 ::-webkit-scrollbar {
   display: none;
   width: 0;
   height: 0;
 }
 
-/* Для Firefox, IE и Edge применяем ко всем элементам */
 * {
-  -ms-overflow-style: none;  /* IE и Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-/* -------------------------------------------- */
-/* БРОНЕБОЙНЫЕ СТИЛИ ДЛЯ TOAST УВЕДОМЛЕНИЙ      */
-/* -------------------------------------------- */
+/* Toast уведомления */
 [data-sonner-toast] {
   background: var(--bg-block) !important;
   backdrop-filter: blur(var(--glass-blur)) !important;
@@ -1431,38 +1323,6 @@ body {
 
 [data-sonner-toast] [data-close-button] {
   display: none !important;
-}
-
-/* Прячем стандартную кнопку закрытия Sonner */
-[data-sonner-toast] [data-close-button] {
-  display: none !important;
-}
-
-/* Бейдж дней на главной странице */
-.deviceDaysLeft {
-  font-size: 12px;
-  color: var(--success);
-  background: var(--success-alpha);
-  padding: 4px 10px; /* Чуть увеличили паддинг для красоты */
-  border-radius: 12px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 4px; /* Отступ между иконкой и текстом */
-}
-
-/* Бейдж дней внутри страницы устройства */
-.daysBadge {
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  background: var(--accent-alpha);
-  color: var(--text-primary);
-  display: flex;
-  align-items: center;
-  gap: 6px; /* Отступ между иконкой и текстом */
-  white-space: nowrap;
 }
 
 /* Специальные фиксы для светлой темы модалок */
@@ -1509,59 +1369,18 @@ body {
   color: #64748b;
 }
 
-/* Специальные фиксы для светлой темы хаба сервисов */
-[data-theme="light"] .servicesHeader {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05); /* Четкая линия под хедером */
-  padding-bottom: 20px;
-}
-
-[data-theme="light"] .serviceCard {
-  background: #f5f5f5; /* Делаем фон карт чуть более кремовым */
-  border: 1px solid rgba(0, 0, 0, 0.08); /* Четкая тонкая серая обводка */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03); /* Легкая тень для объема */
-}
-
-/* 🔥 Улучшаем иконку для светлой темы */
-[data-theme="light"] .serviceIconWrapper {
-  border: 2px solid rgba(0, 0, 0, 0.1); /* Усиливаем обводку иконки */
-}
-
-/* 🚀 Оформление "в разработке" */
-[data-theme="light"] .statusBadge.inDevelopment {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--accent-alpha); /* Полупрозрачный фиолетовый */
-  color: var(--accent); /* Четкий фиолетовый */
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 700;
-  margin-left: 10px;
-  border: 1px solid var(--border-accent);
-}
-
-/* 🌟 Анимированная иконка (Пульсация) */
-[data-theme="light"] .inDevelopment svg {
-  animation: developingPulse 1.5s infinite;
-}
-
-@keyframes developingPulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  50% { transform: scale(1.1); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.8; }
-}
-
-/* -------------------------------------------- */
-/* СТРАНИЦА PRIME GO SERVICES                   */
-/* -------------------------------------------- */
-
+/* СТРАНИЦА PRIME GO SERVICES */
 .servicesHeader {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 40px;
   position: relative;
+}
+
+[data-theme="light"] .servicesHeader {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding-bottom: 20px;
 }
 
 .logoGroup {
@@ -1586,7 +1405,6 @@ body {
   margin-top: 4px;
 }
 
-/* Круглая кнопка профиля */
 .profileMenuContainer {
   position: relative;
 }
@@ -1612,7 +1430,6 @@ body {
   border-color: var(--accent);
 }
 
-/* Выпадающее меню профиля */
 .menuBackdrop {
   position: fixed;
   inset: 0;
@@ -1685,7 +1502,6 @@ body {
 .dropdownItem.logout { color: var(--danger); }
 .dropdownItem.logout:hover { background: var(--danger-alpha); }
 
-/* Сетка сервисов */
 .servicesGrid {
   display: flex;
   flex-direction: column;
@@ -1707,6 +1523,12 @@ body {
   overflow: hidden;
 }
 
+[data-theme="light"] .serviceCard {
+  background: #f5f5f5;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
 .serviceCard::before {
   content: '';
   position: absolute;
@@ -1725,10 +1547,14 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bg-primary); /* Иконка цвета фона */
-  background: var(--text-primary); /* Белый/Темный фон иконки */
+  color: var(--bg-primary);
+  background: var(--text-primary);
   flex-shrink: 0;
   box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+[data-theme="light"] .serviceIconWrapper {
+  border: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 .serviceIconWrapper.ai {
@@ -1762,47 +1588,345 @@ body {
   color: var(--text-primary);
 }
 
+[data-theme="light"] .statusBadge.inDevelopment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-alpha);
+  color: var(--accent);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-left: 10px;
+  border: 1px solid var(--border-accent);
+}
+
+[data-theme="light"] .inDevelopment svg {
+  animation: developingPulse 1.5s infinite;
+}
+
+@keyframes developingPulse {
+  0% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.8; }
+}
+
 /* -------------------------------------------- */
-/* 9. ДЕСКТОПНАЯ ВЕРСИЯ (Парящий интерфейс)     */
+/* 9. ДЕСКТОПНАЯ ВЕРСИЯ */
 /* -------------------------------------------- */
 @media (min-width: 768px) {
-  /* Делаем из контейнера красивый макет телефона по центру экрана */
   .container {
-    margin: 5vh auto; /* Отступ сверху и снизу */
+    margin: 5vh auto;
     min-height: auto;
-    height: 85vh; /* Ограничиваем высоту */
+    height: 85vh;
     max-height: 850px;
-    border-radius: 40px; /* Скругляем углы как у смартфона */
+    border-radius: 40px;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    box-shadow: 0 40px 80px rgba(0,0,0,0.5); /* Глубокая тень */
-    overflow-y: auto; /* Включаем внутренний скролл */
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5);
+    overflow-y: auto;
     position: relative;
   }
 
-  /* Смягчаем тень для светлой темы */
   [data-theme="light"] .container {
     box-shadow: 0 40px 80px rgba(0,0,0,0.1);
   }
 
-  /* Прячем ползунок скролла внутри нашего "телефона" */
   .container::-webkit-scrollbar { display: none; }
   .container { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* * УМНЫЕ МОДАЛКИ:
-   * На телефоне модалка выезжает снизу (шторка).
-   * На компьютере мы делаем её классическим окном по центру.
-   */
   .modalOverlay {
-    align-items: center !important; /* Отменяем прилипание к низу */
+    align-items: center !important;
     padding: 20px;
   }
 
   .modalSheet {
     border-radius: 32px !important;
-    border-bottom: 1px solid var(--border-color) !important; /* Возвращаем нижнюю рамку */
+    border-bottom: 1px solid var(--border-color) !important;
     max-height: 80vh;
     margin: auto;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 1);
+  }
+}
+
+/* ============================================ */
+/* 10. ПОДДЕРЖКА И ЧАТ (USER)                    */
+/* ============================================ */
+.chatContainer {
+  display: flex; 
+  flex-direction: column; 
+  height: 100dvh; 
+  padding: 20px 16px; 
+  overflow: hidden; 
+  position: relative;
+}
+
+.chatHeader {
+  flex-shrink: 0; 
+  margin-bottom: 16px; 
+  padding-bottom: 16px; 
+  border-bottom: 1px solid var(--border-color); 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between;
+}
+
+.chatHeaderLeft {
+  display: flex; 
+  align-items: center; 
+  gap: 16px;
+}
+
+.chatTitleInfo {
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px;
+}
+
+.chatTitle {
+  font-size: 20px; 
+  margin: 0; 
+  color: var(--text-primary);
+}
+
+.chatStatus {
+  font-size: 13px; 
+  font-weight: 600;
+}
+.chatStatus.closed { color: var(--danger); }
+.chatStatus.open { color: var(--success); }
+
+.chatMessagesArea {
+  flex: 1; 
+  overflow-y: auto; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
+  padding-bottom: 10px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.chatMessagesArea::-webkit-scrollbar { display: none; }
+
+.chatSystemMessage {
+  text-align: center; 
+  margin: 10px 0;
+}
+
+.chatSystemMessageInner {
+  display: inline-flex; 
+  align-items: center; 
+  gap: 8px; 
+  background: var(--bg-card); 
+  padding: 6px 12px; 
+  border-radius: 20px; 
+  font-size: 11px; 
+  color: var(--text-secondary); 
+  border: 1px solid var(--border-color);
+}
+
+.chatMessageWrapper {
+  display: flex; 
+  align-items: flex-end; 
+  gap: 10px;
+}
+.chatMessageWrapper.reverse {
+  flex-direction: row-reverse;
+}
+
+.chatAvatar {
+  width: 32px; 
+  height: 32px; 
+  border-radius: 12px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  flex-shrink: 0; 
+  background: transparent; 
+  border: none;
+}
+.chatAvatar.admin {
+  background: var(--bg-card); 
+  border: 1px solid var(--border-color);
+}
+
+.chatBubble {
+  max-width: 80%; 
+  padding: 12px 16px; 
+  border-radius: 20px; 
+  font-size: 14px; 
+  line-height: 1.4; 
+  word-break: break-word;
+}
+
+.chatBubble.userStyle {
+  background: var(--text-primary); 
+  color: var(--bg-primary); 
+  border: none; 
+  border-bottom-right-radius: 4px; 
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.chatBubble.adminStyle {
+  background: var(--bg-block); 
+  color: var(--text-primary); 
+  border: 1px solid var(--border-color); 
+  backdrop-filter: blur(24px); 
+  -webkit-backdrop-filter: blur(24px); 
+  border-bottom-left-radius: 4px; 
+  box-shadow: var(--shadow-sm);
+}
+
+.chatTime {
+  font-size: 10px; 
+  margin-top: 4px; 
+  opacity: 0.6;
+}
+.chatTime.right { text-align: right; color: rgba(128,128,128,0.8); }
+.chatTime.left { text-align: left; color: var(--text-tertiary); }
+
+.chatInputArea {
+  flex-shrink: 0; 
+  padding-top: 12px; 
+  padding-bottom: env(safe-area-inset-bottom, 0px); 
+  border-top: 1px solid var(--border-color); 
+  background: transparent;
+}
+
+.chatInputForm {
+  display: flex; 
+  gap: 10px; 
+  align-items: center;
+}
+
+.chatInputField {
+  margin: 0 !important; 
+  flex: 1; 
+  border-radius: 24px !important; 
+  padding: 16px 20px !important; 
+  text-align: left !important;
+}
+
+.chatSendBtn {
+  width: 48px; 
+  height: 48px; 
+  border-radius: 50%; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  border: none; 
+  transition: all 0.2s ease; 
+  flex-shrink: 0;
+}
+.chatSendBtn.active {
+  background: var(--text-primary); 
+  color: var(--bg-primary); 
+  cursor: pointer;
+}
+.chatSendBtn.disabled {
+  background: var(--bg-card); 
+  color: var(--text-secondary); 
+  border: 1px solid var(--border-color); 
+  cursor: default;
+}
+
+.chatClosedMessage {
+  text-align: center; 
+  padding: 16px; 
+  color: var(--text-tertiary); 
+  background: var(--bg-card); 
+  border-radius: 16px;
+}
+
+.customDropdownContainer {
+  position: relative; 
+  margin-bottom: 16px; 
+  z-index: 50;
+}
+
+.customDropdownHeader {
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between; 
+  cursor: pointer; 
+  margin: 0 !important; 
+  user-select: none;
+}
+
+.customDropdownHeaderContent {
+  display: flex; 
+  align-items: center; 
+  gap: 12px;
+}
+
+.customDropdownIcon {
+  color: var(--text-secondary); 
+  display: flex;
+}
+
+.customDropdownList {
+  position: absolute; 
+  top: 100%; 
+  left: 0; 
+  right: 0; 
+  margin-top: 8px; 
+  padding: 8px; 
+  background: var(--bg-block); 
+  backdrop-filter: blur(24px); 
+  -webkit-backdrop-filter: blur(24px); 
+  border: 1px solid var(--border-color); 
+  border-radius: 20px; 
+  box-shadow: var(--shadow); 
+  z-index: 20;
+}
+
+.customDropdownItem {
+  display: flex; 
+  align-items: center; 
+  gap: 12px; 
+  padding: 14px 16px; 
+  border-radius: 14px; 
+  cursor: pointer; 
+  transition: all 0.2s; 
+  font-weight: 500; 
+  color: var(--text-secondary);
+}
+
+.customDropdownItem:hover, .customDropdownItem.active {
+  background: var(--bg-hover); 
+  color: var(--text-primary); 
+  font-weight: 600;
+}
+
+.supportLoadingScreen {
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  min-height: 200px;
+}
+
+.supportEmptyState {
+  display: flex; 
+  flex-direction: column; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 8px; 
+  padding: 32px; 
+  background: var(--bg-card); 
+  border: 1px solid var(--border-color); 
+  border-radius: 28px; 
+  text-align: center;
+}
+
+.modalActionsZIndex {
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .chatContainer {
+    height: 85vh; 
+    max-height: 850px;
   }
 }

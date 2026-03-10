@@ -137,7 +137,7 @@
   cursor: pointer;
 }
 
-/* Карточки */
+/* Карточка устройств */
 .customCard {
   background: var(--bg-block);
   backdrop-filter: blur(24px);
@@ -540,6 +540,270 @@ input:checked + .slider:before {
   box-shadow: var(--shadow);
   z-index: 101;
   transform-origin: top right; /* Анимация будет открываться от кнопки */
+}
+
+/* ============================================ */
+/* 11. АДМИНКА ТИКЕТОВ И ЧАТА                   */
+/* ============================================ */
+
+/* Контейнер для списков и чатов админки */
+.adminTicketsContainer {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  overflow: hidden;
+  position: relative;
+}
+
+@media (min-width: 768px) {
+  .adminTicketsContainer {
+    height: 85vh;
+    max-height: 850px;
+  }
+}
+@media (max-width: 767px) {
+  .adminTicketsContainer {
+    height: 100dvh;
+    max-height: none;
+  }
+}
+
+/* Панель фильтров */
+.adminFiltersPanel {
+  background: var(--bg-block);
+  padding: 16px;
+  border-radius: 24px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border-color);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.adminFiltersTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.adminSearchForm {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.adminSearchWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.adminSearchIcon {
+  position: absolute;
+  left: 14px;
+  top: 14px;
+  color: var(--text-tertiary);
+}
+
+.adminSearchField {
+  margin: 0 !important;
+  padding-left: 40px !important;
+  border-radius: 16px !important;
+  width: 100%;
+}
+
+.adminSearchBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.adminSearchBtn:hover { transform: scale(1.05); }
+.adminSearchBtn:active { transform: scale(0.95); }
+
+/* Кастомные Dropdown в админке */
+.adminDropdownsRow {
+  display: flex;
+  gap: 10px;
+}
+
+.adminDropdownWrapper {
+  position: relative;
+  flex: 1;
+}
+
+.adminDropdownTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 !important;
+  border-radius: 16px !important;
+  padding: 12px 14px !important;
+  cursor: pointer;
+  font-size: 14px;
+  user-select: none;
+}
+
+.adminDropdownList {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--bg-block);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  z-index: 30;
+}
+
+.adminDropdownItem {
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+.adminDropdownItem.active,
+.adminDropdownItem:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Список тикетов в админке */
+.adminTicketsList {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding-bottom: 20px;
+}
+.adminTicketsList::-webkit-scrollbar {
+  display: none;
+}
+
+/* Кнопка закрытия тикета в шапке */
+.adminCloseTicketBtn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 16px;
+  background: var(--success-alpha);
+  color: var(--success);
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.adminCloseTicketBtn:hover { transform: scale(1.05); }
+.adminCloseTicketBtn:active { transform: scale(0.95); }
+
+/* Модалка подтверждения закрытия тикета */
+.adminConfirmModalOverlay {
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 1000 !important;
+  pointer-events: none;
+}
+
+.adminConfirmBackdrop {
+  pointer-events: auto;
+  backdrop-filter: blur(30px) !important;
+  -webkit-backdrop-filter: blur(30px) !important;
+}
+
+.adminConfirmCard {
+  pointer-events: auto;
+  max-width: 340px !important;
+  padding: 28px !important;
+  display: flex !important;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-color) !important;
+  position: relative;
+  z-index: 1002 !important;
+}
+
+.adminConfirmIconBox {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: var(--warning-alpha);
+  color: var(--warning);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.adminConfirmTitle {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+  color: var(--text-primary);
+}
+
+.adminConfirmText {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0 0 28px 0;
+  line-height: 1.5;
+}
+
+.adminConfirmActions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.adminConfirmCancel {
+  flex: 1;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-input);
+  color: var(--text-secondary);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.adminConfirmCancel:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.adminConfirmSubmit {
+  flex: 1;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--success);
+  border: none;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px var(--success-alpha);
+  transition: all 0.2s;
+}
+.adminConfirmSubmit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px var(--success-alpha);
 }
 
 /* -------------------------------------------- */

@@ -12,8 +12,13 @@ import History from "./pages/History";
 import DeviceDetail from "./pages/DeviceDetail";
 import Admin from "./pages/Admin";
 import Services from "./pages/Services";
+import Support from './pages/Support';
+import TicketChat from './pages/TicketChat';
+import AdminTickets from './pages/AdminTickets';
+import AdminTicketChat from './pages/AdminTicketChat';
 import "./styles/app.css";
 import "./styles/admin.css";
+import "./styles/login.css";
 import { client } from "./api/client";
 
 function App() {
@@ -62,6 +67,10 @@ function App() {
           <Route path="/history" element={<History />} />
           <Route path="/device/:id" element={<DeviceDetail />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/support/:id" element={<TicketChat />} />
+          <Route path="/admin/tickets" element={<AdminTickets />} />
+          <Route path="/admin/tickets/:id" element={<AdminTicketChat />} />
         </Routes>
       </AuthProvider>
     </ThemeProvider>

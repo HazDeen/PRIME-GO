@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { client } from '../api/client';
 import { toast } from 'sonner';
+
 import { 
-  Shield, Sparkles, User, LogOut, 
+  Headset, Shield, Sparkles, User, LogOut, 
   Moon, Sun, ShieldAlert, ChevronRight,
   X, Copy, Key, Bell
 } from 'lucide-react';
@@ -60,7 +61,16 @@ export default function Services() {
           <span className="primeGoSubtitle">СЕРВИСЫ</span>
         </div>
 
-        <div className="profileMenuContainer">
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px' }}>
+          <motion.button 
+            className="profileCircleBtn" // Используем тот же класс, что и у профиля, чтобы они выглядели одинаково
+            onClick={() => navigate('/support')}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            title="Поддержка"
+          >
+            <Headset size={20} />
+          </motion.button>
           <motion.button 
             className="profileCircleBtn"
             onClick={() => setIsMenuOpen(!isMenuOpen)}

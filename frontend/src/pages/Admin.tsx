@@ -7,6 +7,7 @@ import {
   Trash2, Copy, ChevronDown, LogOut, Monitor, 
   Smartphone, Edit2, RefreshCw 
 } from 'lucide-react';
+import { MessageSquare, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin.css';
 import AdminAddDeviceModal from '../components/AdminAddDeviceModal';
@@ -430,6 +431,30 @@ const Admin: React.FC = () => {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Раздел Поддержки */}
+      <motion.div 
+        className="deviceCard"
+        onClick={() => navigate('/admin/tickets')}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        style={{ marginTop: '16px', border: '1px solid var(--border-accent)' }}
+      >
+        <div className="deviceIcon" style={{ background: 'var(--warning-alpha)', color: 'var(--warning)' }}>
+          <MessageSquare size={24} />
+        </div>
+        <div className="deviceInfo">
+          <div className="deviceNameWrapper">
+            <span className="deviceName" style={{ fontSize: '18px' }}>Поддержка (Тикеты)</span>
+          </div>
+          <div className="deviceDate" style={{ color: 'var(--text-secondary)' }}>
+            Ответы на вопросы пользователей
+          </div>
+        </div>
+        <ChevronRight className="deviceChevron" size={20} />
+      </motion.div>
 
       {/* Центральные модалки подтверждения */}
       <AnimatePresence>
