@@ -7,6 +7,9 @@ import {
   Check, AlertCircle, AlertTriangle, Copy, RefreshCw, X, Timer 
 } from 'lucide-react';
 
+// 👇 ВСТАВЬ СЮДА АДРЕС ТВОЕГО НОВОГО БЭКЕНДА (БЕЗ СЛЕША В КОНЦЕ)
+const API_URL = 'https://h4zdeen.up.railway.app';
+
 export default function DeviceDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -40,7 +43,8 @@ export default function DeviceDetail() {
       }
       const user = JSON.parse(userStr);
 
-      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/user/${user.telegramId}`, {
+      // ✅ ЗАМЕНИЛИ ССЫЛКУ
+      const response = await fetch(`${API_URL}/devices/user/${user.telegramId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
@@ -84,7 +88,8 @@ export default function DeviceDetail() {
     toast.loading('Генерируем новую ссылку...', { id: 'replace' });
     
     try {
-      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}/replace`, {
+      // ✅ ЗАМЕНИЛИ ССЫЛКУ
+      const response = await fetch(`${API_URL}/devices/${deviceId}/replace`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
@@ -103,7 +108,8 @@ export default function DeviceDetail() {
     if (!deviceId || !deviceName.trim()) return;
     
     try {
-      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}/name`, {
+      // ✅ ЗАМЕНИЛИ ССЫЛКУ
+      const response = await fetch(`${API_URL}/devices/${deviceId}/name`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -140,7 +146,8 @@ export default function DeviceDetail() {
     toast.loading('Удаляем устройство...', { id: 'delete-device' });
     
     try {
-      const response = await fetch(`https://vpn-production-702c.up.railway.app/devices/${deviceId}`, {
+      // ✅ ЗАМЕНИЛИ ССЫЛКУ
+      const response = await fetch(`${API_URL}/devices/${deviceId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

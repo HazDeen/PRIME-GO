@@ -14,5 +14,5 @@ export default defineConfig({
             include: '**/*.svg',
         })
     ],
-    base: '/VPN/',
+    base: '/PRIME-GO/',
 });
