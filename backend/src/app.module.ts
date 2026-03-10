@@ -11,6 +11,7 @@ import { BotModule } from './bot/bot.module';
 import { AdminModule } from './admin/admin.module';
 import { XuiModule } from './xui/xui.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { PaymentsModule } from './payments/payments.module'; //
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { TicketsModule } from './tickets/tickets.module';
     AdminModule,
     XuiModule,
     TicketsModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

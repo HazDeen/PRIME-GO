@@ -23,6 +23,7 @@ model User {
   devices     Device[]
   transactions Transaction[]
   tickets Ticket[]
+  payments Payment[]
 
   @@map("users")
 }
@@ -91,3 +92,14 @@ model TicketMessage {
   createdAt   DateTime @default(now())
 }
 
+model Payment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  amount    Float
+  provider  String
+  orderId   String   @unique // Уникальный номер заказа (генерируем мы)
+  status    String   @default("PENDING") // PENDING (ожидает), SUCCESS (успешно)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
