@@ -31,17 +31,29 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log('🚀 Бот запускается...');
 
+      // 1. Сначала полностью очищаем состояние вебхуков и старых запросов
+      await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+      this.logger.log('🧹 Старые сессии и вебхуки очищены');
+
       const botInfo = await this.bot.telegram.getMe();
       this.logger.log(`✅ Бот авторизован: @${botInfo.username}`);
-
-      await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
       
       this.registerCommands();
-      this.registerActions(); // Регистрируем обработчики кнопок
+      this.registerActions();
 
-      this.bot.launch({ dropPendingUpdates: true })
+      // 2. Запускаем с небольшой задержкой (опционально), чтобы Railway успел убить старый контейнер
+      this.bot.launch({ 
+        dropPendingUpdates: true,
+        allowedUpdates: ['message', 'callback_query'] 
+      })
         .then(() => this.logger.log('✅ Бот успешно запущен!'))
-        .catch((err) => this.logger.error(`❌ Ошибка запуска бота: ${err.message}`));
+        .catch((err) => {
+          if (err.response?.error_code === 409) {
+            this.logger.error('❌ Ошибка 409: Конфликт токена. Попробуйте перезапустить билд в Railway через 10 секунд.');
+          } else {
+            this.logger.error(`❌ Ошибка запуска бота: ${err.message}`);
+          }
+        });
       
     } catch (error) {
       this.logger.error(`❌ Критическая ошибка: ${(error as Error).message}`);
