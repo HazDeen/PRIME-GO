@@ -7,9 +7,9 @@ export class TicketsService {
 
   // 🔥 Вспомогательная функция для отправки сообщений в ТГ
   private async sendTelegramMessage(chatId: string | bigint, text: string) {
-    const token = process.env.TELEGRAM_BOT_TOKEN;
+    const token = process.env.BOT_TOKEN;
     if (!token) {
-      console.warn('TELEGRAM_BOT_TOKEN не задан в .env!');
+      console.warn('BOT_TOKEN не задан в .env!');
       return;
     }
     
