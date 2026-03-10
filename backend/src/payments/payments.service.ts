@@ -28,7 +28,7 @@ export class PaymentsService {
     if (!token) throw new Error('В .env не указан CRYPTOBOT_TOKEN');
 
     // Запрос к CryptoBot API
-    const response = await fetch('https://pay.crypt.bot/api/createInvoice', {
+    const response = await fetch('https://testnet-pay.crypt.bot/api/createInvoice', {
       method: 'POST',
       headers: {
         'Crypto-Pay-API-Token': token,
