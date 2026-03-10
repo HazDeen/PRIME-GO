@@ -1,12 +1,13 @@
 import { Controller, Get, Put, Post, Delete, Param, Body, Headers, UnauthorizedException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { PrismaClient } from '@prisma/client';
+import { BotService } from '../bot/bot.service';
 
 const prisma = new PrismaClient();
 
 @Controller('admin')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(private readonly adminService: AdminService, private readonly botService: BotService) {}
 
   // 🔥 Вспомогательная функция для отправки сообщений в ТГ
   private async sendTelegramMessage(chatId: string | number | bigint, text: string) {
@@ -158,12 +159,9 @@ export class AdminController {
 
     let settings = await prisma.settings.findFirst();
     
-    // Проверяем прошлые состояния
     const wasMaintenanceOff = settings ? !settings.maintenanceMode : true;
-    
-    // Флаги изменений
     const isTurningMaintenanceOn = body.maintenance === true && wasMaintenanceOff;
-    const isTurningMaintenanceOff = body.maintenance === false && !wasMaintenanceOff; // 👈 Новый флаг окончания работ
+    const isTurningMaintenanceOff = body.maintenance === false && !wasMaintenanceOff;
 
     if (settings) {
       settings = await prisma.settings.update({
@@ -186,26 +184,25 @@ export class AdminController {
       });
     }
 
-    // 🔥 РАССЫЛКА ПОЛЬЗОВАТЕЛЯМ 🔥
+    // 🔥 РАССЫЛКА ПОЛЬЗОВАТЕЛЯМ ЧЕРЕЗ BOT SERVICE 🔥
     if (isTurningMaintenanceOn) {
       try {
         const users = await prisma.user.findMany();
-        const messageText = `⚙️ <b>Технические работы</b>\n\nВ данный момент на серверах VPN проводятся технические работы для улучшения качества связи.\n\nНекоторые функции приложения могут быть временно недоступны. Приносим извинения за временные неудобства!`;
+        const messageText = `⚙️ <b>Технические работы</b>\n\nВ данный момент на серверах VPN проводятся технические работы.\n\nНекоторые функции могут быть временно недоступны. Приносим извинения за временные неудобства!`;
         
         users.forEach(user => {
-          this.sendTelegramMessage(user.telegramId, messageText);
+          this.botService.sendNotification(user.telegramId, messageText);
         });
       } catch (error) {
         console.error('Ошибка при рассылке о начале тех. работ:', error);
       }
     } else if (isTurningMaintenanceOff) {
-      // 👈 НОВАЯ ЛОГИКА: Рассылка об окончании
       try {
         const users = await prisma.user.findMany();
-        const messageText = `✅ <b>Технические работы завершены!</b>\n\nВсе сервисы VPN снова работают в штатном режиме.\n\nСпасибо за ваше терпение! Приятного пользования.`;
+        const messageText = `✅ <b>Технические работы завершены!</b>\n\nВсе сервисы VPN снова работают в штатном режиме.\n\nСпасибо за ваше терпение!`;
         
         users.forEach(user => {
-          this.sendTelegramMessage(user.telegramId, messageText);
+          this.botService.sendNotification(user.telegramId, messageText);
         });
       } catch (error) {
         console.error('Ошибка при рассылке об окончании тех. работ:', error);
@@ -218,16 +215,5 @@ export class AdminController {
       admins: settings.blockAdmins,
       maintenance: settings.maintenanceMode 
     };
-  }
-
-  @Get('status')
-  async getSystemStatus() {
-    let settings = await prisma.settings.findFirst();
-    if (!settings) {
-      settings = await prisma.settings.create({
-        data: { blockAll: false, blockUsers: false, blockAdmins: false, maintenanceMode: false }
-      });
-    }
-    return { maintenance: settings.maintenanceMode };
   }
 }

@@ -51,11 +51,27 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
   // ==========================================
   // ПУБЛИЧНЫЙ МЕТОД ДЛЯ ОТПРАВКИ УВЕДОМЛЕНИЙ
   // ==========================================
+  // ==========================================
+  // ПУБЛИЧНЫЙ МЕТОД ДЛЯ ОТПРАВКИ УВЕДОМЛЕНИЙ
+  // ==========================================
   public async sendNotification(telegramId: number | bigint | string, message: string) {
     try {
-      // Здесь можно добавить проверку: если user.notificationsEnabled === false, то делать return
+      // 1. Ищем пользователя в базе по его telegramId
+      // (Оборачиваем в BigInt, так как судя по прошлым файлам, ID хранится в BigInt)
+      const user = await this.prisma.user.findFirst({
+        where: { telegramId: BigInt(telegramId) } 
+      });
+
+      // 2. ПРОВЕРКА: Если юзер не найден ИЛИ у него выключены уведомления — прерываем функцию
+      if (user && user.notificationsEnabled === false) {
+        this.logger.log(`Отправка пропущена: пользователь ${telegramId} отключил уведомления.`);
+        return; // Выходим из функции, сообщение не отправляется
+      }
+
+      // 3. Если всё ок, отправляем сообщение
       await this.bot.telegram.sendMessage(telegramId.toString(), message, { parse_mode: 'HTML' });
       this.logger.log(`Уведомление отправлено пользователю ${telegramId}`);
+      
     } catch (error) {
       this.logger.error(`Ошибка отправки уведомления ${telegramId}: ${(error as Error).message}`);
     }

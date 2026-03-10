@@ -1,9 +1,12 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service'; 
+import { BotService } from '../bot/bot.service';
 
 @Injectable()
 export class TicketsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private botService: BotService) {}
 
   // 🔥 Вспомогательная функция для отправки сообщений в ТГ
   private async sendTelegramMessage(chatId: string | bigint, text: string) {
@@ -35,27 +38,20 @@ export class TicketsService {
         userId: BigInt(data.userId),
         topic: data.topic,
         messages: {
-          create: {
-            text: data.text,
-            isAdmin: false,
-          },
+          create: { text: data.text, isAdmin: false },
         },
       },
       include: { messages: true },
     });
 
-    // 🔥 РАССЫЛКА АДМИНАМ 🔥
+    // 🔥 РАССЫЛКА АДМИНАМ ЧЕРЕЗ BOT SERVICE 🔥
     try {
-      // Ищем всех админов в базе
-      const admins = await this.prisma.user.findMany({ 
-        where: { isAdmin: true } 
-      });
+      const admins = await this.prisma.user.findMany({ where: { isAdmin: true } });
+      const messageText = `🚨 <b>Новый тикет!</b>\n\n<b>От:</b> <code>${data.userId}</code>\n<b>Тема:</b> ${data.topic}\n<b>Суть:</b> ${data.text}\n\n<a href="https://hazdeen.github.io/VPN/#/admin/tickets">Перейти в панель</a>`;
 
-      const messageText = `🚨 <b>Новый тикет!</b>\n\n<b>От:</b> <code>${data.userId}</code>\n<b>Тема:</b> ${data.topic}\n<b>Суть:</b> ${data.text}\n\n<a href="https://hazdeen.github.io/VPN/#/admin/tickets">Перейти в панель тикетов</a>`;
-
-      // Отправляем каждому админу сообщение
       for (const admin of admins) {
-        await this.sendTelegramMessage(admin.telegramId, messageText);
+        // Вызываем наш централизованный метод!
+        await this.botService.sendNotification(admin.telegramId, messageText);
       }
     } catch (error) {
       console.error('Ошибка при рассылке админам о тикете:', error);
