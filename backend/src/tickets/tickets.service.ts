@@ -1,5 +1,5 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service'; // Проверь правильность пути до твоего PrismaService
+import { Injectable, BadRequestException } from '@nestjs/common'; // 👈 Добавили BadRequestException
+import { PrismaService } from '../prisma/prisma.service'; 
 
 @Injectable()
 export class TicketsService {
@@ -49,6 +49,23 @@ export class TicketsService {
 
   // 4. Отправить новое сообщение в тикет
   async addMessage(ticketId: number, text: string, isAdmin: boolean) {
+    
+    // 🔥 1. ДОБАВЛЕНА ЗАЩИТА: Сначала находим тикет и проверяем его статус
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: { status: true } // Оптимизация: тянем из базы только статус
+    });
+
+    if (!ticket) {
+      throw new BadRequestException('Тикет не найден');
+    }
+
+    if (ticket.status === 'CLOSED') {
+      // NestJS сам поймает эту ошибку и вернет клиенту статус 400 (Bad Request)
+      throw new BadRequestException('Нельзя писать в закрытый тикет');
+    }
+
+    // 2. Если всё ок, обновляем тикет и добавляем сообщение
     return this.prisma.ticket.update({
       where: { id: ticketId },
       data: {
