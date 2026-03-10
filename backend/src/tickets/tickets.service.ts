@@ -79,10 +79,15 @@ export class TicketsService {
       where: { id },
       include: {
         messages: { orderBy: { createdAt: 'asc' } },
+        user: true,
       },
     });
     if (!ticket) return null;
-    return { ...ticket, userId: ticket.userId.toString() };
+    return { 
+      ...ticket, 
+      userId: ticket.userId.toString(),
+      username: ticket.user?.username || `@id${ticket.userId.toString()}` 
+    };
   }
 
   // 4. Отправить новое сообщение в тикет
@@ -123,8 +128,14 @@ export class TicketsService {
     const tickets = await this.prisma.ticket.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      include: { user: true } // 👈 Подтягиваем данные пользователя
     });
 
-    return tickets.map(t => ({ ...t, userId: t.userId.toString() }));
+    return tickets.map(t => ({ 
+      ...t, 
+      userId: t.userId.toString(),
+      // 👈 Добавляем никнейм для списка
+      username: t.user?.username || `@id${t.userId.toString()}`
+    }));
   }
 }
