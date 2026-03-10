@@ -318,7 +318,6 @@
 
 .modalInput:focus {
   border-color: var(--text-primary);
-  background: rgba(0,0,0,0.4);
 }
 
 .modalBtnGroup {
@@ -338,6 +337,65 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* -------------------------------------------- */
+/* КНОПКИ В МОДАЛКЕ ДОБАВЛЕНИЯ УСТРОЙСТВА       */
+/* -------------------------------------------- */
+
+.modalActionsRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px; /* Хороший отступ от сетки иконок */
+  width: 100%;
+}
+
+/* Главная кнопка "Добавить" (Белая, премиальная) */
+.modalSubmitBtn {
+  flex: 2; /* Занимает больше места (2/3) */
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: none;
+  background: var(--text-primary); 
+  color: var(--bg-primary); 
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
+}
+
+.modalSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Кнопка "Отмена" */
+.modalCancelBtn {
+  flex: 1; /* Занимает меньше места (1/3) */
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCancelBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 .modalBtn.primary { background: var(--text-primary); color: var(--bg-primary); } /* Белая кнопка */

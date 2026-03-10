@@ -3,7 +3,8 @@ import { api } from '../api/client';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogIn, Eye, EyeOff, Lock, User, ShieldCheck, Moon, Sun } from 'lucide-react';
-import { useTheme } from '../context/ThemeContext'; // Подключаем хук темы
+import { useTheme } from '../context/ThemeContext';
+import { useNavigate } from 'react-router-dom'; // 👈 Добавили хук
 import '../styles/login.css'; 
 
 export default function Login() {
@@ -12,7 +13,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { theme, toggleTheme } = useTheme(); // Достаем текущую тему и функцию переключения
+  
+  const navigate = useNavigate(); // 👈 Инициализируем навигацию
+  const { theme, toggleTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,9 +34,10 @@ export default function Login() {
       toast.success(`Добро пожаловать, ${response.user.firstName || username}!`);
       setIsSuccess(true); 
       
+      // 🔥 Теперь используем правильный редирект через useNavigate
       setTimeout(() => {
-        window.location.href = '/VPN/';
-      }, 3000);
+        navigate('/'); // 👈 Просто указываем роут, basename подставится сам
+      }, 2000); // Сократил до 2 сек, чтобы юзер меньше ждал
       
     } catch (error: any) {
       if (error.message?.includes('Пароль не установлен')) {
@@ -49,7 +53,6 @@ export default function Login() {
 
   return (
     <div className="loginPage">
-      {/* Кнопка смены темы (абсолютно позиционирована) */}
       <motion.button 
         className="loginThemeBtn"
         onClick={toggleTheme}
@@ -79,7 +82,7 @@ export default function Login() {
                   <div className="loginIconWrapper">
                     <ShieldCheck size={32} className="loginHeaderIcon" />
                   </div>
-                  <h1 className="loginTitle">VPN Mini App</h1>
+                  <h1 className="loginTitle">PRIME GO Services</h1>
                   <p className="loginDescription">
                     Введите ваш Telegram username и пароль
                   </p>

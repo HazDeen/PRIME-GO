@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft } from 'lucide-react'; // 🔥 Новые красивые иконки
+import { ChevronLeft } from 'lucide-react';
 import { useBalance } from '../hooks/useBalance';
 import { useDevices } from '../hooks/useDevices';
 import { useAuth } from '../context/AuthContext';
@@ -21,10 +21,9 @@ export default function Home() {
   const handleAddDevice = async (name: string, customName: string, type: DeviceType) => {
     try {
       await addDevice(name, customName, type); 
-      setShowAddModal(false);
-      refetchBalance();
+      refetchBalance(); // Обновляем баланс только при успехе
     } catch (error: any) {
-      // Ошибка обработается внутри модалки
+      throw error; 
     }
   };
 
@@ -45,9 +44,8 @@ export default function Home() {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       <div className="homeHeader" style={{ justifyContent: 'flex-start', gap: '16px' }}>
-        {/* Кнопка НАЗАД в главное меню */}
         <motion.button 
-          className="themeButton" /* Используем старый класс для красивого стеклянного квадратика */
+          className="themeButton" 
           onClick={() => navigate('/')} 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -58,7 +56,6 @@ export default function Home() {
         <h1 className="screenTitle">Prime VPN</h1>
       </div>
       
-      {/* Карточки внутри автоматически получат стиль из app.css */}
       <BalanceCard />
       
       <ActionButtons />

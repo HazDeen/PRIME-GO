@@ -26,8 +26,6 @@ export default function AdminTickets() {
   const navigate = useNavigate();
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
-  const isDesktop = window.innerWidth >= 768;
 
   // Фильтры
   const [filterStatus, setFilterStatus] = useState(STATUS_OPTIONS[0]);
@@ -80,11 +78,7 @@ export default function AdminTickets() {
   };
 
   return (
-    <div className="container" style={{ 
-      display: 'flex', flexDirection: 'column', 
-      height: isDesktop ? '85vh' : '100dvh', maxHeight: isDesktop ? '850px' : 'none', 
-      padding: '20px 16px', overflow: 'hidden' 
-    }}>
+    <div className="adminTicketsContainer">
       
       {/* Шапка */}
       <div className="deviceDetailHeader" style={{ flexShrink: 0 }}>
@@ -100,55 +94,59 @@ export default function AdminTickets() {
       </div>
 
       {/* Панель фильтров */}
-      <div style={{ background: 'var(--bg-block)', padding: '16px', borderRadius: '24px', marginBottom: '16px', border: '1px solid var(--border-color)', flexShrink: 0, zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+      <div className="adminFiltersPanel">
+        <div className="adminFiltersTitle">
           <Filter size={18} /> Фильтры
         </div>
         
         {/* Поиск */}
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-          <div style={{ position: 'relative', flex: 1 }}>
-            <Search size={18} style={{ position: 'absolute', left: '14px', top: '14px', color: 'var(--text-tertiary)' }} />
+        <form onSubmit={handleSearch} className="adminSearchForm">
+          <div className="adminSearchWrapper">
+            <Search size={18} className="adminSearchIcon" />
             <input 
               type="text" 
-              className="modalInput" 
+              className="modalInput adminSearchField" 
               placeholder="Поиск по User ID..."
               value={searchUserId}
               onChange={(e) => setSearchUserId(e.target.value)}
-              style={{ margin: 0, paddingLeft: '40px', borderRadius: '16px', width: '100%' }}
             />
           </div>
-          <button type="submit" className="themeButton" style={{ width: '48px', height: '48px', borderRadius: '16px', border: 'none', background: 'var(--text-primary)', color: 'var(--bg-primary)' }}>
+          <button type="submit" className="adminSearchBtn">
             <Search size={20} />
           </button>
         </form>
 
         {/* Кастомные выпадающие списки (Dropdowns) */}
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div className="adminDropdownsRow">
           
           {/* Dropdown: СТАТУС */}
-          <div style={{ position: 'relative', flex: 1 }}>
+          <div className="adminDropdownWrapper">
             <div 
-              className="modalInput"
+              className="modalInput adminDropdownTrigger"
               onClick={() => { setIsStatusOpen(!isStatusOpen); setIsTopicOpen(false); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: 0, borderRadius: '16px', padding: '12px 14px', cursor: 'pointer', fontSize: '14px', userSelect: 'none' }}
             >
               <span>{filterStatus.label}</span>
-              <ChevronDown size={18} style={{ color: 'var(--text-secondary)', transform: isStatusOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+              <ChevronDown 
+                size={18} 
+                style={{ color: 'var(--text-secondary)', transform: isStatusOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} 
+              />
             </div>
             <AnimatePresence>
               {isStatusOpen && (
                 <>
                   <div style={{ position: 'fixed', inset: 0, zIndex: 20 }} onClick={() => setIsStatusOpen(false)} />
                   <motion.div
-                    initial={{ opacity: 0, y: -5, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -5, scale: 0.95 }} transition={{ duration: 0.15 }}
-                    style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '8px', padding: '8px', background: 'var(--bg-block)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: 'var(--shadow)', zIndex: 30 }}
+                    className="adminDropdownList"
+                    initial={{ opacity: 0, y: -5, scale: 0.95 }} 
+                    animate={{ opacity: 1, y: 0, scale: 1 }} 
+                    exit={{ opacity: 0, y: -5, scale: 0.95 }} 
+                    transition={{ duration: 0.15 }}
                   >
                     {STATUS_OPTIONS.map(opt => (
                       <div
                         key={opt.value}
                         onClick={() => { setFilterStatus(opt); setIsStatusOpen(false); }}
-                        style={{ padding: '10px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', background: filterStatus.value === opt.value ? 'var(--bg-hover)' : 'transparent', color: filterStatus.value === opt.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                        className={`adminDropdownItem ${filterStatus.value === opt.value ? 'active' : ''}`}
                       >
                         {opt.label}
                       </div>
@@ -160,28 +158,33 @@ export default function AdminTickets() {
           </div>
 
           {/* Dropdown: ТЕМА */}
-          <div style={{ position: 'relative', flex: 1 }}>
+          <div className="adminDropdownWrapper">
             <div 
-              className="modalInput"
+              className="modalInput adminDropdownTrigger"
               onClick={() => { setIsTopicOpen(!isTopicOpen); setIsStatusOpen(false); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', margin: 0, borderRadius: '16px', padding: '12px 14px', cursor: 'pointer', fontSize: '14px', userSelect: 'none' }}
             >
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filterTopic.label}</span>
-              <ChevronDown size={18} style={{ color: 'var(--text-secondary)', transform: isTopicOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} />
+              <ChevronDown 
+                size={18} 
+                style={{ color: 'var(--text-secondary)', transform: isTopicOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} 
+              />
             </div>
             <AnimatePresence>
               {isTopicOpen && (
                 <>
                   <div style={{ position: 'fixed', inset: 0, zIndex: 20 }} onClick={() => setIsTopicOpen(false)} />
                   <motion.div
-                    initial={{ opacity: 0, y: -5, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -5, scale: 0.95 }} transition={{ duration: 0.15 }}
-                    style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: '8px', padding: '8px', background: 'var(--bg-block)', backdropFilter: 'blur(24px)', border: '1px solid var(--border-color)', borderRadius: '16px', boxShadow: 'var(--shadow)', zIndex: 30 }}
+                    className="adminDropdownList"
+                    initial={{ opacity: 0, y: -5, scale: 0.95 }} 
+                    animate={{ opacity: 1, y: 0, scale: 1 }} 
+                    exit={{ opacity: 0, y: -5, scale: 0.95 }} 
+                    transition={{ duration: 0.15 }}
                   >
                     {TOPIC_OPTIONS.map(opt => (
                       <div
                         key={opt.value}
                         onClick={() => { setFilterTopic(opt); setIsTopicOpen(false); }}
-                        style={{ padding: '10px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', background: filterTopic.value === opt.value ? 'var(--bg-hover)' : 'transparent', color: filterTopic.value === opt.value ? 'var(--text-primary)' : 'var(--text-secondary)' }}
+                        className={`adminDropdownItem ${filterTopic.value === opt.value ? 'active' : ''}`}
                       >
                         {opt.label}
                       </div>
@@ -196,14 +199,14 @@ export default function AdminTickets() {
       </div>
 
       {/* Список тикетов */}
-      <div className="ticketsList" style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none', msOverflowStyle: 'none', paddingBottom: '20px' }}>
+      <div className="adminTicketsList">
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
+          <div className="supportLoadingScreen">
             <div className="toast-spinner" style={{ width: '32px', height: '32px', border: '3px solid var(--border-color)', borderTopColor: 'var(--text-primary)', borderRadius: '50%' }}></div>
           </div>
         ) : tickets.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-tertiary)' }}>
-            Тикеты не найдены
+          <div className="supportEmptyState" style={{ background: 'transparent', border: 'none' }}>
+            <span style={{ color: 'var(--text-tertiary)' }}>Тикеты не найдены</span>
           </div>
         ) : (
           tickets.map((ticket, index) => (

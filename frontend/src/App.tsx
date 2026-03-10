@@ -44,7 +44,7 @@ function App() {
   if (loading) return null; // Или красивый полноэкранный лоадер
 
   // 🚨 ПЕРЕХВАТЧИК: Если тех. работы, и мы не пытаемся открыть /login
-  if (isMaintenance && !currentPath.includes('/login')) {
+  if (isMaintenance && !currentPath.toLowerCase().includes('login')) {
     return (
       <ThemeProvider>
         <Maintenance />

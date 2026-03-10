@@ -12,6 +12,7 @@
   /* Эффект матового стекла для карточек */
   --bg-card: rgba(255, 255, 255, 0.03);
   --bg-block: rgba(20, 20, 20, 0.6);
+  --bg-list: rgba(20, 20, 20);
   --bg-input: rgba(255, 255, 255, 0.05);
   --bg-hover: rgba(255, 255, 255, 0.08);
   
@@ -51,6 +52,7 @@
 
   /* Карточки из белого матового стекла */
   --bg-card: rgba(255, 255, 255, 0.75);
+  --bg-block: rgba(255, 255, 255, 0.75);
   --bg-block: rgba(255, 255, 255, 0.75);
   --bg-input: rgba(0, 0, 0, 0.04);
   --bg-hover: rgba(0, 0, 0, 0.08);
@@ -537,11 +539,69 @@ body {
 
 .modalInput:focus {
   border-color: var(--accent);
-  background: rgba(0,0,0,0.5);
 }
 
 .modalInput::placeholder {
   color: var(--text-tertiary);
+}
+
+/* -------------------------------------------- */
+/* КНОПКИ В МОДАЛКЕ ДОБАВЛЕНИЯ УСТРОЙСТВА       */
+/* -------------------------------------------- */
+
+.modalActionsRow {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px; /* Хороший отступ от сетки иконок */
+  width: 100%;
+}
+
+/* Главная кнопка "Добавить" (Белая, премиальная) */
+.modalSubmitBtn {
+  flex: 2; /* Занимает больше места (2/3) */
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: none;
+  background: var(--text-primary); 
+  color: var(--bg-primary); 
+  font-size: 16px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.15);
+}
+
+.modalSubmitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Кнопка "Отмена" */
+.modalCancelBtn {
+  flex: 1; /* Занимает меньше места (1/3) */
+  padding: 16px 20px;
+  border-radius: 20px;
+  border: 1px solid var(--border-input);
+  background: var(--bg-card);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: var(--text-secondary);
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.modalCancelBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
 }
 
 /* Сетка типов устройств */
@@ -1872,7 +1932,7 @@ body {
   right: 0; 
   margin-top: 8px; 
   padding: 8px; 
-  background: var(--bg-block); 
+  background: var(--bg-list); 
   backdrop-filter: blur(24px); 
   -webkit-backdrop-filter: blur(24px); 
   border: 1px solid var(--border-color); 

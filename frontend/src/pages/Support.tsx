@@ -5,13 +5,11 @@ import { toast } from 'sonner';
 import { 
   ChevronLeft, Plus, MessageCircle, Clock, 
   CheckCircle2, ChevronRight, ChevronDown, Headset,
-  CreditCard, Globe, Bug, Lightbulb // 👈 Добавили новые иконки для списка
+  CreditCard, Globe, Bug, Lightbulb
 } from 'lucide-react';
 
-// 👇 Не забудь поменять на свой актуальный URL бэкенда
 const API_URL = 'https://h4zdeen.up.railway.app';
 
-// Массив наших тем с нормальными иконками
 const TOPICS = [
   { id: 'payment', label: 'Вопрос по оплате', icon: <CreditCard size={18} /> },
   { id: 'vpn', label: 'Не работает VPN', icon: <Globe size={18} /> },
@@ -26,11 +24,10 @@ export default function Support() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   
-  // Состояния для нового тикета
   const [topic, setTopic] = useState(TOPICS[0].label);
   const [text, setText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // 👈 Управление нашим кастомным списком
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     loadTickets();
@@ -108,7 +105,6 @@ export default function Support() {
     }
   };
 
-  // Находим текущий выбранный объект темы, чтобы достать его иконку
   const currentTopic = TOPICS.find(t => t.label === topic) || TOPICS[0];
 
   return (
@@ -126,7 +122,7 @@ export default function Support() {
         <h1>Поддержка</h1>
       </div>
 
-      {/* Информационный блок */}
+      {/* Инфо-блок */}
       <div className="infoMessage">
         <Headset className="infoIcon" size={20} />
         <div>
@@ -134,7 +130,7 @@ export default function Support() {
         </div>
       </div>
 
-      {/* Блок со списком тикетов */}
+      {/* Заголовок списка */}
       <div className="devicesCardHeader" style={{ marginTop: '32px' }}>
         <div className="devicesCardTitle">
           <h2 className="sectionTitle">Мои обращения</h2>
@@ -150,23 +146,22 @@ export default function Support() {
         </motion.button>
       </div>
 
-      {/* Список */}
+      {/* Список тикетов */}
       <div className="ticketsList">
         {loading ? (
-          <div className="loadingScreen" style={{ minHeight: '200px' }}>
+          <div className="supportLoadingScreen">
             <div className="toast-spinner" style={{ width: '32px', height: '32px', border: '3px solid var(--border-color)', borderTopColor: 'var(--text-primary)', borderRadius: '50%' }}></div>
           </div>
         ) : tickets.length === 0 ? (
           <motion.div 
-            className="deleteCard" 
-            style={{ justifyContent: 'center', background: 'var(--bg-card)', borderColor: 'var(--border-color)', flexDirection: 'column', gap: '8px', padding: '32px' }}
+            className="supportEmptyState"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <MessageCircle size={48} style={{ color: 'var(--text-tertiary)', marginBottom: '8px' }} />
-            <div className="deleteCardContent" style={{ textAlign: 'center' }}>
-              <h4 style={{ color: 'var(--text-primary)' }}>У вас нет обращений</h4>
-              <p>Если у вас возникли трудности, создайте новый тикет.</p>
+            <MessageCircle size={48} style={{ color: 'var(--text-tertiary)' }} />
+            <div>
+              <h4 style={{ color: 'var(--text-primary)', margin: '0 0 4px 0', fontSize: '16px' }}>У вас нет обращений</h4>
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '13px' }}>Если у вас возникли трудности, создайте новый тикет.</p>
             </div>
           </motion.div>
         ) : (
@@ -197,7 +192,7 @@ export default function Support() {
         )}
       </div>
 
-      {/* Модальное окно создания тикета (Шторка) */}
+      {/* Модалка создания тикета */}
       <AnimatePresence>
         {isModalOpen && (
           <div className="modalOverlay">
@@ -226,19 +221,13 @@ export default function Support() {
                 <div className="modalField" style={{ position: 'relative', zIndex: 50 }}>
                   <label className="modalLabel">Тема обращения</label>
                   
-                  {/* 🔥 КАСТОМНЫЙ DROPDOWN ВМЕСТО SELECT 🔥 */}
-                  <div style={{ position: 'relative', marginBottom: '16px' }}>
-                    {/* Кнопка открытия (выглядит как инпут) */}
+                  <div className="customDropdownContainer">
                     <div 
-                      className="modalInput"
+                      className="modalInput customDropdownHeader"
                       onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                      style={{ 
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        cursor: 'pointer', margin: 0, userSelect: 'none'
-                      }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <span style={{ color: 'var(--text-secondary)', display: 'flex' }}>
+                      <div className="customDropdownHeaderContent">
+                        <span className="customDropdownIcon">
                           {currentTopic.icon}
                         </span>
                         <span>{currentTopic.label}</span>
@@ -253,11 +242,9 @@ export default function Support() {
                       />
                     </div>
 
-                    {/* Выпадающее меню */}
                     <AnimatePresence>
                       {isDropdownOpen && (
                         <>
-                          {/* Невидимый слой, чтобы закрывать меню по клику снаружи */}
                           <div 
                             style={{ position: 'fixed', inset: 0, zIndex: 10 }} 
                             onClick={() => setIsDropdownOpen(false)}
@@ -267,17 +254,7 @@ export default function Support() {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -10, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            style={{
-                              position: 'absolute', top: '100%', left: 0, right: 0,
-                              marginTop: '8px', padding: '8px',
-                              background: 'rgb(20 20 20)',
-                              backdropFilter: 'blur(24px)',
-                              WebkitBackdropFilter: 'blur(24px)',
-                              border: '1px solid var(--border-color)',
-                              borderRadius: '20px',
-                              boxShadow: 'var(--shadow)',
-                              zIndex: 20
-                            }}
+                            className="customDropdownList"
                           >
                             {TOPICS.map((t) => (
                               <div
@@ -286,18 +263,9 @@ export default function Support() {
                                   setTopic(t.label);
                                   setIsDropdownOpen(false);
                                 }}
-                                style={{
-                                  display: 'flex', alignItems: 'center', gap: '12px',
-                                  padding: '14px 16px', borderRadius: '14px',
-                                  cursor: 'pointer', transition: 'all 0.2s',
-                                  background: topic === t.label ? 'var(--bg-hover)' : 'transparent',
-                                  color: topic === t.label ? 'var(--text-primary)' : 'var(--text-secondary)',
-                                  fontWeight: topic === t.label ? 600 : 500
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                                onMouseLeave={(e) => e.currentTarget.style.background = topic === t.label ? 'var(--bg-hover)' : 'transparent'}
+                                className={`customDropdownItem ${topic === t.label ? 'active' : ''}`}
                               >
-                                <span style={{ color: topic === t.label ? 'var(--text-primary)' : 'var(--text-tertiary)', display: 'flex' }}>
+                                <span className="customDropdownIcon" style={{ color: topic === t.label ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
                                   {t.icon}
                                 </span>
                                 {t.label}
@@ -313,7 +281,7 @@ export default function Support() {
                   </div>
                 </div>
 
-                <div className="modalField" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="modalField modalActionsZIndex">
                   <label className="modalLabel">Описание проблемы</label>
                   <textarea 
                     className="modalInput"
@@ -325,7 +293,7 @@ export default function Support() {
                   />
                 </div>
 
-                <div className="modalActionsRow" style={{ position: 'relative', zIndex: 1 }}>
+                <div className="modalActionsRow modalActionsZIndex">
                   <button 
                     type="button" 
                     className="modalCancelBtn"
