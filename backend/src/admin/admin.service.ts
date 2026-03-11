@@ -143,16 +143,24 @@ export class AdminService {
     const device = await this.prisma.device.findUnique({ where: { id: deviceId }, include: { user: true } });
     if (!device) throw new NotFoundException('Device not found');
 
-    const location = device.location || 'ch'; // 👈 Берем локацию из БД
+    const location = device.location || 'ch';
 
+    // Шаг 1: Удаляем старого клиента
     if (device.uuid) {
-      await this.xuiService.deleteClient(location, device.uuid); // 👈 location
+      await this.xuiService.deleteClient(location, device.uuid);
     }
 
+    // Шаг 2: Генерируем новый UUID, но сохраняем старый email!
     const newUuid = crypto.randomUUID(); 
-    const xuiData = await this.xuiService.addClient(location, { // 👈 location
+    
+    const tgUsername = device.user.username ? `@${device.user.username}` : `ID:${device.user.telegramId}`;
+    const clientEmail = device.email || `client${deviceId}user`; // Переиспользуем старый
+    const linkRemark = `${tgUsername} (${device.type})`;
+
+    const xuiData = await this.xuiService.addClient(location, {
       uuid: newUuid,
-      name: device.customName || device.name,
+      email: clientEmail, 
+      remark: linkRemark, 
       tgUid: device.user.telegramId.toString(),
       totalGb: 1000*1024*1024*1024, 
       expiryTime: device.expiresAt ? device.expiresAt.getTime() : 0 
@@ -162,12 +170,12 @@ export class AdminService {
       throw new Error(`Failed to regenerate link in 3x-ui: ${xuiData.msg}`);
     }
 
+    // Шаг 3: Обновляем ссылку в БД
     const updatedDevice = await this.prisma.device.update({
       where: { id: deviceId },
       data: {
         uuid: xuiData.uuid,
         configLink: xuiData.configLink,
-        email: xuiData.email
       }
     });
 
@@ -179,12 +187,22 @@ export class AdminService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const location = data.location || 'ch'; // 👈 Если админ не выбрал, по умолчанию Швейцария
+    const location = data.location || 'ch'; 
     const newUuid = crypto.randomUUID();
     
-    const xuiData = await this.xuiService.addClient(location, { // 👈 location
+    // 🌟 Ищем следующий ID для админской выдачи
+    const lastDevice = await this.prisma.device.findFirst({ orderBy: { id: 'desc' } });
+    const nextId = (lastDevice?.id || 0) + 1;
+
+    const tgUsername = user.username ? `@${user.username}` : `ID:${user.telegramId}`;
+    const clientEmail = `client${nextId}user`;
+    const linkRemark = `${tgUsername} (${data.type})`;
+
+    // Создаем в 3x-ui
+    const xuiData = await this.xuiService.addClient(location, {
       uuid: newUuid,
-      name: data.name,
+      email: clientEmail,
+      remark: linkRemark,
       tgUid: user.telegramId.toString(),
       totalGb: 1000*1024*1024*1024, 
       expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000 
@@ -192,16 +210,17 @@ export class AdminService {
 
     if (!xuiData.success) throw new Error(`3x-ui error: ${xuiData.msg}`);
 
+    // Сохраняем в БД
     const newDevice = await this.prisma.device.create({
       data: {
         userId: user.id,
         name: data.name,
         customName: data.name,
         type: data.type,
-        location: location, // 👈 Сохраняем локацию
+        location: location,
         uuid: xuiData.uuid,
         configLink: xuiData.configLink,
-        email: xuiData.email,
+        email: clientEmail, // Сохраняем системный email
         isActive: true,
         connectedAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
