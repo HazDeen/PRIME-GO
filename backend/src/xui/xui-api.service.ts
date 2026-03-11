@@ -1,90 +1,72 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios'; // Добавили импорт axios
-import * as https from 'https'; // Добавили импорт https
+import { Injectable, Logger } from '@nestjs/common';
+import axios, { AxiosInstance } from 'axios';
+import * as https from 'https';
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
-export class XuiApiService implements OnModuleInit {
+export class XuiApiService {
   private readonly logger = new Logger(XuiApiService.name);
-  private api: AxiosInstance; // Будем использовать только это имя
-  private isLoggedIn = false;
   
-  constructor(
-      private readonly configService: ConfigService, // 2. Внедряем его здесь
-      // ... если здесь были другие сервисы (например HttpService), оставь их
-    ) {}
+  // Храним подключения к разным панелям (ключ - локация: 'ch' или 'at')
+  private apis: Record<string, { instance: AxiosInstance; isLoggedIn: boolean }> = {};
 
-  private readonly panelUrl = process.env.XUI_PANEL_URL;
-  private readonly username = process.env.XUI_USERNAME;
-  private readonly password = process.env.XUI_PASSWORD;
+  constructor(private readonly configService: ConfigService) {}
 
-  private generateVlessLink(uuid: string, name: string): string {
-    const host = this.configService.get('VLESS_HOST');
-    const port = this.configService.get('VLESS_PORT');
-    const pbk = this.configService.get('VLESS_PUBLIC_KEY');
-    const sni = this.configService.get('VLESS_SNI');
-    const sid = this.configService.get('VLESS_SID');
-    const flow = 'xtls-rprx-vision'; 
-    
-    const remark = encodeURIComponent(name);
-    // Формат ссылки для TCP + Reality + Vision
-    return `vless://${uuid}@${host}:${port}?security=reality&sni=${sni}&fp=chrome&pbk=${pbk}&sid=${sid}&flow=${flow}&type=tcp#${remark}`;
+  // Получаем настройки для конкретной локации
+  private getServerConfig(location: string) {
+    const prefix = location.toUpperCase(); // 'CH' или 'AT'
+    return {
+      url: process.env[`XUI_${prefix}_PANEL_URL`],
+      username: process.env[`XUI_${prefix}_USERNAME`],
+      password: process.env[`XUI_${prefix}_PASSWORD`],
+      host: process.env[`VLESS_${prefix}_HOST`],
+      inboundId: Number(process.env[`XUI_${prefix}_INBOUND_ID`]) || 1
+    };
   }
 
-  async onModuleInit() {
-    await this.login();
-  }
+  // Ленивая авторизация (подключаемся только при запросе)
+  private async ensureLogin(location: string) {
+    if (this.apis[location]?.isLoggedIn) return;
 
-  private async login() {
+    const config = this.getServerConfig(location);
+    if (!config.url) throw new Error(`Не настроены доступы для сервера ${location}`);
+
     try {
-      this.logger.log(`🔐 Логинимся в панель 3x-ui: ${this.panelUrl}`);
-
-      // Инициализируем экземпляр при логине
-      this.api = axios.create({
-        baseURL: this.panelUrl,
+      this.logger.log(`🔐 Логинимся в панель [${location.toUpperCase()}]: ${config.url}`);
+      
+      const apiInstance = axios.create({
+        baseURL: config.url,
         withCredentials: true,
-        httpsAgent: new https.Agent({  
-          rejectUnauthorized: false // Чтобы не ругался на самоподписанные SSL
-        })
+        httpsAgent: new https.Agent({ rejectUnauthorized: false })
       });
 
-      const response = await this.api.post('/login', {
-        username: this.username,
-        password: this.password
+      const response = await apiInstance.post('/login', {
+        username: config.username,
+        password: config.password
       });
 
       const cookies = response.headers['set-cookie'];
       if (cookies) {
-        // Устанавливаем куки во все последующие запросы этого экземпляра
-        this.api.defaults.headers.common['Cookie'] = cookies.join('; ');
-        this.isLoggedIn = true;
-        this.logger.log('✅ Успешный вход в 3x-ui панель');
+        apiInstance.defaults.headers.common['Cookie'] = cookies.join('; ');
+        this.apis[location] = { instance: apiInstance, isLoggedIn: true };
+        this.logger.log(`✅ Вход выполнен [${location.toUpperCase()}]`);
       } else {
-        throw new Error('Не удалось получить куки авторизации');
+        throw new Error('Куки не получены');
       }
     } catch (error: any) {
-      this.logger.error('❌ Ошибка входа в 3x-ui:', error.message);
+      this.logger.error(`❌ Ошибка входа [${location.toUpperCase()}]:`, error.message);
       throw error;
     }
   }
 
-  // Вспомогательный метод для проверки авторизации перед каждым запросом
-  private async ensureLogin() {
-    if (!this.isLoggedIn || !this.api) {
-      await this.login();
-    }
-  }
+  // Создание клиента на НУЖНОМ сервере
+  async addClient(location: string, clientData: any) {
+    await this.ensureLogin(location);
+    const api = this.apis[location].instance;
+    const config = this.getServerConfig(location);
 
-  // --- ГЛАВНЫЕ МЕТОДЫ ДЛЯ ВАШЕГО DEVICE SERVICE ---
-
-  async addClient(inboundId: number, clientData: any) {
-    await this.ensureLogin();
-
-    // 1. Сначала берем актуальные настройки из панели
-    const inboundConfig = await this.getInboundConfig(inboundId);
-    if (!inboundConfig) {
-      return { success: false, msg: 'Ошибка получения настроек из панели' };
-    }
+    const inboundConfig = await this.getInboundConfig(location, config.inboundId);
+    if (!inboundConfig) return { success: false, msg: 'Ошибка получения настроек из панели' };
 
     const clientUuid = clientData.uuid;
     const clientEmail = `${Math.random().toString(36).substring(7)}`;
@@ -97,30 +79,23 @@ export class XuiApiService implements OnModuleInit {
       expiryTime: clientData.expiryTime || 0,
       enable: true,
       tgId: clientData.tgUid || "",
-      subId: this.generateSubId(),
+      subId: Math.random().toString(36).substring(2, 12),
     };
 
     const payload = new URLSearchParams({
-      id: inboundId.toString(),
+      id: config.inboundId.toString(),
       settings: JSON.stringify({ clients: [client] }),
     });
 
     try {
-      const response = await this.api.post('/panel/inbound/addClient', payload.toString(), {
+      const response = await api.post('/panel/inbound/addClient', payload.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
       });
 
       if (response.data?.success) {
-        // 2. СОБИРАЕМ ССЫЛКУ НА ОСНОВЕ ДАННЫХ ИЗ ПАНЕЛИ
-        const remark = encodeURIComponent(clientData.name || 'VPN');
-        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&pbk=${inboundConfig.pbk}&fp=chrome&sni=${inboundConfig.sni}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${clientEmail}`;
+        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&pbk=${inboundConfig.pbk}&fp=chrome&sni=${inboundConfig.sni}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${location.toUpperCase()}-${clientEmail}`;
 
-        return { 
-          success: true, 
-          configLink: vlessLink,
-          email: clientEmail,
-          uuid: clientUuid 
-        };
+        return { success: true, configLink: vlessLink, email: clientEmail, uuid: clientUuid };
       }
       return { success: false, msg: response.data?.msg };
     } catch (error: any) {
@@ -128,69 +103,45 @@ export class XuiApiService implements OnModuleInit {
     }
   }
 
-  async deleteClient(inboundId: number, uuid: string) {
-    await this.ensureLogin();
+  // Удаление клиента с НУЖНОГО сервера
+  async deleteClient(location: string, uuid: string) {
+    await this.ensureLogin(location);
+    const api = this.apis[location].instance;
+    const config = this.getServerConfig(location);
 
     try {
-      // В 3x-ui обычно такой путь для удаления клиента из инбаунда
-      const response = await this.api.post(`/panel/inbound/${inboundId}/delClient/${uuid}`);
+      const response = await api.post(`/panel/inbound/${config.inboundId}/delClient/${uuid}`);
       return response.data;
     } catch (error: any) {
-      this.logger.error('Ошибка deleteClient:', error.message);
       return { success: false, msg: error.message };
     }
   }
 
-  async getInboundConfig(inboundId: number) {
-    await this.ensureLogin();
+  // Получение настроек с НУЖНОГО сервера
+  async getInboundConfig(location: string, inboundId: number) {
+    await this.ensureLogin(location);
+    const api = this.apis[location].instance;
+    const host = this.getServerConfig(location).host;
     
     try {
-      // Используем /list вместо /get — это работает стабильнее
-      const response = await this.api.post('/panel/inbound/list');
-      
+      const response = await api.post('/panel/inbound/list');
       if (response.data?.success && Array.isArray(response.data.obj)) {
-        const inbounds = response.data.obj;
-        
-        // Ищем нужный инбаунд. Используем == для сравнения (число/строка)
-        const inbound = inbounds.find((i: any) => i.id == inboundId);
-        
-        if (!inbound) {
-          this.logger.error(`❌ Inbound с ID ${inboundId} не найден в панели. Доступные ID: ${inbounds.map(i => i.id).join(', ')}`);
-          return null;
-        }
+        const inbound = response.data.obj.find((i: any) => i.id == inboundId);
+        if (!inbound) return null;
 
         const streamSettings = JSON.parse(inbound.streamSettings);
-        
-        // Извлекаем параметры для VLESS + Reality + TCP
         return {
           port: inbound.port,
           protocol: inbound.protocol,
           pbk: streamSettings.realitySettings.settings?.publicKey || streamSettings.realitySettings.publicKey,
           sid: streamSettings.realitySettings.shortIds[0],
           sni: streamSettings.realitySettings.serverNames[0],
-          host: this.configService.get('VLESS_HOST')
+          host: host
         };
       }
-      
-      this.logger.error(`❌ Панель вернула ошибку при запросе списка: ${JSON.stringify(response.data)}`);
       return null;
     } catch (error: any) {
-      this.logger.error(`❌ Критическая ошибка XUI API: ${error.message}`);
       return null;
     }
-  }
-
-  // --- ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ---
-
-  private generateSubId(): string {
-    return Math.random().toString(36).substring(2, 12);
-  }
-
-  private formatSubUrl(subId: string): string {
-    const subPort = process.env.SUB_PORT || 443;
-    const subPath = process.env.SUB_PATH || '/sub/';
-    // Очищаем URL от порта для формирования ссылки
-    const base = this.panelUrl?.replace(/:\d+$/, '');
-    return `${base}:${subPort}${subPath}${subId}`;
   }
 }

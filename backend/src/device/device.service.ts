@@ -8,28 +8,25 @@ import { ConfigService } from '@nestjs/config';
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);
   private readonly DEVICE_PRICE = 300;
-  private readonly inboundId = this.configService.get<number>('XUI_INBOUND_ID');
 
   constructor(
     private prisma: PrismaService,
     private xuiApiService: XuiApiService,
     private configService: ConfigService,
-  ) {
-    this.inboundId = this.configService.get<number>('XUI_INBOUND_ID') || 2;
-  }
+  ) {}
 
   /**
-   * УНИВЕРСАЛЬНЫЙ МЕТОД СОЗДАНИЯ (Использует tgId)
+   * УНИВЕРСАЛЬНЫЙ МЕТОД СОЗДАНИЯ (С поддержкой локаций)
    */
-  async create(dto: { tgId: string; name: string; customName: string; type: string }) {
-    // 1. Ищем пользователя по Telegram ID (BigInt)
+  async create(dto: { tgId: string; name: string; customName: string; type: string; location?: string }) {
+    // 1. Ищем пользователя
     const user = await this.prisma.user.findUnique({
       where: { telegramId: BigInt(dto.tgId) }
     });
 
     if (!user) throw new NotFoundException('Пользователь не найден в базе данных');
 
-    // 2. Проверки: лимит устройств и баланс
+    // 2. Проверки
     const count = await this.prisma.device.count({ where: { userId: user.id } });
     if (count >= 5) throw new BadRequestException('Максимум 5 устройств на один аккаунт');
 
@@ -42,12 +39,13 @@ export class DeviceService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     const clientEmail = `${Math.random().toString(36).substring(7)}`;
+    
+    // Определяем локацию (если не передали, то по умолчанию Швейцария - ch)
+    const location = dto.location || 'ch';
 
-    // 4. Создание в 3x-ui панели
-    // totalGb: 100 GB в байтах. (100 * 1024^3)
+    // 4. Создание в нужной 3x-ui панели
     const totalGbBytes = 1000 * 1024 * 1024 * 1024;
-
-    const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
+    const xuiResponse = await this.xuiApiService.addClient(location, {
       uuid: clientUuid,
       email: clientEmail,
       totalGb: totalGbBytes,
@@ -60,15 +58,15 @@ export class DeviceService {
       throw new BadRequestException('Ошибка VPN панели: ' + (xuiResponse?.msg || 'Не удалось создать клиента'));
     }
 
-    // 5. ТРАНЗАКЦИЯ: БД + Баланс + Транзакция
+    // 5. ТРАНЗАКЦИЯ: БД + Баланс
     return await this.prisma.$transaction(async (tx) => {
-      // Создаем устройство
       const device = await tx.device.create({
         data: {
           userId: user.id,
-          name: dto.name, // Это модель (iPhone 15)
+          name: dto.name,
           customName: dto.customName || dto.name,
           type: dto.type,
+          location: location, // 👈 Сохраняем локацию в БД
           uuid: clientUuid,
           email: clientEmail,
           configLink: xuiResponse.configLink || '',
@@ -77,20 +75,18 @@ export class DeviceService {
         },
       });
 
-      // Списываем баланс
       await tx.user.update({
         where: { id: user.id },
         data: { balance: { decrement: this.DEVICE_PRICE } },
       });
 
-      // Логируем транзакцию
       await tx.transaction.create({
         data: {
           userId: user.id,
           deviceId: device.id,
           amount: -this.DEVICE_PRICE,
           type: 'subscription',
-          description: `Оплата устройства: ${dto.customName || dto.name}`,
+          description: `Оплата VPN (${location.toUpperCase()}): ${dto.customName || dto.name}`,
         },
       });
 
@@ -99,7 +95,7 @@ export class DeviceService {
   }
 
   /**
-   * Получение списка устройств по TG ID (для фронтенда)
+   * Получение списка устройств
    */
   async getUserDevicesByTgId(tgId: string) {
     const user = await this.prisma.user.findUnique({
@@ -119,14 +115,15 @@ export class DeviceService {
   }
 
   /**
-   * Удаление устройства (БД + XUI)
+   * Удаление устройства с нужного сервера
    */
   async remove(id: number) {
     const device = await this.prisma.device.findUnique({ where: { id } });
     if (!device) throw new NotFoundException('Устройство не найдено');
 
     if (device.uuid) {
-      await this.xuiApiService.deleteClient(this.inboundId, device.uuid).catch(e => 
+      const location = device.location || 'ch'; // 👈 Берем локацию из базы
+      await this.xuiApiService.deleteClient(location, device.uuid).catch(e => 
         this.logger.error(`Ошибка удаления в XUI (ID: ${device.uuid}): ${e.message}`)
       );
     }
@@ -134,10 +131,9 @@ export class DeviceService {
     return this.prisma.device.delete({ where: { id } });
   }
 
-  // --- Остальные методы (replace, updateName) ---
-  // Их тоже лучше перевести на работу по ID устройства напрямую, 
-  // так как ID в базе уникален и username/tgId для поиска записи уже не обязателен.
-
+  /**
+   * Обновление имени
+   */
   async updateDeviceName(deviceId: number, customName: string) {
     return this.prisma.device.update({
       where: { id: deviceId },
@@ -145,28 +141,31 @@ export class DeviceService {
     });
   }
 
-
+  /**
+   * Перегенерация на нужном сервере
+   */
   async replaceDevice(deviceId: number) {
     this.logger.log(`🔄 Полная замена конфигурации для устройства ID: ${deviceId}`);
     
     const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
     if (!device) throw new NotFoundException('Устройство не найдено');
 
-    // 1. Удаляем старого клиента из 3x-ui
+    const location = device.location || 'ch'; // 👈 Узнаем, где оно было создано
+
+    // 1. Удаляем со старого сервера
     if (device.uuid) {
-      await this.xuiApiService.deleteClient(this.inboundId, device.uuid).catch(() => {
+      await this.xuiApiService.deleteClient(location, device.uuid).catch(() => {
         this.logger.warn(`Не удалось удалить старый UUID ${device.uuid} из панели, продолжаем...`);
       });
     }
 
-    // 2. Генерируем новый UUID
     const newUuid = uuidv4();
     const clientEmail = `${Math.random().toString(36).substring(7)}`
     
-    // 3. Создаем НОВОГО клиента в 3x-ui
-    const xuiResponse = await this.xuiApiService.addClient(this.inboundId, {
+    // 2. Создаем на том же сервере
+    const xuiResponse = await this.xuiApiService.addClient(location, {
       uuid: newUuid,
-      name: device.customName || device.name, // Используем текущее имя для ссылки
+      name: device.customName || device.name,
       email: clientEmail,
       totalGb: 1000 * 1024 * 1024 * 1024,
       expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
@@ -176,32 +175,24 @@ export class DeviceService {
       throw new BadRequestException('Ошибка при генерации новой ссылки в VPN панели');
     }
 
-    // 4. Обновляем запись в БД новой VLESS ссылкой
     const updated = await this.prisma.device.update({
       where: { id: deviceId },
       data: {
         uuid: newUuid,
-        configLink: xuiResponse.configLink, // <--- Сюда придет vless://...
+        configLink: xuiResponse.configLink,
         updatedAt: new Date(),
       },
     });
 
     this.logger.log(`✅ Ссылка для устройства ${deviceId} успешно заменена на VLESS`);
 
-    return {
-      configLink: updated.configLink,
-      uuid: updated.uuid
-    };
+    return { configLink: updated.configLink, uuid: updated.uuid };
   }
 
   async findAll() {
     return this.prisma.device.findMany({
-      include: { 
-        user: true // Чтобы видеть, чье это устройство
-      },
-      orderBy: { 
-        connectedAt: 'desc' 
-      }
+      include: { user: true },
+      orderBy: { connectedAt: 'desc' }
     });
   }
 }

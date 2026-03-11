@@ -34,6 +34,7 @@ model Device {
   name        String
   customName  String?
   type        String
+  location    String    @default("ch")
   configLink  String   @unique
   uuid String? @unique
   email       String?   @unique

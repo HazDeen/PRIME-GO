@@ -110,11 +110,11 @@ export class AdminService {
     const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
     if (!device) throw new NotFoundException('Device not found');
 
-    const INBOUND_ID = 2; // <-- ИСПРАВЛЕНИЕ: Используем инбаунд 1 по умолчанию
+    const location = device.location || 'ch'; // 👈 Берем локацию из БД
 
-    // Пытаемся удалить из панели 3x-ui (проверяем только uuid)
     if (device.uuid) {
-      const xuiResponse = await this.xuiService.deleteClient(INBOUND_ID, device.uuid);
+      // 👈 Передаем location вместо INBOUND_ID
+      const xuiResponse = await this.xuiService.deleteClient(location, device.uuid);
       if (!xuiResponse?.success) {
         this.logger.warn(`Failed to delete client from 3x-ui (UUID: ${device.uuid}): ${xuiResponse?.msg || 'Unknown error'}`);
       }
@@ -122,7 +122,6 @@ export class AdminService {
       this.logger.warn(`Device ${deviceId} missing uuid. Skipping 3x-ui deletion.`);
     }
 
-    // Удаляем из PostgreSQL
     await this.prisma.device.delete({
       where: { id: deviceId },
     });
@@ -144,20 +143,18 @@ export class AdminService {
     const device = await this.prisma.device.findUnique({ where: { id: deviceId }, include: { user: true } });
     if (!device) throw new NotFoundException('Device not found');
 
-    const INBOUND_ID = 2;
+    const location = device.location || 'ch'; // 👈 Берем локацию из БД
 
-    // Шаг 1: Удаляем старого клиента из панели 3x-ui
     if (device.uuid) {
-      await this.xuiService.deleteClient(INBOUND_ID, device.uuid);
+      await this.xuiService.deleteClient(location, device.uuid); // 👈 location
     }
 
-    // Шаг 2: Генерируем новый UUID и создаем клиента в 3x-ui
-    const newUuid = crypto.randomUUID(); // Убедись, что 'crypto' импортирован или используй другой генератор
-    const xuiData = await this.xuiService.addClient(INBOUND_ID, {
+    const newUuid = crypto.randomUUID(); 
+    const xuiData = await this.xuiService.addClient(location, { // 👈 location
       uuid: newUuid,
       name: device.customName || device.name,
       tgUid: device.user.telegramId.toString(),
-      totalGb: 1000*1024*1024*1024, // Безлимит, или возьми из логики
+      totalGb: 1000*1024*1024*1024, 
       expiryTime: device.expiresAt ? device.expiresAt.getTime() : 0 
     });
 
@@ -165,7 +162,6 @@ export class AdminService {
       throw new Error(`Failed to regenerate link in 3x-ui: ${xuiData.msg}`);
     }
 
-    // Шаг 3: Обновляем ссылку и uuid в нашей БД
     const updatedDevice = await this.prisma.device.update({
       where: { id: deviceId },
       data: {
@@ -179,31 +175,30 @@ export class AdminService {
   }
 
   // 3. Создание устройства админом (бесплатно)
-  async addDeviceByAdmin(userId: number, data: { name: string, type: string }) {
+  async addDeviceByAdmin(userId: number, data: { name: string, type: string, location?: string }) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const INBOUND_ID = 2;
+    const location = data.location || 'ch'; // 👈 Если админ не выбрал, по умолчанию Швейцария
     const newUuid = crypto.randomUUID();
     
-    // Создаем в 3x-ui
-    const xuiData = await this.xuiService.addClient(INBOUND_ID, {
+    const xuiData = await this.xuiService.addClient(location, { // 👈 location
       uuid: newUuid,
       name: data.name,
       tgUid: user.telegramId.toString(),
       totalGb: 1000*1024*1024*1024, 
-      expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000 // +30 дней
+      expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000 
     });
 
     if (!xuiData.success) throw new Error(`3x-ui error: ${xuiData.msg}`);
 
-    // Сохраняем в БД
     const newDevice = await this.prisma.device.create({
       data: {
         userId: user.id,
         name: data.name,
         customName: data.name,
         type: data.type,
+        location: location, // 👈 Сохраняем локацию
         uuid: xuiData.uuid,
         configLink: xuiData.configLink,
         email: xuiData.email,

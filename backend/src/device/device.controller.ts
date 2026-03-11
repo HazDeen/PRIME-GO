@@ -31,7 +31,8 @@ export class DeviceController {
     tgId: string; 
     name: string; 
     customName: string; 
-    type: string 
+    type: string;
+    location: string;
   }) {
     this.logger.log(`🚀 Запрос на создание устройства для TG: ${body.tgId}`);
     
