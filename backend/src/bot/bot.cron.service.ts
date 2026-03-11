@@ -31,8 +31,7 @@ export class BotCronService {
         // Если у пользователя нет активных устройств, пропускаем его
         if (user.devices.length === 0) continue;
 
-        // Расчет списаний (как у тебя в коде: 10 руб. за 1 устройство в день)
-        const dailyRate = user.devices.length * 10;
+        const dailyRate = user.devices.reduce((sum, d) => sum + (d.location === 'at' ? 5 : 10), 0);
         const balance = Number(user.balance);
         const daysLeft = Math.floor(balance / dailyRate);
 

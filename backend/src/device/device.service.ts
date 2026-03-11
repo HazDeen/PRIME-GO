@@ -30,8 +30,12 @@ export class DeviceService {
     const count = await this.prisma.device.count({ where: { userId: user.id } });
     if (count >= 5) throw new BadRequestException('Максимум 5 устройств на один аккаунт');
 
-    if (user.balance < this.DEVICE_PRICE) {
-      throw new BadRequestException(`Недостаточно средств. Стоимость: ${this.DEVICE_PRICE} ₽`);
+    // 🌟 ОПРЕДЕЛЯЕМ ЛОКАЦИЮ И ЦЕНУ
+    const location = dto.location || 'ch';
+    const currentPrice = location === 'at' ? 150 : 300; // Австрия - 150, Швейцария - 300
+
+    if (user.balance < currentPrice) {
+      throw new BadRequestException(`Недостаточно средств. Стоимость: ${currentPrice} ₽`);
     }
 
     // 3. Подготовка данных
@@ -39,9 +43,6 @@ export class DeviceService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     const clientEmail = `${Math.random().toString(36).substring(7)}`;
-    
-    // Определяем локацию (если не передали, то по умолчанию Швейцария - ch)
-    const location = dto.location || 'ch';
 
     // 4. Создание в нужной 3x-ui панели
     const totalGbBytes = 1000 * 1024 * 1024 * 1024;
@@ -66,7 +67,7 @@ export class DeviceService {
           name: dto.name,
           customName: dto.customName || dto.name,
           type: dto.type,
-          location: location, // 👈 Сохраняем локацию в БД
+          location: location,
           uuid: clientUuid,
           email: clientEmail,
           configLink: xuiResponse.configLink || '',
@@ -75,16 +76,18 @@ export class DeviceService {
         },
       });
 
+      // 🌟 Списываем нужную сумму
       await tx.user.update({
         where: { id: user.id },
-        data: { balance: { decrement: this.DEVICE_PRICE } },
+        data: { balance: { decrement: currentPrice } },
       });
 
+      // 🌟 Логируем транзакцию с нужной суммой и указанием локации
       await tx.transaction.create({
         data: {
           userId: user.id,
           deviceId: device.id,
-          amount: -this.DEVICE_PRICE,
+          amount: -currentPrice,
           type: 'subscription',
           description: `Оплата VPN (${location.toUpperCase()}): ${dto.customName || dto.name}`,
         },
