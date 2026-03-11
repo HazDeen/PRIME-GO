@@ -201,7 +201,7 @@ export default function DeviceDetail() {
           <AlertCircle size={48} />
           <h2>Устройство не найдено</h2>
           <motion.button 
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/vpn')}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -224,7 +224,7 @@ export default function DeviceDetail() {
       <div className="deviceDetailHeader">
         <motion.button 
           className="backButton" 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/vpn')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

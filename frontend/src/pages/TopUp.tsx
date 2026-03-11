@@ -1,45 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, CreditCard, Wallet } from 'lucide-react';
+import { ChevronLeft, Bitcoin, Wallet } from 'lucide-react';
 import { useBalance } from '../hooks/useBalance';
-import { api } from '../api/client';
+import { client } from '../api/client';
 import { toast } from 'sonner';
 
 const PRESET_AMOUNTS = [100, 300, 500];
 
 export default function TopUp() {
   const navigate = useNavigate();
-  const { balance, refetch: refetchBalance } = useBalance();
+  const { balance } = useBalance();
+  
   const [selected, setSelected] = useState<number | 'custom'>(100);
   const [customAmount, setCustomAmount] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Вычисляем текущую выбранную сумму
+  const currentAmount = selected === 'custom' ? Number(customAmount) : selected;
+  // Вычисляем превью нового баланса
+  const newBalance = (balance || 0) + (currentAmount || 0);
+
   const handlePay = async () => {
-    const amount = selected === 'custom' ? Number(customAmount) : selected;
-    
-    if (!amount || amount < 1) {
-      toast.error('Введите корректную сумму');
+    if (!currentAmount || currentAmount < 50) {
+      toast.error('Минимальная сумма пополнения — 50 ₽');
       return;
     }
 
     setLoading(true);
     try {
-      await api.balance.topup(amount);
-      
-      toast.success(`Баланс пополнен на ${amount} ₽`);
-      
-      await refetchBalance();
-      setTimeout(() => navigate('/'), 1500);
+      // Создаем счет в CryptoBot через наш бэкенд
+      const response = await client.payments.create(currentAmount);
+      // Перенаправляем пользователя на страницу оплаты в Telegram
+      window.location.href = response.url;
     } catch (error: any) {
-      console.error('Topup error:', error);
-      toast.error(error.message || 'Ошибка пополнения');
-    } finally {
+      toast.error(error.message || 'Ошибка создания платежа');
       setLoading(false);
     }
   };
-
-  const newBalance = (balance || 0) + (selected === 'custom' ? Number(customAmount) || 0 : selected);
 
   // Плавная анимация появления страницы
   const pageVariants = {
@@ -56,6 +54,7 @@ export default function TopUp() {
       exit="out"
       variants={pageVariants}
       transition={{ duration: 0.3, ease: "easeOut" }}
+      style={{ paddingTop: '20px' }}
     >
       <div className="topupHeader">
         <motion.button 
@@ -111,12 +110,31 @@ export default function TopUp() {
               exit={{ opacity: 0, height: 0, marginTop: 0 }}
               type="number"
               className="customAmountInput"
-              placeholder="Введите сумму..."
+              placeholder="Введите сумму (от 50 ₽)..."
               value={customAmount}
               onChange={(e) => setCustomAmount(e.target.value)}
             />
           )}
         </AnimatePresence>
+      </div>
+
+      {/* Информационный блок о крипто-платеже */}
+      <div style={{ marginBottom: '24px', marginTop: '16px' }}>
+        <div style={{ 
+            display: 'flex', alignItems: 'center', gap: '12px', padding: '16px', 
+            background: 'var(--accent-alpha)',
+            border: '1px solid var(--accent)',
+            borderRadius: '16px'
+          }}
+        >
+          <Bitcoin size={28} color="var(--accent)" />
+          <div>
+            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>Telegram CryptoBot</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+              Мгновенная оплата в USDT, TON, BTC и др.
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="infoMessage">
@@ -127,12 +145,13 @@ export default function TopUp() {
       <motion.button 
         className="payButton"
         onClick={handlePay}
-        disabled={loading || (selected === 'custom' && !customAmount)}
+        disabled={loading || (selected === 'custom' && (!customAmount || Number(customAmount) < 50))}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
+        style={{ opacity: loading || (selected === 'custom' && (!customAmount || Number(customAmount) < 50)) ? 0.7 : 1 }}
       >
-        <CreditCard size={20} />
-        {loading ? 'Обработка...' : 'Пополнить'}
+        <Bitcoin size={20} />
+        {loading ? 'Создание счета...' : `Пополнить на ${currentAmount || 0} ₽`}
       </motion.button>
     </motion.div>
   );

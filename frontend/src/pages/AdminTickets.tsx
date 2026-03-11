@@ -223,8 +223,14 @@ export default function AdminTickets() {
                 <User size={24} color="var(--text-secondary)" />
               </div>
               <div className="deviceInfo">
-                <div className="deviceNameWrapper">
-                  <span className="deviceName" style={{ fontSize: '15px' }}>ID: {ticket.userId}</span>
+                <div className="deviceNameWrapper" style={{ alignItems: 'baseline' }}>
+                  {/* 🔥 Выводим никнейм основным текстом */}
+                  <span className="deviceName" style={{ fontSize: '16px' }}>
+                    {ticket.username}
+                  </span>
+                  <span style={{ fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                    {ticket.userId}
+                  </span>
                 </div>
                 <div className="deviceDate" style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
                   {ticket.topic}

@@ -20,7 +20,7 @@ export default function History() {
     return (
       <div className="historyPage container">
         <div className="historyHeader">
-          <button className="backButton" onClick={() => navigate(-1)}>
+          <button className="backButton" onClick={() => navigate('/vpn')}>
             <ChevronLeft size={24} />
           </button>
           <h1>История</h1>
@@ -48,7 +48,7 @@ export default function History() {
       <div className="historyHeader">
         <motion.button 
           className="backButton" 
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/vpn')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

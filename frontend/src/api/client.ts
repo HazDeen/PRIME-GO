@@ -306,6 +306,20 @@ export const client = {
     }
   },
 
+
+  payments: {
+    create: async (amount: number) => {
+      const tgId = JSON.parse(localStorage.getItem('user') || '{}').telegramId;
+      const res = await fetch(`${API_BASE_URL}/payments/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-telegram-id': String(tgId) },
+        body: JSON.stringify({ amount }) 
+      });
+      if (!res.ok) throw new Error('Ошибка создания платежа');
+      return res.json();
+    }
+  },
+
   // --- АДМИН ПАНЕЛЬ ---
   admin: {
     getStats: async () => {

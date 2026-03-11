@@ -113,7 +113,7 @@ export default function Support() {
       <div className="deviceDetailHeader">
         <motion.button 
           className="backButton" 
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/home')}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >

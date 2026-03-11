@@ -100,7 +100,7 @@ export default function AdminTicketChat() {
           <div className="chatTitleInfo">
             <h1 className="chatTitle" style={{ fontSize: '18px' }}>Тикет #{ticket.id}</h1>
             <span className="chatStatus" style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>
-              Пользователь: {ticket.userId}
+              {ticket.username} <span style={{ opacity: 0.5 }}>({ticket.userId})</span>
             </span>
           </div>
         </div>
@@ -200,7 +200,9 @@ export default function AdminTicketChat() {
               <p className="adminConfirmText">
                 Вы уверены, что вопрос решен? Пользователь больше не сможет отправлять сюда сообщения.
                 <br/><br/>
-                ID Пользователя: <strong style={{ color: 'var(--text-primary)', fontWeight: 700, letterSpacing: '0.5px' }}>{ticket.userId}</strong>
+                Пользователь: <strong style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{ticket.username}</strong>
+                <br/>
+                <span style={{ fontSize: '12px', opacity: 0.6 }}>ID: {ticket.userId}</span>
               </p>
               
               <div className="adminConfirmActions">

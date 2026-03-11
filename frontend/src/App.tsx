@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { Toast } from "./components/Toast"; 
@@ -6,7 +6,7 @@ import Maintenance from "./pages/Maintenance";
 import { useState, useEffect } from "react";
 
 import Login from "./pages/Login";
-import Home from "./pages/Home";
+import Vpn from "./pages/Vpn";
 import TopUp from "./pages/TopUp";
 import History from "./pages/History";
 import DeviceDetail from "./pages/DeviceDetail";
@@ -16,10 +16,35 @@ import Support from './pages/Support';
 import TicketChat from './pages/TicketChat';
 import AdminTickets from './pages/AdminTickets';
 import AdminTicketChat from './pages/AdminTicketChat';
+import Gemini from "./pages/Gemini";
 import "./styles/app.css";
 import "./styles/admin.css";
 import "./styles/login.css";
 import { client } from "./api/client";
+
+// ==========================================
+// 🛡️ ЗАЩИТА РОУТОВ (ПРОВЕРКА АВТОРИЗАЦИИ)
+// ==========================================
+
+// 1. Не пускаем неавторизованных внутрь
+const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+  const user = localStorage.getItem('user');
+  if (!user) {
+    return <Navigate to="/" replace />; // Кидаем на логин
+  }
+  return children;
+};
+
+// 2. Не пускаем авторизованных обратно на страницу входа
+const PublicRoute = ({ children }: { children: JSX.Element }) => {
+  const user = localStorage.getItem('user');
+  if (user) {
+    return <Navigate to="/home" replace />; // Кидаем сразу в сервисы
+  }
+  return children;
+};
+
+// ==========================================
 
 function App() {
   const [isMaintenance, setIsMaintenance] = useState(false);
@@ -43,8 +68,8 @@ function App() {
 
   if (loading) return null; // Или красивый полноэкранный лоадер
 
-  // 🚨 ПЕРЕХВАТЧИК: Если тех. работы, и мы не пытаемся открыть /login
-  if (isMaintenance && !currentPath.toLowerCase().includes('login')) {
+  // 🚨 ПЕРЕХВАТЧИК: Если тех. работы, и мы не пытаемся открыть логин (который теперь на /)
+  if (isMaintenance && currentPath !== '/' && !currentPath.toLowerCase().includes('login')) {
     return (
       <ThemeProvider>
         <Maintenance />
@@ -52,25 +77,41 @@ function App() {
     );
   }
 
-  // 🌟 ОСНОВНОЕ ПРИЛОЖЕНИЕ (Отображается в обычном режиме)
+  // 🌟 ОСНОВНОЕ ПРИЛОЖЕНИЕ
   return (
     <ThemeProvider>
       <AuthProvider>
-        {/* 👇 Вот он! Теперь тут работает наш умный стеклянный тостер */}
         <Toast /> 
         
         <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/vpn" element={<Home />} />
-          <Route path="/" element={<Services />} />
-          <Route path="/topup" element={<TopUp />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/device/:id" element={<DeviceDetail />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/support" element={<Support />} />
-          <Route path="/support/:id" element={<TicketChat />} />
-          <Route path="/admin/tickets" element={<AdminTickets />} />
-          <Route path="/admin/tickets/:id" element={<AdminTicketChat />} />
+          {/* 🚪 ПУБЛИЧНАЯ СТРАНИЦА (ЛОГИН ТЕПЕРЬ ТУТ) */}
+          <Route path="/" element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          } />
+          {/* На всякий случай делаем редирект со старого /login */}
+          <Route path="/login" element={<Navigate to="/" replace />} />
+
+          {/* 🛡️ ЗАЩИЩЕННЫЕ СТРАНИЦЫ ПРИЛОЖЕНИЯ */}
+          {/* Главное меню сервисов переехало на /home */}
+          <Route path="/home" element={<ProtectedRoute><Services /></ProtectedRoute>} />
+          
+          <Route path="/vpn" element={<ProtectedRoute><Vpn /></ProtectedRoute>} />
+          <Route path="/gemini" element={<ProtectedRoute><Gemini /></ProtectedRoute>} />
+          <Route path="/topup" element={<ProtectedRoute><TopUp /></ProtectedRoute>} />
+          <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+          <Route path="/device/:id" element={<ProtectedRoute><DeviceDetail /></ProtectedRoute>} />
+          <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+          <Route path="/support/:id" element={<ProtectedRoute><TicketChat /></ProtectedRoute>} />
+          
+          {/* 🛡️ АДМИНКА */}
+          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin/tickets" element={<ProtectedRoute><AdminTickets /></ProtectedRoute>} />
+          <Route path="/admin/tickets/:id" element={<ProtectedRoute><AdminTicketChat /></ProtectedRoute>} />
+
+          {/* Если юзер введет несуществующую ссылку — кидаем на главную */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </ThemeProvider>

@@ -153,8 +153,10 @@ export default function Services() {
 
         <motion.div 
           className="serviceCard geminiCard"
+          onClick={() => navigate('/gemini')} // 👈 ДОБАВИЛИ ПЕРЕХОД
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          style={{ cursor: 'pointer' }} // 👈 Добавили курсор
         >
           <div className="serviceIconWrapper ai">
             <Sparkles size={32} />
@@ -163,8 +165,9 @@ export default function Services() {
             <h2>Gemini AI</h2>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <p style={{ margin: 0 }}>Умный помощник</p>
-              <div className="statusBadge inDevelopment">
-                <Sparkles size={14} /> В разработке
+              {/* Плашку "В разработке" можно убрать, или заменить на "Доступно" */}
+              <div className="statusBadge" style={{ background: 'var(--success-alpha)', color: 'var(--success)' }}>
+                <Sparkles size={14} /> Доступно
               </div>
             </div>
           </div>
