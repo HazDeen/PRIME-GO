@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete } from '@nestjs/common';
 import { XuiApiService } from './xui-api.service';
 
 @Controller('xui')
@@ -11,11 +11,12 @@ export class XuiController {
     return { status: 'XUI API is connected and ready' };
   }
 
-  // Создание клиента (теперь вызываем addClient вместо createClient)
+  // Создание клиента (теперь используем location вместо inboundId)
   @Post('client')
   async createClient(@Body() data: any) {
-    // В сервисе мы переименовали метод в addClient
-    return this.xuiService.addClient(data.inboundId || 1, {
+    const location = data.location || 'ch'; // По умолчанию Швейцария
+    
+    return this.xuiService.addClient(location, {
       uuid: data.uuid,
       email: data.email,
       tgUid: data.tgUid,
@@ -24,13 +25,12 @@ export class XuiController {
     });
   }
 
-  // Удаление клиента
-  @Delete('client/:inboundId/:uuid')
+  // Удаление клиента (принимаем строку location в параметрах ссылки)
+  @Delete('client/:location/:uuid')
   async deleteClient(
-    @Param('inboundId') inboundId: string,
+    @Param('location') location: string,
     @Param('uuid') uuid: string
   ) {
-    // В сервисе метод называется deleteClient
-    return this.xuiService.deleteClient(+inboundId, uuid);
+    return this.xuiService.deleteClient(location, uuid);
   }
 }
