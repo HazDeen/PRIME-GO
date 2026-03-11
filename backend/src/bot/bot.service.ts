@@ -31,7 +31,7 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     try {
       this.logger.log('🚀 Бот запускается...');
 
-      // 1. Сначала полностью очищаем состояние вебхуков и старых запросов
+      // 1. Очищаем вебхуки на всякий случай
       await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
       this.logger.log('🧹 Старые сессии и вебхуки очищены');
 
@@ -41,22 +41,42 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
       this.registerCommands();
       this.registerActions();
 
-      // 2. Запускаем с небольшой задержкой (опционально), чтобы Railway успел убить старый контейнер
-      this.bot.launch({ 
-        dropPendingUpdates: true,
-        allowedUpdates: ['message', 'callback_query'] 
-      })
-        .then(() => this.logger.log('✅ Бот успешно запущен!'))
-        .catch((err) => {
-          if (err.response?.error_code === 409) {
-            this.logger.error('❌ Ошибка 409: Конфликт токена. Попробуйте перезапустить билд в Railway через 10 секунд.');
+      // 2. Умный запуск с повторными попытками (Retry Logic)
+      const startBot = async (retries = 5) => {
+        try {
+          // Ждем 2 секунды перед первым запуском, чтобы дать старому контейнеру время умереть
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          await this.bot.launch({ 
+            dropPendingUpdates: true,
+            allowedUpdates: ['message', 'callback_query'] 
+          });
+          this.logger.log('✅ Бот успешно запущен и слушает обновления!');
+        } catch (err: any) {
+          if (err.response?.error_code === 409 && retries > 0) {
+            this.logger.warn(`⚠️ Конфликт 409. Старый контейнер еще жив. Ждем 5 сек... (Осталось попыток: ${retries})`);
+            setTimeout(() => startBot(retries - 1), 5000); // Пробуем снова через 5 секунд
           } else {
-            this.logger.error(`❌ Ошибка запуска бота: ${err.message}`);
+            this.logger.error(`❌ Критическая ошибка запуска бота: ${err.message}`);
           }
-        });
-      
+        }
+      };
+
+      // Запускаем процесс
+      startBot();
+
+      // 3. Учим бота КОРРЕКТНО отключаться, когда Railway присылает команду на остановку старого контейнера
+      process.once('SIGINT', () => {
+        this.logger.log('🛑 Получен сигнал SIGINT (Остановка)');
+        this.bot.stop('SIGINT');
+      });
+      process.once('SIGTERM', () => {
+        this.logger.log('🛑 Получен сигнал SIGTERM (Railway убивает контейнер)');
+        this.bot.stop('SIGTERM');
+      });
+
     } catch (error) {
-      this.logger.error(`❌ Критическая ошибка: ${(error as Error).message}`);
+      this.logger.error(`❌ Ошибка инициализации бота: ${(error as Error).message}`);
     }
   }
 
