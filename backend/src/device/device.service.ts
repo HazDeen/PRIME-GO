@@ -2,7 +2,6 @@ import { Injectable, BadRequestException, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { XuiApiService } from '../xui/xui-api.service';
 import { v4 as uuidv4 } from 'uuid';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class DeviceService {
@@ -11,7 +10,6 @@ export class DeviceService {
   constructor(
     private prisma: PrismaService,
     private xuiApiService: XuiApiService,
-    private configService: ConfigService,
   ) {}
 
   async create(dto: { tgId: string; name: string; customName: string; type: string; location?: string }) {
@@ -35,27 +33,25 @@ export class DeviceService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     
-    // 🌟 1. Узнаем будущий ID устройства
+    // 🌟 ИСПРАВЛЕНИЕ: Узнаем следующий ID из базы данных
     const lastDevice = await this.prisma.device.findFirst({ orderBy: { id: 'desc' } });
     const nextId = (lastDevice?.id || 0) + 1;
-
-    // 🌟 2. ФОРМИРУЕМ EMAIL И КОММЕНТАРИЙ
-    const tgUsername = user.username ? `@${user.username}` : `ID:${user.telegramId}`;
-    const clientEmail = `client${nextId}user`; // Формат: client1user, client2user...
-    const linkRemark = `${tgUsername} (${dto.type})`; // Формат: @hazdeen (iPhone)
+    
+    // 🌟 Формируем красивый никнейм
+    const clientEmail = `client${nextId}user`; 
 
     const totalGbBytes = 1000 * 1024 * 1024 * 1024;
+    
+    // Передаем правильный email в 3x-ui
     const xuiResponse = await this.xuiApiService.addClient(location, {
       uuid: clientUuid,
-      email: clientEmail,
-      remark: linkRemark, // Передаем красивый комментарий для ссылки
+      email: clientEmail, 
       totalGb: totalGbBytes,
       expiryTime: expiresAt.getTime(),
       tgUid: user.telegramId.toString()
     });
 
     if (!xuiResponse || !xuiResponse.success) {
-      this.logger.error(`XUI Error: ${xuiResponse?.msg}`);
       throw new BadRequestException('Ошибка VPN панели: ' + (xuiResponse?.msg || 'Не удалось создать клиента'));
     }
 
@@ -68,7 +64,7 @@ export class DeviceService {
           type: dto.type,
           location: location,
           uuid: clientUuid,
-          email: clientEmail, // Сохраняем системный ник (client1user) в БД
+          email: clientEmail, 
           configLink: xuiResponse.configLink || '',
           isActive: true,
           expiresAt,
@@ -133,12 +129,7 @@ export class DeviceService {
   }
 
   async replaceDevice(deviceId: number) {
-    this.logger.log(`🔄 Полная замена конфигурации для устройства ID: ${deviceId}`);
-    
-    const device = await this.prisma.device.findUnique({ 
-      where: { id: deviceId },
-      include: { user: true }
-    });
+    const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
     if (!device) throw new NotFoundException('Устройство не найдено');
 
     const location = device.location || 'ch';
@@ -149,18 +140,15 @@ export class DeviceService {
 
     const newUuid = uuidv4();
     
-    // 🌟 При перегенерации ПЕРЕИСПОЛЬЗУЕМ старый email (например, client1user)
-    const tgUsername = device.user.username ? `@${device.user.username}` : `ID:${device.user.telegramId}`;
+    // 🌟 При перегенерации ключа сохраняем оригинальный client{ID}user!
     const clientEmail = device.email || `client${deviceId}user`;
-    const linkRemark = `${tgUsername} (${device.type})`;
     
     const xuiResponse = await this.xuiApiService.addClient(location, {
       uuid: newUuid,
-      email: clientEmail, // Старый email
-      remark: linkRemark, // Красивый комментарий
+      email: clientEmail, 
       totalGb: 1000 * 1024 * 1024 * 1024,
       expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
-      tgUid: device.user.telegramId.toString()
+      tgUid: "0"
     });
 
     if (!xuiResponse || !xuiResponse.success) {

@@ -7,14 +7,12 @@ import { ConfigService } from '@nestjs/config';
 export class XuiApiService {
   private readonly logger = new Logger(XuiApiService.name);
   
-  // Храним подключения к разным панелям (ключ - локация: 'ch' или 'at')
   private apis: Record<string, { instance: AxiosInstance; isLoggedIn: boolean }> = {};
 
   constructor(private readonly configService: ConfigService) {}
 
-  // Получаем настройки для конкретной локации
   private getServerConfig(location: string) {
-    const prefix = location.toUpperCase(); // 'CH' или 'AT'
+    const prefix = location.toUpperCase(); 
     return {
       url: process.env[`XUI_${prefix}_PANEL_URL`],
       username: process.env[`XUI_${prefix}_USERNAME`],
@@ -24,7 +22,6 @@ export class XuiApiService {
     };
   }
 
-  // Ленивая авторизация (подключаемся только при запросе)
   private async ensureLogin(location: string) {
     if (this.apis[location]?.isLoggedIn) return;
 
@@ -49,17 +46,14 @@ export class XuiApiService {
       if (cookies) {
         apiInstance.defaults.headers.common['Cookie'] = cookies.join('; ');
         this.apis[location] = { instance: apiInstance, isLoggedIn: true };
-        this.logger.log(`✅ Вход выполнен [${location.toUpperCase()}]`);
       } else {
         throw new Error('Куки не получены');
       }
     } catch (error: any) {
-      this.logger.error(`❌ Ошибка входа [${location.toUpperCase()}]:`, error.message);
       throw error;
     }
   }
 
-  // Создание клиента на НУЖНОМ сервере
   async addClient(location: string, clientData: any) {
     await this.ensureLogin(location);
     const api = this.apis[location].instance;
@@ -69,7 +63,10 @@ export class XuiApiService {
     if (!inboundConfig) return { success: false, msg: 'Ошибка получения настроек из панели' };
 
     const clientUuid = clientData.uuid;
-    const clientEmail = `${Math.random().toString(36).substring(7)}`;
+    
+    // 🛑 ВОТ ЗДЕСЬ ИСПРАВЛЕНИЕ: Берем строго тот email, который передали!
+    const clientEmail = clientData.email; 
+
     const client = {
       id: clientUuid,
       email: clientEmail,
@@ -93,7 +90,8 @@ export class XuiApiService {
       });
 
       if (response.data?.success) {
-        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&pbk=${inboundConfig.pbk}&fp=chrome&sni=${inboundConfig.sni}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${location.toUpperCase()}-${clientEmail}`;
+        // 🛑 И ТУТ ВСТАВЛЯЕМ ЕГО ЖЕ В ССЫЛКУ (без случайных символов)
+        const vlessLink = `vless://${clientUuid}@${inboundConfig.host}:${inboundConfig.port}?security=reality&pbk=${inboundConfig.pbk}&fp=chrome&sni=${inboundConfig.sni}&sid=${inboundConfig.sid}&flow=xtls-rprx-vision&type=tcp#PRIME-${clientEmail}`;
 
         return { success: true, configLink: vlessLink, email: clientEmail, uuid: clientUuid };
       }
@@ -103,7 +101,6 @@ export class XuiApiService {
     }
   }
 
-  // Удаление клиента с НУЖНОГО сервера
   async deleteClient(location: string, uuid: string) {
     await this.ensureLogin(location);
     const api = this.apis[location].instance;
@@ -117,7 +114,6 @@ export class XuiApiService {
     }
   }
 
-  // Получение настроек с НУЖНОГО сервера
   async getInboundConfig(location: string, inboundId: number) {
     await this.ensureLogin(location);
     const api = this.apis[location].instance;
