@@ -30,7 +30,6 @@ const getDeviceIcon = (type: DeviceType) => {
 export default function DeviceCard({ id, name, model, type, date, isActive, daysLeft = 0, location, onClick }: Props) {
   const navigate = useNavigate();
   const Icon = getDeviceIcon(type);
-  const locationBadge = location === 'at' ? '🇦🇹 Австрия' : '🇨🇭 Швейцария';
 
   // 🌟 УМНЫЙ КЛИК: если есть onDeviceClick из AppView, используем его. Если нет - стандартный роутинг.
   const handleClick = () => {
@@ -49,11 +48,16 @@ export default function DeviceCard({ id, name, model, type, date, isActive, days
           <div className="deviceNameWrapper">
             <span className="deviceName">{name}</span>
             <span className="deviceOriginalName">{model}</span>
+            {location && (
+            <span className="countryBadge sm">
+              <span className={`fi fi-${location === 'at' ? 'at' : 'ch'}`}></span>
+              {location === 'at' ? 'AT' : 'CH'}
+            </span>
+          )}
           </div>
         </div>
         <div className="deviceMeta">
           <span className="deviceDate">{date}</span>
-          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginLeft: '8px' }}>{locationBadge}</span>
           {isActive && daysLeft > 0 && (
             <span className="daysBadge">
               <Timer size={14} /> 

@@ -77,6 +77,15 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
         onClick={(e) => e.stopPropagation()}
         initial={{ y: "100%" }} animate={{ y: isClosing ? "100%" : 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        drag="y" // Тянем только по вертикали
+        dragConstraints={{ top: 0, bottom: 0 }} // Чтобы она не улетала вверх, а только пружинила
+        dragElastic={0.2} // Сопротивление при натяжении
+        onDragEnd={(_, info) => {
+          // Если скорость свайпа или расстояние больше порога — закрываем
+          if (info.offset.y > 150 || info.velocity.y > 500) {
+            onClose();
+          }
+        }}
       >
         <motion.div className="modalHandle" onClick={handleClose} />
         

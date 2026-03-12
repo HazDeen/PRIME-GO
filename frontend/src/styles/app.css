@@ -464,12 +464,14 @@ body {
   background: var(--bg-secondary);
   border-radius: 32px 32px 0 0;
   padding: 24px;
-  padding-bottom: calc(40px + env(safe-area-inset-bottom, 16px)) !important;
+  padding-bottom: calc(24px + env(safe-area-inset-bottom, 16px)) !important;
   border-top: 1px solid var(--border-color);
   box-shadow: var(--shadow);
   z-index: 1002;
-  max-height: 90vh;
+  max-height: 65dvh; 
   overflow-y: auto;
+  overscroll-behavior: none; 
+  -webkit-overflow-scrolling: touch;
 }
 
 .modalHandle {
@@ -852,9 +854,6 @@ body {
 /* -------------------------------------------- */
 /* 7. СТРАНИЦА ИСТОРИИ */
 /* -------------------------------------------- */
-.historyPage {
-  padding: 20px 16px;
-}
 
 .historyHeader {
   display: flex;

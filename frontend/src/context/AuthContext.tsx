@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 interface User {
   id: number;
@@ -16,6 +16,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
+  setUser: (user: User | null) => void;
   loading: boolean;
   updateBalance: (newBalance: number) => void;
   logout: () => void;
@@ -27,8 +28,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const location = useLocation();
-  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -40,18 +39,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     }
     setLoading(false);
-    setInitialLoad(false); // 👈 Первая загрузка завершена
   }, []);
 
-  useEffect(() => {
-    // Не делаем редирект, пока идёт первая загрузка
-    if (initialLoad) return;
-
-    const isLoginPage = location.pathname.includes('/login');
-    if (!user && !isLoginPage) {
-      navigate('/login');
-    }
-  }, [user, loading, initialLoad, navigate, location]);
+  // ❌ МЫ УДАЛИЛИ useEffect, КОТОРЫЙ ДЕЛАЛ navigate('/login')
+  // Теперь роутер не будет дергаться. AppView сам поймет, что user == null, и покажет форму входа.
 
   const updateBalance = (newBalance: number) => {
     if (user) {
@@ -63,15 +54,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('token'); // Подчищаем токен на всякий случай
     setUser(null);
-    navigate('/login');
+    navigate('/'); // 👈 Кидаем на главную
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, updateBalance, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, updateBalance, logout }}> {/* 👈 ДОБАВИТЬ СЮДА */}
       {children}
     </AuthContext.Provider>
-  );
+  )
 };
 
 export const useAuth = () => {

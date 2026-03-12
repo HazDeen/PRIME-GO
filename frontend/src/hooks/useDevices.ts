@@ -16,6 +16,7 @@ export interface Device {
   expiresAt: string;
   date: string;      
   daysLeft?: number;
+  location?: string;
 }
 
 export function useDevices() {
