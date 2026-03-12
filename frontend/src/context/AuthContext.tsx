@@ -9,6 +9,9 @@ interface User {
   username: string;
   balance: number;
   isAdmin: boolean;
+  autoRenewVpn?: boolean;
+  autoRenewGemini?: boolean;
+  tgNotifications?: boolean;
 }
 
 interface AuthContextType {
