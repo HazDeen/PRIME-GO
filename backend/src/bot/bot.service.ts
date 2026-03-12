@@ -187,7 +187,7 @@ export class BotService implements OnModuleInit, BeforeApplicationShutdown {
         {
           parse_mode: 'HTML',
           ...Markup.inlineKeyboard([
-            [Markup.button.url('✉️ Написать', 'https://t.me/HazDeen')],
+            [Markup.button.url('✉️ Написать', 'https://t.me/Prime_Go_ADMIN')],
             [Markup.button.callback('🔙 Назад', 'menu_main')]
           ])
         }
