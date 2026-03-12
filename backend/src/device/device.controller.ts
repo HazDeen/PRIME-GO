@@ -9,7 +9,8 @@ import {
   NotFoundException, 
   BadRequestException,
   ForbiddenException, // 👈 Импортировали ошибку доступа
-  Logger 
+  Logger,
+  Headers
 } from '@nestjs/common';
 import { DeviceService } from './device.service';
 import { PrismaClient } from '@prisma/client';
@@ -125,5 +126,15 @@ export class DeviceController {
   @Get('admin/all')
   async findAll() {
     return this.deviceService.findAll();
+  }
+
+  @Post(':id/renew')
+  async renewDevice(@Param('id') id: string, @Headers('Authorization') auth: string) {
+    // Получаем пользователя (зависит от твоей авторизации, обычно из токена или можно передать userId)
+    // Упрощенно для примера (лучше брать из токена):
+    const tokenParams = JSON.parse(Buffer.from(auth.split('.')[1], 'base64').toString()); 
+    const userId = tokenParams.id; // Твой ID из токена
+
+    return this.deviceService.renewDevice(parseInt(id), userId);
   }
 }

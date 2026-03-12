@@ -173,4 +173,54 @@ export class DeviceService {
       orderBy: { connectedAt: 'desc' }
     });
   }
+
+  async renewDevice(deviceId: number, userId: number) {
+    const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!device) throw new NotFoundException('Устройство не найдено');
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const location = device.location || 'ch';
+    const price = location === 'at' ? 150 : 300;
+
+    if (user.balance < price) {
+      throw new BadRequestException(`Недостаточно средств. Стоимость продления: ${price} ₽`);
+    }
+
+    // Считаем новую дату: если уже просрочен - от сегодня + 30 дней. Если еще активен - прибавляем 30 дней к остатку.
+    const currentExpiry = device.expiresAt ? device.expiresAt.getTime() : Date.now();
+    const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
+    const newExpiryTime = baseTime + (30 * 24 * 60 * 60 * 1000);
+    const newExpiresAt = new Date(newExpiryTime);
+
+    // Обновляем в 3x-ui
+    if (device.uuid) {
+      const xuiRes = await this.xuiApiService.updateClientExpiry(location, device.uuid, newExpiryTime);
+      if (!xuiRes.success) throw new BadRequestException('Ошибка при обновлении в панели VPN');
+    }
+
+    // Транзакция: списываем деньги, обновляем базу, пишем историю
+    return await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: user.id },
+        data: { balance: { decrement: price } },
+      });
+
+      await tx.transaction.create({
+        data: {
+          userId: user.id,
+          deviceId: device.id,
+          amount: -price,
+          type: 'subscription',
+          description: `Продление VPN (${location.toUpperCase()}): ${device.customName || device.name}`,
+        },
+      });
+
+      return await tx.device.update({
+        where: { id: device.id },
+        data: { expiresAt: newExpiresAt, isActive: true },
+      });
+    });
+  }
 }

@@ -114,6 +114,42 @@ export class XuiApiService {
     }
   }
 
+  async updateClientExpiry(location: string, uuid: string, newExpiryTime: number) {
+    await this.ensureLogin(location);
+    const api = this.apis[location].instance;
+    const config = this.getServerConfig(location);
+
+    try {
+      // 1. Сначала нужно получить текущие данные клиента
+      const response = await api.get(`/panel/api/inbounds/getClientTraffics/${config.inboundId}`);
+      if (!response.data?.success) return { success: false, msg: 'Не удалось получить данные клиента' };
+      
+      const client = response.data.obj.find((c: any) => c.email.includes(uuid) || c.email === uuid || c.id === uuid);
+      
+      // 2. Формируем запрос на обновление
+      const payload = new URLSearchParams({
+        id: config.inboundId.toString(),
+        settings: JSON.stringify({
+          clients: [{
+            id: uuid,
+            expiryTime: newExpiryTime,
+            enable: true
+            // Остальные параметры 3x-ui сохранит автоматически
+          }]
+        }),
+      });
+
+      const updateRes = await api.post(`/panel/inbound/updateClient/${uuid}`, payload.toString(), {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }
+      });
+
+      return { success: updateRes.data?.success, msg: updateRes.data?.msg };
+    } catch (error: any) {
+      this.logger.error(`Ошибка продления в 3x-ui: ${error.message}`);
+      return { success: false, msg: error.message };
+    }
+  }
+
   async getInboundConfig(location: string, inboundId: number) {
     await this.ensureLogin(location);
     const api = this.apis[location].instance;

@@ -19,11 +19,15 @@ model User {
   notificationsEnabled Boolean @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  autoRenewVpn    Boolean        @default(false)
+  autoRenewGemini Boolean        @default(false)
+  tgNotifications Boolean        @default(true)
 
   devices     Device[]
   transactions Transaction[]
   tickets Ticket[]
   payments Payment[]
+  notifications   Notification[]
 
   @@map("users")
 }
@@ -105,4 +109,14 @@ model Payment {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
