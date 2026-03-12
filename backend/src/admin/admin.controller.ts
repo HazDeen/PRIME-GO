@@ -136,7 +136,9 @@ export class AdminController {
           blockAll: false, 
           blockUsers: false, 
           blockAdmins: false, 
-          maintenanceMode: false 
+          maintenanceMode: false,
+          blockCh: false, // 👈 Добавили инициализацию
+          blockAt: false  // 👈 Добавили инициализацию
         }
       });
     }
@@ -145,14 +147,17 @@ export class AdminController {
       all: settings.blockAll,
       users: settings.blockUsers,
       admins: settings.blockAdmins,
-      maintenance: settings.maintenanceMode 
+      maintenance: settings.maintenanceMode,
+      blockCh: settings.blockCh || false, // 👈 Отдаем на фронтенд
+      blockAt: settings.blockAt || false  // 👈 Отдаем на фронтенд
     };
   }
 
   @Put('settings')
   async updateSettings(
     @Headers('x-username') adminUsername: string,
-    @Body() body: { all: boolean, users: boolean, admins: boolean, maintenance: boolean }
+    // 👇 Добавили новые поля в Body
+    @Body() body: { all: boolean, users: boolean, admins: boolean, maintenance: boolean, blockCh: boolean, blockAt: boolean }
   ) {
     if (!adminUsername) throw new UnauthorizedException('Username required');
     await this.adminService.validateAdmin(adminUsername);
@@ -170,7 +175,9 @@ export class AdminController {
           blockAll: body.all, 
           blockUsers: body.users, 
           blockAdmins: body.admins,
-          maintenanceMode: body.maintenance 
+          maintenanceMode: body.maintenance,
+          blockCh: body.blockCh, // 👈 Сохраняем Швейцарию
+          blockAt: body.blockAt  // 👈 Сохраняем Австрию
         }
       });
     } else {
@@ -179,7 +186,9 @@ export class AdminController {
           blockAll: body.all, 
           blockUsers: body.users, 
           blockAdmins: body.admins,
-          maintenanceMode: body.maintenance 
+          maintenanceMode: body.maintenance,
+          blockCh: body.blockCh, // 👈 Сохраняем
+          blockAt: body.blockAt  // 👈 Сохраняем
         }
       });
     }
@@ -213,7 +222,9 @@ export class AdminController {
       all: settings.blockAll,
       users: settings.blockUsers,
       admins: settings.blockAdmins,
-      maintenance: settings.maintenanceMode 
+      maintenance: settings.maintenanceMode,
+      blockCh: settings.blockCh, // 👈 Возвращаем обратно фронтенду
+      blockAt: settings.blockAt  // 👈 Возвращаем обратно фронтенду
     };
   }
 }

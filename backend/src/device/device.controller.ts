@@ -32,7 +32,7 @@ export class DeviceController {
     name: string; 
     customName: string; 
     type: string;
-    location: string;
+    location?: string; // 👈 Добавили location
   }) {
     this.logger.log(`🚀 Запрос на создание устройства для TG: ${body.tgId}`);
     
@@ -45,6 +45,7 @@ export class DeviceController {
       // 🚨 ЖЕСТКАЯ ПРОВЕРКА БЛОКИРОВКИ (ТУМБЛЕРЫ)
       // ==========================================
       const settings = await prisma.settings.findFirst();
+      const location = body.location || 'ch'; // Узнаем, куда просится клиент
       
       if (settings) {
         // 1. Проверяем глобальную блокировку
@@ -52,19 +53,22 @@ export class DeviceController {
           throw new ForbiddenException('⛔️ Создание новых VPN временно приостановлено сервером.');
         }
 
-        // Ищем пользователя, чтобы понять, админ он или нет
-        // (Обычно telegramId в базе это BigInt. Если у тебя Int или String, убери BigInt)
+        // 2. 🌍 ПРОВЕРКА БЛОКИРОВКИ КОНКРЕТНЫХ СЕРВЕРОВ
+        if (location === 'ch' && settings.blockCh) {
+          throw new ForbiddenException('⛔️ Создание VPN на сервере Швейцарии (CH) временно приостановлено.');
+        }
+        if (location === 'at' && settings.blockAt) {
+          throw new ForbiddenException('⛔️ Создание VPN на сервере Австрии (AT) временно приостановлено.');
+        }
+
         const user = await prisma.user.findFirst({
           where: { telegramId: BigInt(body.tgId) } 
         });
 
         if (user) {
-          // 2. Если юзер НЕ админ, и стоит запрет для пользователей
           if (settings.blockUsers && !user.isAdmin) {
             throw new ForbiddenException('⛔️ Создание VPN для обычных пользователей закрыто.');
           }
-          
-          // 3. Если юзер АДМИН, и стоит запрет для админов
           if (settings.blockAdmins && user.isAdmin) {
             throw new ForbiddenException('⛔️ Создание VPN для администраторов закрыто.');
           }
@@ -72,11 +76,10 @@ export class DeviceController {
       }
       // ==========================================
 
-      // Вызываем метод сервиса, который делает ВСЁ остальное
       return await this.deviceService.create(body);
     } catch (error) {
       this.logger.error(`❌ Ошибка создания: ${error.message}`);
-      throw error; // Ошибка улетит на фронтенд и покажется в Toast
+      throw error; 
     }
   }
 

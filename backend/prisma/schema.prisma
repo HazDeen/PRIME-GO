@@ -71,6 +71,8 @@ model Settings {
   blockAdmins  Boolean  @default(false)
   maintenanceMode Boolean  @default(false)
   updatedAt    DateTime @updatedAt
+  blockCh     Boolean  @default(false) 
+  blockAt     Boolean  @default(false)
 }
 
 model Ticket {
