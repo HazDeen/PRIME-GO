@@ -1,35 +1,7 @@
 import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
-import axios, { AxiosInstance } from 'axios';
 
 const API_BASE_URL = 'https://h4zdeen.up.railway.app'; // ссылка на backend
-
-export class Client {
-  public api: AxiosInstance;
-
-  constructor(baseURL: string) {
-    this.api = axios.create({
-      baseURL,
-      withCredentials: true,
-    });
-  }
-
-  async getUsers() {
-    return this.api.get('/users');
-  }
-
-  async createUser(data: { telegramId: string; balance: number }) {
-    return this.api.post('/users', data);
-  }
-
-  async getAllDevices() {
-    return this.api.get('/devices/admin/all');
-  }
-
-  async createDevice(data: { tgId: string; name: string; type: string }) {
-    return this.api.post('/devices', data);
-  }
-}
 
 // Универсальная функция для заголовков
 const getHeaders = (includeJson = true) => {
@@ -60,7 +32,7 @@ const getHeaders = (includeJson = true) => {
 
 let isCreatingDevice = false;
 
-// 👇 ТЕПЕРЬ ВСЁ НАХОДИТСЯ В ОДНОМ ОБЪЕКТЕ CLIENT 👇
+// Экспортируем наш основной объект API (Обязательно export const client)
 export const client = {
   
   // --- СИСТЕМА (Тех. работы) ---
@@ -171,7 +143,7 @@ export const client = {
       }
     },
 
-    create: async (data: { name: string; model: string; type: DeviceType; tgUserId: string; }) => {
+    create: async (data: { name: string; model: string; type: DeviceType; tgUserId: string; location?: string }) => {
       if (isCreatingDevice) return;
       isCreatingDevice = true;
       try {
@@ -201,6 +173,7 @@ export const client = {
             name: data.name,
             model: data.model,
             type: data.type,
+            location: data.location || 'ch',
             uuid: xuiResult.data.uuid,
             subscriptionUrl: xuiResult.data.subscriptionUrl,
             tgUserId: data.tgUserId
@@ -208,7 +181,6 @@ export const client = {
         });
         
         const dbResult = await dbRes.json();
-        // 🚨 Если бэкенд отбил запрос (например, сработала блокировка)
         if (!dbRes.ok) {
           throw new Error(dbResult.message || 'Ошибка сохранения устройства');
         }
@@ -306,7 +278,7 @@ export const client = {
     }
   },
 
-
+  // --- ПЛАТЕЖИ ---
   payments: {
     create: async (amount: number) => {
       const tgId = JSON.parse(localStorage.getItem('user') || '{}').telegramId;
@@ -370,17 +342,14 @@ export const client = {
       });
       return response.json();
     },
-    createDevice: async (data: { tgId: string; name: string; type: string }) => {
+    createDevice: async (data: { tgId: string; name: string; type: string; location?: string }) => {
       const response = await fetch(`${API_BASE_URL}/devices`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data)
       });
       const result = await response.json();
-      
-      // 🚨 Жестко выбрасываем ошибку, чтобы остановить зеленый тост
       if (!response.ok) throw new Error(result.message || 'Ошибка создания устройства');
-      
       return result;
     },
     updateUsername: async (userId: number, newUsername: string) => {
@@ -398,17 +367,14 @@ export const client = {
       });
       return response.json();
     },
-    addDeviceForUser: async (userId: number, data: { name: string, type: string }) => {
+    addDeviceForUser: async (userId: number, data: { name: string; type: string; location: string }) => {
       const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/devices`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(data)
       });
       const result = await response.json();
-      
-      // 🚨 Аналогичная проверка для модалки админа
       if (!response.ok) throw new Error(result.message || 'Ошибка создания устройства');
-      
       return result;
     },
     deleteDevice: async (deviceId: number) => {
@@ -437,7 +403,7 @@ export const client = {
       if (!res.ok) throw new Error('Ошибка получения настроек');
       return res.json();
     },
-    updateSettings: async (settings: { all: boolean, users: boolean, admins: boolean, maintenance: boolean }) => {
+    updateSettings: async (settings: { all: boolean, users: boolean, admins: boolean, maintenance: boolean, blockCh: boolean, blockAt: boolean}) => {
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
       const adminUsername = user?.username || '';
@@ -456,7 +422,5 @@ export const client = {
   }
 };
 
-// Экспортируем api как алиас для client, чтобы не сломать импорты в других местах, если они были
+// Экспортируем алиас api, чтобы в старых файлах (например в Login.tsx) не ломался импорт
 export const api = client;
-
-// test deploy update

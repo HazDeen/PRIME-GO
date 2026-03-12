@@ -44,7 +44,7 @@ export default function DevicesCard({ onAddClick }: Props) {
       </div>
 
       <div className="tariffInfo">
-        Тариф 300 ₽/мес за одно устройство
+        Тариф от 150 ₽/мес за одно устройство
       </div>
     </div>
   );

@@ -5,9 +5,8 @@ import { toast } from 'sonner';
 import { 
   Plus, Wallet, ShieldCheck, ShieldAlert, 
   Trash2, Copy, ChevronDown, LogOut, Monitor, 
-  Smartphone, Edit2, RefreshCw 
+  Smartphone, Edit2, RefreshCw, MessageSquare, ChevronRight 
 } from 'lucide-react';
-import { MessageSquare, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin.css';
 import AdminAddDeviceModal from '../components/AdminAddDeviceModal';
@@ -53,16 +52,20 @@ const Admin: React.FC = () => {
 
   const [confirmModal, setConfirmModal] = useState<ModalState | null>(null);
 
+  // Стейт со всеми тумблерами (включая сервера)
   const [restrictions, setRestrictions] = useState({
     all: false,
     users: false,
     admins: false,
     maintenance: false,
+    blockCh: false,
+    blockAt: false
   });
   const [isExtraSettingsOpen, setIsExtraSettingsOpen] = useState(false);
 
-  const toggleRestriction = async (target: 'all' | 'users' | 'admins' | 'maintenance') => {
-    let newRestrictions = { ...restrictions };
+  // Универсальная функция переключения тумблеров
+  const toggleRestriction = async (target: 'all' | 'users' | 'admins' | 'maintenance' | 'blockCh' | 'blockAt') => {
+    const newRestrictions = { ...restrictions };
     
     newRestrictions[target] = !newRestrictions[target];
     
@@ -78,7 +81,6 @@ const Admin: React.FC = () => {
     try {
       await client.admin.updateSettings(newRestrictions);
       
-      // Выбираем ТОЛЬКО ОДНО уведомление для показа
       if (target === 'maintenance') {
         if (newRestrictions.maintenance) {
           toast.warning('Режим тех. работ ВКЛЮЧЕН');
@@ -86,7 +88,6 @@ const Admin: React.FC = () => {
           toast.success('Режим тех. работ ВЫКЛЮЧЕН');
         }
       } else {
-        // Показываем стандартный тост, только если это были другие тумблеры
         toast.success('Настройки безопасности обновлены');
       }
       
@@ -197,9 +198,7 @@ const Admin: React.FC = () => {
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
       
-      {/* ========================================== */}
-      {/* 🛡️ ГЛОБАЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ (СПРАВА СВЕРХУ) */}
-      {/* ========================================== */}
+      {/* 🛡️ ГЛОБАЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ */}
       <div className="topRightControls">
         <motion.button 
           className="settingsToggleBtn"
@@ -219,7 +218,6 @@ const Admin: React.FC = () => {
           <LogOut size={20} />
         </motion.button>
 
-        {/* Выпадающее меню блокировок */}
         <AnimatePresence>
           {isExtraSettingsOpen && (
             <motion.div 
@@ -232,44 +230,44 @@ const Admin: React.FC = () => {
               <div className="restrictionItem" style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: '12px', marginBottom: '4px' }}>
                 <span style={{ color: 'var(--warning)', fontWeight: 700 }}>Режим "Тех. работы"</span>
                 <label className="premiumSwitch">
-                  <input 
-                    type="checkbox" 
-                    checked={restrictions.maintenance} 
-                    onChange={() => toggleRestriction('maintenance')} 
-                  />
+                  <input type="checkbox" checked={restrictions.maintenance} onChange={() => toggleRestriction('maintenance')} />
                   <span className="slider round" style={{ borderColor: restrictions.maintenance ? 'var(--warning)' : '' }}></span>
                 </label>
               </div>
               <div className="restrictionItem">
                 <span>Запретить всем (Global)</span>
                 <label className="premiumSwitch">
-                  <input 
-                    type="checkbox" 
-                    checked={restrictions.all} 
-                    onChange={() => toggleRestriction('all')} 
-                  />
+                  <input type="checkbox" checked={restrictions.all} onChange={() => toggleRestriction('all')} />
                   <span className="slider round"></span>
                 </label>
               </div>
               <div className="restrictionItem">
                 <span>Запретить пользователям</span>
                 <label className="premiumSwitch">
-                  <input 
-                    type="checkbox" 
-                    checked={restrictions.users} 
-                    onChange={() => toggleRestriction('users')} 
-                  />
+                  <input type="checkbox" checked={restrictions.users} onChange={() => toggleRestriction('users')} />
                   <span className="slider round"></span>
                 </label>
               </div>
               <div className="restrictionItem">
                 <span>Запретить админам</span>
                 <label className="premiumSwitch">
-                  <input 
-                    type="checkbox" 
-                    checked={restrictions.admins} 
-                    onChange={() => toggleRestriction('admins')} 
-                  />
+                  <input type="checkbox" checked={restrictions.admins} onChange={() => toggleRestriction('admins')} />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+              
+              {/* НОВЫЕ ТУМБЛЕРЫ ДЛЯ СЕРВЕРОВ */}
+              <div className="restrictionItem" style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                <span>Запретить Швейцарию 🇨🇭</span>
+                <label className="premiumSwitch">
+                  <input type="checkbox" checked={restrictions.blockCh} onChange={() => toggleRestriction('blockCh')} />
+                  <span className="slider round"></span>
+                </label>
+              </div>
+              <div className="restrictionItem">
+                <span>Запретить Австрию 🇦🇹</span>
+                <label className="premiumSwitch">
+                  <input type="checkbox" checked={restrictions.blockAt} onChange={() => toggleRestriction('blockAt')} />
                   <span className="slider round"></span>
                 </label>
               </div>
@@ -277,14 +275,13 @@ const Admin: React.FC = () => {
           )}
         </AnimatePresence>
       </div>
-      {/* ========================================== */}
 
       <div className="adminHeaderRow">
         <h1 className="mainTitle">Админ-панель</h1>
       </div>
 
       <div className="adminGrid">
-        {/* === КОЛОНКА ПОЛЬЗОВАТЕЛИ === */}
+        {/* КОЛОНКА ПОЛЬЗОВАТЕЛИ */}
         <div className="adminColumn">
           <div className="columnHeaderRow">
             <div className="headerTitleGroup" onClick={() => setIsUsersOpen(!isUsersOpen)}>
@@ -328,7 +325,7 @@ const Admin: React.FC = () => {
                           <button className="dropItem" onClick={() => setConfirmModal({ type: 'rename', title: 'Изменить никнейм', data: user, inputValue: user.username })}>
                             <Edit2 size={14}/> Изменить никнейм
                           </button>
-                          <button className="dropItem" onClick={() => setConfirmModal({ type: 'balance', title: 'Изменить баланс', data: user, inputValue: '0' })}>
+                          <button className="dropItem" onClick={() => setConfirmModal({ type: 'balance', title: 'Изменить баланс', data: user, inputValue: String(user.balance) })}>
                             <Wallet size={14}/> Изменить баланс
                           </button>
                           <button className="dropItem" onClick={() => setConfirmModal({ type: 'admin', title: 'Сменить права', data: user })}>
@@ -344,7 +341,7 @@ const Admin: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* === КОЛОНКА УСТРОЙСТВА === */}
+        {/* КОЛОНКА УСТРОЙСТВА */}
         <div className="adminColumn">
           <div className="columnHeaderRow">
             <div className="headerTitleGroup" onClick={() => setIsDevicesOpen(!isDevicesOpen)}>
@@ -354,7 +351,6 @@ const Admin: React.FC = () => {
               </motion.div>
             </div>
             
-            {/* Кнопка "Добавить VPN" осталась на своем месте */}
             <div className="adminActionGroup">
               <motion.button 
                 className="addBtnCompact" 
@@ -367,7 +363,6 @@ const Admin: React.FC = () => {
             </div>
           </div>
 
-          {/* Список устройств */}
           <AnimatePresence>
             {isDevicesOpen && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflow: 'hidden' }}>
@@ -432,7 +427,6 @@ const Admin: React.FC = () => {
         </div>
       </div>
 
-      {/* Раздел Поддержки */}
       <motion.div 
         className="deviceCard"
         onClick={() => navigate('/admin/tickets')}
@@ -456,7 +450,7 @@ const Admin: React.FC = () => {
         <ChevronRight className="deviceChevron" size={20} />
       </motion.div>
 
-      {/* Центральные модалки подтверждения */}
+      {/* МОДАЛКИ ПОДТВЕРЖДЕНИЯ ДЕЙСТВИЙ */}
       <AnimatePresence>
         {confirmModal && confirmModal.type !== 'addDevice' && (
           <div className="modalOverlay center" onClick={() => setConfirmModal(null)}>
@@ -495,15 +489,15 @@ const Admin: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Модалка добавления VPN */}
+      {/* МОДАЛКА СОЗДАНИЯ VPN */}
       <AnimatePresence>
         {confirmModal?.type === 'addDevice' && (
           <AdminAddDeviceModal 
             users={users} 
             isBlocked={restrictions.all || restrictions.admins}
             onClose={() => setConfirmModal(null)} 
-            onAdd={async (userId: number, name: string, type: string) => {
-              await client.admin.addDeviceForUser(userId, { name, type });
+            onAdd={async (userId: number, name: string, type: string, location: string) => {
+              await client.admin.addDeviceForUser(userId, { name, type, location });
               fetchData(); 
             }}
           />

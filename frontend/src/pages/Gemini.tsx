@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Sparkles, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
-import BalanceCard from "../components/BalanceCard"; // Переиспользуем твою карточку баланса
+import BalanceCard from "../components/BalanceCard";
+import ActionButtons from "../components/ActionButtons";
 
 const API_URL = 'https://h4zdeen.up.railway.app';
 
@@ -82,6 +83,7 @@ export default function Gemini() {
 
       {/* Карточка баланса (такая же как в VPN) */}
       <BalanceCard />
+      <ActionButtons />
 
       {/* Информационная карточка */}
       <div className="customCard" style={{ marginTop: '20px', padding: '20px' }}>

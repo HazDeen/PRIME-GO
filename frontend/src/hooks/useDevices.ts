@@ -7,14 +7,14 @@ const API_BASE_URL = 'https://h4zdeen.up.railway.app';
 
 export interface Device {
   id: number;
-  name: string;      // Мы используем это как отображаемое имя
-  model: string;     // Добавь это поле
+  name: string;      
+  model: string;     
   type: DeviceType;
   configLink: string;
   uuid?: string;
   isActive: boolean;
   expiresAt: string;
-  date: string;      // Добавь это поле (мы его мапим в сервисе из connectedAt)
+  date: string;      
   daysLeft?: number;
 }
 
@@ -32,7 +32,6 @@ export function useDevices() {
 
     try {
       const user = JSON.parse(userStr);
-      // Стучимся на новый эндпоинт: /devices/user/:tgId
       const response = await fetch(`${API_BASE_URL}/devices/user/${user.telegramId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -50,15 +49,14 @@ export function useDevices() {
     }
   }, []);
 
-  // 2. Функция создания устройства (ОДИН ЗАПРОС)
-  const addDevice = async (name: string, customName: string, type: DeviceType) => {
+  // 2. Функция создания устройства (С ПОДДЕРЖКОЙ ЛОКАЦИИ)
+  const addDevice = async (name: string, customName: string, type: DeviceType, location: string) => { // 👈 Добавили location
     setLoading(true);
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) throw new Error('Пользователь не авторизован');
       const user = JSON.parse(userStr);
 
-      // Отправляем данные на ОДИН эндпоинт /devices
       const response = await fetch(`${API_BASE_URL}/devices`, {
         method: 'POST',
         headers: {
@@ -67,27 +65,23 @@ export function useDevices() {
         },
         body: JSON.stringify({
           tgId: user.telegramId.toString(),
-          name: name,         // Модель (например, iPhone 15)
-          customName: customName, // Название (например, Мой телефон)
-          type: type          // Тип устройства
+          name: name,         
+          customName: customName, 
+          type: type,          
+          location: location  // 👈 Передаем локацию на бэкенд
         }),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        // Если на бэкенде не хватило денег или ошибка в XUI, выкидываем ошибку
         throw new Error(result.message || 'Ошибка при создании устройства');
       }
-
-      toast.success('✅ Устройство успешно создано!');
       
-      // Сразу обновляем список устройств, чтобы увидеть новое
       await fetchDevices();
       
     } catch (err: any) {
-      toast.error(err.message || 'Не удалось создать устройство');
-      throw err; // Пробрасываем ошибку в модалку, чтобы она не закрылась
+      throw err; 
     } finally {
       setLoading(false);
     }

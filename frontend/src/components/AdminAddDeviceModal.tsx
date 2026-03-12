@@ -1,12 +1,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { ChevronDown, Check } from "lucide-react"; // Добавили иконки для селекта
-import { Smartphone, Bot, Laptop, Monitor, Cpu} from 'lucide-react';
+import { ChevronDown, Check, Globe } from "lucide-react"; // 👈 Добавили Globe
+import { Smartphone, Bot, Laptop, Monitor, Cpu } from 'lucide-react';
 import { toast } from 'sonner';
 
+// 👈 Обновили onAdd, теперь он принимает location (4-й параметр)
 type Props = {
   onClose: () => void;
-  onAdd: (userId: number, name: string, type: string) => Promise<void>;
+  onAdd: (userId: number, name: string, type: string, location: string) => Promise<void>;
   users: any[];
   isBlocked?: boolean
 };
@@ -19,12 +20,17 @@ const DEVICE_TYPES = [
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
+const LOCATIONS = [
+  { id: 'ch', label: 'Швейцария', flag: '🇨🇭', desc: 'Ультра быстрый' },
+  { id: 'at', label: 'Австрия', flag: '🇦🇹', desc: 'Европейский пинг' }
+];
+
 export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }: Props) {
   const [name, setName] = useState("");
   const [selectedType, setSelectedType] = useState("iPhone");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [selectedLocation, setSelectedLocation] = useState<string>("ch"); // 👈 Стейт локации
   
-  // Состояния для кастомного выпадающего списка
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,7 +38,7 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
   const handleClose = () => {
     if (isClosing) return;
     setIsClosing(true);
-    setTimeout(() => onClose(), 250); // Ждем окончания анимации
+    setTimeout(() => onClose(), 250);
   };
 
   const handleSubmit = async () => {
@@ -45,7 +51,8 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
 
     setLoading(true);
     try {
-      await onAdd(selectedUserId, name, selectedType);
+      // 👈 Передаем выбранную локацию
+      await onAdd(selectedUserId, name, selectedType, selectedLocation);
       toast.success('Устройство добавлено!');
       handleClose();
     } catch (e: any) {
@@ -55,7 +62,6 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
     }
   };
 
-  // Находим выбранного юзера для отображения
   const selectedUser = users.find(u => u.id === selectedUserId);
 
   return (
@@ -70,10 +76,8 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
         className="modalSheet"
         onClick={(e) => {
           e.stopPropagation();
-          // Закрываем дропдаун, если кликнули куда-то вне его
           if (isDropdownOpen) setIsDropdownOpen(false);
         }}
-        // Анимация выезда снизу вверх
         initial={{ y: "100%" }}
         animate={{ y: isClosing ? "100%" : 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
@@ -83,7 +87,7 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
         <h2 className="modalTitle">Добавить VPN (Админ)</h2>
         <p className="modalSub">Устройство будет добавлено выбранному пользователю без списания баланса.</p>
 
-        {/* 1. КАСТОМНЫЙ ВЫПАДАЮЩИЙ СПИСОК */}
+        {/* 1. ПОЛЬЗОВАТЕЛЬ */}
         <div className="modalField" style={{ position: 'relative' }}>
           <label className="modalLabel">Пользователь</label>
           <div 
@@ -93,10 +97,7 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
               setIsDropdownOpen(!isDropdownOpen);
             }}
             style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              cursor: 'pointer',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
               marginBottom: isDropdownOpen ? '8px' : '24px',
               borderColor: isDropdownOpen ? 'var(--accent)' : 'var(--border-input)',
               background: isDropdownOpen ? 'var(--accent-alpha)' : 'var(--bg-input)'
@@ -110,42 +111,25 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
             </motion.div>
           </div>
 
-          {/* Само всплывающее меню с юзерами */}
           <AnimatePresence>
             {isDropdownOpen && (
               <motion.div
-                className="no-scrollbar" // <-- ДОБАВИЛИ КЛАСС ДЛЯ СКРЫТИЯ СКРОЛЛБАРА
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
+                className="no-scrollbar"
+                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 style={{
-                  position: 'absolute',
-                  top: '72px', // <-- ПОДНЯЛИ ВЫШЕ (было 80px), так как инпут стал тоньше
-                  left: 0,
-                  right: 0,
-                  background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  maxHeight: '160px', // <-- СДЕЛАЛИ ЧУТЬ КОМПАКТНЕЕ
-                  overflowY: 'auto',
-                  zIndex: 10,
-                  boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
+                  position: 'absolute', top: '72px', left: 0, right: 0,
+                  background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
+                  borderRadius: '16px', maxHeight: '160px', overflowY: 'auto',
+                  zIndex: 10, boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
                 }}
               >
                 {users.map(u => (
                   <div 
                     key={u.id}
-                    onClick={() => {
-                      setSelectedUserId(u.id);
-                      setIsDropdownOpen(false);
-                    }}
+                    onClick={() => { setSelectedUserId(u.id); setIsDropdownOpen(false); }}
                     style={{
-                      padding: '14px 16px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      borderBottom: '1px solid var(--border-color)',
+                      padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
                       background: selectedUserId === u.id ? 'var(--accent-alpha)' : 'transparent',
                       color: selectedUserId === u.id ? 'var(--accent)' : 'var(--text-primary)'
                     }}
@@ -162,14 +146,44 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
           </AnimatePresence>
         </div>
 
-        {/* 2. НАЗВАНИЕ УСТРОЙСТВА */}
+        {/* 2. 🌍 ВЫБОР СЕРВЕРА (Анимация отступа теперь здесь) */}
         <div 
           className="modalField" 
           style={{ 
+            marginBottom: '20px',
             marginTop: isDropdownOpen ? '170px' : '0', 
             transition: 'margin 0.2s' 
           }}
         >
+          <label className="modalLabel" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Globe size={16} /> Выберите сервер
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {LOCATIONS.map(loc => (
+              <motion.div
+                key={loc.id}
+                onClick={() => setSelectedLocation(loc.id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  padding: '14px', borderRadius: '14px', cursor: 'pointer',
+                  background: selectedLocation === loc.id ? 'var(--accent-alpha)' : 'var(--bg-input)',
+                  border: selectedLocation === loc.id ? '1px solid var(--accent)' : '1px solid transparent',
+                  transition: '0.2s', display: 'flex', alignItems: 'center', gap: '10px'
+                }}
+              >
+                <span style={{ fontSize: '24px' }}>{loc.flag}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{loc.label}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{loc.desc}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. НАЗВАНИЕ УСТРОЙСТВА */}
+        <div className="modalField">
           <label className="modalLabel">Название устройства</label>
           <input
             className="modalInput"
@@ -179,7 +193,7 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
           />
         </div>
 
-        {/* 3. ТИП УСТРОЙСТВА */}
+        {/* 4. ТИП УСТРОЙСТВА */}
         <div className="deviceTypeSelector">
           <label className="modalLabel">Тип устройства</label>
           <div className="deviceTypeGrid">

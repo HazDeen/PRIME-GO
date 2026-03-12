@@ -1,18 +1,16 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-// 🔥 Импортируем иконки из lucide-react вместо старых SVG
-import { Smartphone, Bot, Laptop, Monitor, Cpu, X } from 'lucide-react';
+import { Smartphone, Bot, Laptop, Monitor, Cpu, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import type { DeviceType } from '../types/device';
 
 type Props = {
   onClose: () => void;
-  onAdd: (name: string, customName: string, type: DeviceType) => Promise<void>;
+  onAdd: (name: string, customName: string, type: DeviceType, location: string) => Promise<void>;
   tgUserId: string;
   isBlocked?: boolean
 };
 
-// 🔥 Заменили иконки в массиве
 const DEVICE_TYPES: { id: DeviceType; label: string; icon: any }[] = [
   { id: "iPhone", label: "iPhone", icon: Smartphone },
   { id: "Android", label: "Android", icon: Bot },
@@ -21,12 +19,21 @@ const DEVICE_TYPES: { id: DeviceType; label: string; icon: any }[] = [
   { id: "Other", label: "Другое", icon: Cpu },
 ];
 
+const LOCATIONS = [
+  { id: 'ch', label: 'Швейцария', flag: '🇨🇭', desc: 'Быстрый (300 ₽)' },
+  { id: 'at', label: 'Австрия', flag: '🇦🇹', desc: 'Базовый (150 ₽)' }
+];
+
 export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
   const [name, setName] = useState("");
   const [customName, setCustomName] = useState("");
   const [selectedType, setSelectedType] = useState<DeviceType>("iPhone");
+  const [selectedLocation, setSelectedLocation] = useState<string>("ch");
   const [isClosing, setIsClosing] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // 🌟 Динамическая цена в зависимости от выбранного сервера
+  const currentPrice = selectedLocation === 'at' ? 150 : 300;
 
   const handleClose = () => {
     if (isClosing) return;
@@ -47,16 +54,12 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
 
     setLoading(true);
     try {
-      await onAdd(name || customName, customName || name, selectedType);
+      // Передаем локацию 4-м параметром
+      await onAdd(name || customName, customName || name, selectedType, selectedLocation);
       
       toast.success('Устройство успешно добавлено!');
-      
-      setTimeout(() => {
-        handleClose();
-      }, 2000);
-
+      setTimeout(() => handleClose(), 2000);
     } catch (error: any) {
-      console.error('Ошибка при добавлении:', error);
       toast.error(error.message || 'Не удалось добавить устройство');
     } finally {
       setLoading(false);
@@ -65,59 +68,63 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
 
   return (
     <motion.div 
-      className="modalOverlay bottom" // 🔥 Используем класс из app.css
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      className="modalOverlay bottom"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       onClick={handleClose}
     >
       <motion.div
         className="modalSheet"
         onClick={(e) => e.stopPropagation()}
-        initial={{ y: "100%" }}
-        animate={{ y: isClosing ? "100%" : 0 }}
+        initial={{ y: "100%" }} animate={{ y: isClosing ? "100%" : 0 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
       >
-        <motion.div 
-          className="modalHandle" 
-          onClick={handleClose}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-        />
+        <motion.div className="modalHandle" onClick={handleClose} />
         
-        <h2 className="modalTitle">Добавить новое устройство</h2>
+        <h2 className="modalTitle">Новое подключение</h2>
 
         <div className="modalDescription">
-          <p className="modalPrice">
-            Стоимость 300 ₽/мес за каждое устройство
-          </p>
-          <p className="modalNote">
-            Средства спишутся сразу, подписка на 30 дней
-          </p>
+          {/* 🌟 Цена меняется тут */}
+          <p className="modalPrice">Стоимость {currentPrice} ₽/мес</p>
+          <p className="modalNote">Средства спишутся сразу с баланса</p>
         </div>
 
-        <div className="modalField">
-          <label className="modalLabel">
-            Название устройства <span style={{ fontSize: '12px', opacity: 0.5 }}>(как оно будет отображаться)</span>
+        {/* 🌍 ВЫБОР СЕРВЕРА */}
+        <div className="modalField" style={{ marginBottom: '20px' }}>
+          <label className="modalLabel" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Globe size={16} /> Выберите сервер
           </label>
-          <input
-            className="modalInput"
-            placeholder="Например: Мой iPhone"
-            value={customName}
-            onChange={(e) => setCustomName(e.target.value)}
-            disabled={loading}
-          />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+            {LOCATIONS.map(loc => (
+              <motion.div
+                key={loc.id}
+                onClick={() => setSelectedLocation(loc.id)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  padding: '14px', borderRadius: '14px', cursor: 'pointer',
+                  background: selectedLocation === loc.id ? 'var(--accent-alpha)' : 'var(--bg-input)',
+                  border: selectedLocation === loc.id ? '1px solid var(--accent)' : '1px solid transparent',
+                  transition: '0.2s', display: 'flex', alignItems: 'center', gap: '10px'
+                }}
+              >
+                <span style={{ fontSize: '24px' }}>{loc.flag}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{loc.label}</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{loc.desc}</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
+        {/* Инпуты */}
+        <div className="modalField">
+          <label className="modalLabel">Название <span style={{opacity: 0.5}}>(для вас)</span></label>
+          <input className="modalInput" placeholder="Мой iPhone" value={customName} onChange={(e) => setCustomName(e.target.value)} disabled={loading} />
+        </div>
         <div className="modalField">
           <label className="modalLabel">Модель устройства</label>
-          <input
-            className="modalInput"
-            placeholder="Например: iPhone 15"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={loading}
-          />
+          <input className="modalInput" placeholder="iPhone 15" value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
         </div>
 
         <div className="deviceTypeSelector">
@@ -126,18 +133,8 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
             {DEVICE_TYPES.map((type) => {
               const Icon = type.icon;
               return (
-                <motion.button
-                  key={type.id}
-                  type="button"
-                  className={`deviceTypeBtn ${selectedType === type.id ? "active" : ""}`}
-                  onClick={() => setSelectedType(type.id)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  disabled={loading}
-                >
-                  {/* Иконка lucide сама возьмет нужный размер и толщину из CSS */}
-                  <Icon /> 
-                  <span>{type.label}</span>
+                <motion.button key={type.id} type="button" className={`deviceTypeBtn ${selectedType === type.id ? "active" : ""}`} onClick={() => setSelectedType(type.id)} disabled={loading}>
+                  <Icon /> <span>{type.label}</span>
                 </motion.button>
               );
             })}
@@ -145,24 +142,9 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
         </div>
 
         <div className="modalActionsRow">
-          <motion.button
-            className="modalSubmitBtn"
-            onClick={handleSubmit}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            disabled={loading}
-          >
-            {loading ? '⏳ Добавление...' : '+ Добавить за 300 ₽'}
-          </motion.button>
-          
-          <motion.button
-            className="modalCancelBtn"
-            onClick={handleClose}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            disabled={loading}
-          >
-            <X size={18} style={{ marginRight: '6px' }} /> Отмена
+          <motion.button className="modalSubmitBtn" onClick={handleSubmit} disabled={loading}>
+            {/* 🌟 Цена на кнопке тоже меняется */}
+            {loading ? '⏳ Добавление...' : `+ Добавить за ${currentPrice} ₽`}
           </motion.button>
         </div>
       </motion.div>
