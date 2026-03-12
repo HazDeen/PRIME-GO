@@ -2,12 +2,12 @@ import { useDevices } from '../hooks/useDevices';
 import DeviceCard from './DeviceCard';
 import { Plus} from 'lucide-react';
 
-
 type Props = {
   onAddClick: () => void;
+  onDeviceClick?: (id: number) => void;
 };
 
-export default function DevicesCard({ onAddClick }: Props) {
+export default function DevicesCard({ onAddClick, onDeviceClick }: Props) {
   const { devices, loading } = useDevices();
 
   if (loading) {
@@ -34,11 +34,13 @@ export default function DevicesCard({ onAddClick }: Props) {
             id={device.id}
             name={device.name}
             model={device.model}
-            type={device.type}  // 👈 ТЕПЕРЬ ТИП СТРОГИЙ
+            type={device.type}
             date={device.date}
             isActive={device.isActive}
             configLink={device.configLink}
             daysLeft={device.daysLeft}
+            location={device.location}
+            onClick={() => onDeviceClick && onDeviceClick(device.id)}
           />
         ))}
       </div>

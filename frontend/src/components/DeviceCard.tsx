@@ -12,38 +12,38 @@ type Props = {
   isActive: boolean;
   daysLeft?: number;
   configLink: string;
+  onClick?: () => void;
+  location?: string; 
 };
 
 const getDeviceIcon = (type: DeviceType) => {
   switch (type) {
-    case 'iPhone':
-      return Smartphone;
-    case 'Android':
-      return Bot;
-    case 'Mac':
-      return Laptop;
-    case 'PC':
-      return Monitor;
-    case 'Other':
-      return Cpu;
-    default:
-      return Smartphone;
+    case 'iPhone': return Smartphone;
+    case 'Android': return Bot;
+    case 'Mac': return Laptop;
+    case 'PC': return Monitor;
+    case 'Other': return Cpu;
+    default: return Smartphone;
   }
 };
 
-export default function DeviceCard({ id, name, model, type, date, isActive, daysLeft = 0 }: Props) {
+export default function DeviceCard({ id, name, model, type, date, isActive, daysLeft = 0, location, onClick }: Props) {
   const navigate = useNavigate();
   const Icon = getDeviceIcon(type);
+  const locationBadge = location === 'at' ? '🇦🇹 Австрия' : '🇨🇭 Швейцария';
+
+  // 🌟 УМНЫЙ КЛИК: если есть onDeviceClick из AppView, используем его. Если нет - стандартный роутинг.
+  const handleClick = () => {
+    if (onClick) {
+      onClick();
+    } else {
+      navigate(`/device/${id}`);
+    }
+  };
 
   return (
-    <div 
-      className="deviceCard" 
-      onClick={() => navigate(`/device/${id}`)}
-    >
-      <div className="deviceIcon">
-        <Icon width={22} height={22} />
-      </div>
-      
+    <div className="deviceCard" onClick={handleClick}>
+      <div className="deviceIcon"><Icon width={22} height={22} /></div>
       <div className="deviceInfo">
         <div className="deviceNameRow">
           <div className="deviceNameWrapper">
@@ -53,6 +53,7 @@ export default function DeviceCard({ id, name, model, type, date, isActive, days
         </div>
         <div className="deviceMeta">
           <span className="deviceDate">{date}</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginLeft: '8px' }}>{locationBadge}</span>
           {isActive && daysLeft > 0 && (
             <span className="daysBadge">
               <Timer size={14} /> 
