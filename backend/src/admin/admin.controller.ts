@@ -123,6 +123,26 @@ export class AdminController {
   // РОУТЫ ДЛЯ ТУМБЛЕРОВ БЕЗОПАСНОСТИ
   // ==========================================
   
+  // ==========================================
+  // ПУБЛИЧНЫЙ СТАТУС СИСТЕМЫ (Без авторизации)
+  // ==========================================
+  @Get('status')
+  async getSystemStatus() {
+    try {
+      // Ищем настройки в БД
+      const settings = await prisma.settings.findFirst();
+      
+      // Возвращаем только один безопасный параметр
+      return { 
+        maintenance: settings ? settings.maintenanceMode : false 
+      };
+    } catch (error) {
+      console.error('Ошибка получения статуса БД:', error);
+      // Если БД недоступна, на всякий случай включаем техработы на клиенте
+      return { maintenance: true }; 
+    }
+  }
+
   @Get('settings')
   async getSettings(@Headers('x-username') adminUsername: string) {
     if (!adminUsername) throw new UnauthorizedException('Username required');

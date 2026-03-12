@@ -11,7 +11,8 @@ import { BotModule } from './bot/bot.module';
 import { AdminModule } from './admin/admin.module';
 import { XuiModule } from './xui/xui.module';
 import { TicketsModule } from './tickets/tickets.module';
-import { PaymentsModule } from './payments/payments.module'; //
+import { PaymentsModule } from './payments/payments.module'; 
+import { UserController } from './user/user.controller';
 
 @Module({
   imports: [
@@ -31,5 +32,8 @@ import { PaymentsModule } from './payments/payments.module'; //
     TicketsModule,
     PaymentsModule,
   ],
+  controllers: [
+    UserController
+  ]
 })
 export class AppModule {}
