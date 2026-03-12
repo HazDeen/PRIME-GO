@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, BeforeApplicationShutdown, Logger } from '@nestjs/common';
 import { Telegraf, Markup } from 'telegraf';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -6,7 +6,7 @@ import * as bcrypt from 'bcrypt';
 const API_URL = 'https://hazdeen.github.io/PRIME-GO/';
 
 @Injectable()
-export class BotService implements OnModuleInit, OnModuleDestroy {
+export class BotService implements OnModuleInit, BeforeApplicationShutdown {
   private bot: Telegraf;
   private readonly logger = new Logger(BotService.name);
   
@@ -22,9 +22,14 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     this.bot = new Telegraf(botToken);
   }
 
-  async onApplicationShutdown(signal?: string) {
-    this.logger.log(`Остановка Telegraf бота... Сигнал: ${signal}`);
-    this.bot.stop(signal);
+  async beforeApplicationShutdown(signal?: string) {
+    this.logger.warn(`🛑 Получен сигнал ${signal}. Экстренно отключаем бота от Telegram...`);
+    try {
+      this.bot.stop(signal);
+      this.logger.log('✅ Бот успешно отключен от серверов Telegram.');
+    } catch (e) {
+      this.logger.error('Ошибка при остановке бота', e);
+    }
   }
 
   async onModuleInit() {
@@ -365,8 +370,4 @@ export class BotService implements OnModuleInit, OnModuleDestroy {
     });
   }
 
-  async onModuleDestroy() {
-    this.logger.log('🛑 Останавливаем бота...');
-    this.bot.stop();
-  }
 }
