@@ -2,7 +2,7 @@ import { Injectable, BadRequestException, Logger, NotFoundException } from '@nes
 import { PrismaService } from '../prisma/prisma.service';
 import { XuiApiService } from '../xui/xui-api.service';
 import { v4 as uuidv4 } from 'uuid';
-
+//
 @Injectable()
 export class DeviceService {
   private readonly logger = new Logger(DeviceService.name);

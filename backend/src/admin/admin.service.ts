@@ -190,7 +190,6 @@ export class AdminService {
     const location = data.location || 'ch'; 
     const newUuid = crypto.randomUUID();
     
-    // 🌟 НОВАЯ ЛОГИКА: Рандомный ID от 1 до 100 для админа
     let clientEmail = '';
     let isEmailFree = false;
     const maxSlots = 100;
