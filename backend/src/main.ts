@@ -33,4 +33,5 @@ async function bootstrap() {
     console.log('✅ Приложение полностью готово к работе');
   });
 }
+
 bootstrap();
