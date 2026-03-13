@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Put, Param, Headers, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Patch, Headers, UnauthorizedException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { PrismaClient } from '@prisma/client';
 
@@ -62,5 +62,27 @@ export class UserController {
       data: { isRead: true }
     });
     return { success: true };
+  }
+
+  @Patch('username')
+  async updateUsername(
+    @Body() body: { telegramId: string | number; username: string }
+  ) {
+    try {
+      const updatedUser = await prisma.user.update({
+        where: { telegramId: BigInt(body.telegramId) },
+        data: { username: body.username },
+      });
+      
+      return { 
+        success: true, 
+        user: {
+          ...updatedUser,
+          telegramId: updatedUser.telegramId.toString() // BigInt нельзя просто так вернуть в JSON
+        } 
+      };
+    } catch (error) {
+      return { success: false, error: 'Не удалось обновить имя' };
+    }
   }
 }
