@@ -147,26 +147,8 @@ export const client = {
       if (isCreatingDevice) return;
       isCreatingDevice = true;
       try {
-        const response = await fetch(`${API_BASE_URL}/xui/client`, {
-          method: 'POST',
-          headers: getHeaders(),
-          body: JSON.stringify({
-            inboundId: 1,
-            tgUid: data.tgUserId,
-            email: Math.random().toString(36).substring(2, 10),
-            flow: 'xtls-rprx-vision',
-            totalGb: 1000,
-            expiryTime: Date.now() + 30 * 24 * 60 * 60 * 1000,
-            comment: `${data.type}: ${data.model}`
-          })
-        });
-
-        const xuiResult = await response.json();
-        if (!response.ok || !xuiResult.success) {
-          throw new Error(xuiResult.message || 'Ошибка 3x-ui');
-        }
-
-        const dbRes = await fetch(`${API_BASE_URL}/devices`, {
+        // Отправляем ОДИН запрос на бэкенд
+        const response = await fetch(`${API_BASE_URL}/devices`, {
           method: 'POST',
           headers: getHeaders(),
           body: JSON.stringify({
@@ -174,18 +156,17 @@ export const client = {
             model: data.model,
             type: data.type,
             location: data.location || 'ch',
-            uuid: xuiResult.data.uuid,
-            subscriptionUrl: xuiResult.data.subscriptionUrl,
             tgUserId: data.tgUserId
+            // uuid, email и subscriptionUrl фронтенду генерировать и знать до ответа не нужно!
           })
         });
-        
-        const dbResult = await dbRes.json();
-        if (!dbRes.ok) {
-          throw new Error(dbResult.message || 'Ошибка сохранения устройства');
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || 'Ошибка создания устройства');
         }
         
-        return xuiResult;
+        return result; // Бэкенд возвращает уже готовые данные и из БД, и из XUI
       } catch (error: any) {
         throw error;
       } finally {
@@ -268,13 +249,27 @@ export const client = {
       });
       return response.json();
     },
-    updateProfile: async (data: any) => {
-      const response = await fetch(`${API_BASE_URL}/user/profile`, {
+    // 👇 НОВАЯ ФУНКЦИЯ: Обновление логина
+    updateUsername: async (newUsername: string) => {
+      const response = await fetch(`${API_BASE_URL}/user/username`, {
         method: 'PATCH',
         headers: getHeaders(),
-        body: JSON.stringify(data)
+        body: JSON.stringify({ newUsername })
       });
-      return response.json();
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Ошибка обновления логина');
+      return data;
+    },
+    // 👇 НОВАЯ ФУНКЦИЯ: Обновление пароля
+    updatePassword: async (oldPassword: string, newPassword: string) => {
+      const response = await fetch(`${API_BASE_URL}/user/password`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ oldPassword, newPassword })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Ошибка обновления пароля');
+      return data;
     }
   },
 

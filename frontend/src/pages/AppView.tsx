@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Shield, Sparkles, Wallet, User, ChevronRight, 
-  Settings, ShieldCheck, LifeBuoy, LogOut,
+  Settings, ShieldCheck, LogOut,
   ChevronLeft, Plus, Bell, Moon, Sun, 
   MessageSquare, Bitcoin, Globe, Bug, Lightbulb, MessageCircle, 
   Headset, CreditCard, ChevronDown, ArrowDownToLine, RefreshCcw, 
   Edit2, Trash2, Smartphone, Check, AlertTriangle, 
-  Copy, RefreshCw, X, Timer, Send, Info, Clock, CheckCircle2, BellRing, SmartphoneNfc, Eye, EyeOff, LogIn, ShieldAlert, Lock
+  Copy, RefreshCw, X, Timer, Send, Info, Clock, CheckCircle2, BellRing,
+  Eye, EyeOff, LogIn, ShieldAlert, Lock, Paintbrush, BookOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -29,7 +30,7 @@ import '../styles/appview.css';
 // ==========================================
 type Tab = 'services' | 'wallet' | 'profile';
 type Service = null | 'vpn' | 'gemini';
-type ProfileScreen = null | 'settings' | 'support';
+type ProfileScreen = null | 'settings' | 'support' | 'security' | 'faq'; 
 type DeepScreen = null | { type: 'history' } | { type: 'device'; id: number } | { type: 'ticket'; id: number };
 
 const API_URL = 'https://h4zdeen.up.railway.app';
@@ -83,7 +84,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       const response = await client.auth.login(username, password);
       localStorage.setItem('user', JSON.stringify(response.user));
       setUser(response.user);
-      toast.success(`Добро пожаловать, ${response.user.firstName || username}!`);
+      toast.success(`Добро пожаловать, ${response.user.username || username}!`);
       setIsSuccess(true); 
       setTimeout(() => { onLoginSuccess(); }, 1500);
     } catch (error: any) {
@@ -92,7 +93,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       } else if (error.message?.includes('Неверный пароль')) {
         toast.error('Неверный пароль');
       } else {
-        toast.error(error.message || 'Ошибка входа');
+        toast.error('Ошибка входа');
       }
       setLoading(false);
     }
@@ -118,12 +119,12 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
                 <form onSubmit={handleSubmit} className="loginForm">
                   <div className="inputGroup">
                     <div className="inputIconWrapper"><User size={18} /></div>
-                    <input type="text" className="loginInput" placeholder="Username" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
+                    <input type="text" className="loginInput" placeholder="Login (default: Username (with out @))" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
                   </div>
                   
                   <div className="inputGroup">
                     <div className="inputIconWrapper"><Lock size={18} /></div>
-                    <input type={showPassword ? "text" : "password"} className="loginInput" placeholder="Пароль" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
+                    <input type={showPassword ? "text" : "password"} className="loginInput" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
                     <button type="button" className="eyeButton" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
                       {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -386,7 +387,7 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
 
       <div className="configCard">
         <h3 className="configCardTitle">Конфигурация</h3>
-        <p className="configCardDescription">Скопируйте ссылку и вставьте в приложение HitProxy или Vibe</p>
+        <p className="configCardDescription">Скопируйте ссылку и вставьте в приложение v2RayTun</p>
         <div className="configLinkContainer">
           <code className="configLinkCode">{device.configLink}</code>
           <div className="configActions">
@@ -437,8 +438,8 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewMessage(e.target.value);
     if (textareaRef.current) {
-      textareaRef.current.style.height = '52px'; // Сначала сбрасываем до минимума
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`; // Растем до 120px
+      textareaRef.current.style.height = '52px'; 
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`; 
     }
   };
 
@@ -450,7 +451,6 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
     setTicket({ ...ticket, messages: [...ticket.messages, tempMsg] });
     setNewMessage('');
     
-    // 👈 Сбрасываем высоту инпута после отправки
     if (textareaRef.current) textareaRef.current.style.height = '52px';
 
     try {
@@ -459,7 +459,6 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
     } catch (e) { toast.error('Ошибка'); loadTicket(false); } finally { setSending(false); }
   };
 
-  // 👈 Отправка по кнопке Enter (без Shift)
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -526,7 +525,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
 // ==========================================
 const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, setUser, logout } = useAuth(); 
   
   const [activeTab, setActiveTab] = useState<Tab>('services');
   const [activeService, setActiveService] = useState<Service>(null);
@@ -543,6 +542,31 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
   const [isTelegramTheme, setIsTelegramTheme] = useState(() => localStorage.getItem('tgTheme') === 'true');
+
+  // 👇 Стейты безопасности для Логина и Пароля
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState(user?.username || '');
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [savingSecurity, setSavingSecurity] = useState(false);
+
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [ticketTopic, setTicketTopic] = useState(TOPICS[0].label);
+  const [ticketText, setTicketText] = useState('');
+  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  // Сбрасываем поля при открытии экрана безопасности
+  useEffect(() => {
+    if (activeProfileScreen === 'security') {
+      setNewUsername(user?.username || '');
+      setOldPassword('');
+      setNewPassword('');
+      setIsEditingUsername(false);
+    }
+  }, [activeProfileScreen, user]);
 
   useEffect(() => {
     if (isTelegramTheme) {
@@ -564,7 +588,24 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     }
   }, [user]);
 
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval>;
+    if (activeProfileScreen === 'support') {
+      setLoadingTickets(true);
+      loadTickets(); 
+      
+      interval = setInterval(() => {
+        loadTickets(); 
+      }, 3000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [activeProfileScreen, user]);
+
+
   const updateSetting = async (key: string, value: boolean) => {
+    if (!user) return;
     try {
       if (key === 'autoRenewVpn') setAutoRenewVpn(value);
       if (key === 'autoRenewGemini') setAutoRenewGemini(value);
@@ -575,6 +616,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
       });
       const updatedUser = { ...user, [key]: value };
       localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser as any);
     } catch (e) { toast.error('Ошибка сохранения настроек'); }
   };
 
@@ -595,13 +637,42 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
 
   const [loadingGemini, setLoadingGemini] = useState(false);
 
-  const [tickets, setTickets] = useState<any[]>([]);
-  const [loadingTickets, setLoadingTickets] = useState(true);
-  const [showTicketModal, setShowTicketModal] = useState(false);
-  const [ticketTopic, setTicketTopic] = useState(TOPICS[0].label);
-  const [ticketText, setTicketText] = useState('');
-  const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  // 👇 ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ЛОГИНА
+  const handleSaveUsername = async () => {
+    if (!newUsername.trim() || !user) return;
+    try {
+      setSavingSecurity(true);
+      await client.users.updateUsername(newUsername);
+      
+      const updatedUser = { ...user, username: newUsername };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser); 
+      
+      toast.success('Логин успешно обновлен');
+      setIsEditingUsername(false);
+    } catch(e: any) { 
+      toast.error(e.message || 'Ошибка при сохранении логина'); 
+    } finally { 
+      setSavingSecurity(false); 
+    }
+  };
+
+  // 👇 ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ПАРОЛЯ
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword) return;
+    try {
+      setSavingSecurity(true);
+      await client.users.updatePassword(oldPassword, newPassword);
+      toast.success('Пароль успешно изменен');
+      setOldPassword('');
+      setNewPassword('');
+    } catch(e: any) { 
+      toast.error(e.message || 'Неверный текущий пароль или ошибка сервера'); 
+    } finally { 
+      setSavingSecurity(false); 
+    }
+  };
 
   const handleAddDevice = async (name: string, customName: string, type: any, location: string) => {
     try {
@@ -644,7 +715,11 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
       if (!user) return;
       const response = await fetch(`${API_URL}/tickets/user/${user.telegramId}`);
       setTickets(await response.json());
-    } catch (e) { toast.error('Ошибка'); } finally { setLoadingTickets(false); }
+    } catch (e) { 
+      console.error('Ошибка загрузки обращений'); 
+    } finally { 
+      setLoadingTickets(false); 
+    }
   };
 
   const handleCreateTicket = async (e: React.FormEvent) => {
@@ -663,9 +738,24 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'OPEN': return <div className="daysBadge" style={{ background: 'var(--warning-alpha)', color: 'var(--warning)' }}><Clock size={14} /> Открыт</div>;
-      case 'ANSWERED': return <div className="daysBadge" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)' }}><MessageCircle size={14} /> Ждет ответа</div>;
-      case 'CLOSED': return <div className="daysBadge" style={{ background: 'var(--success-alpha)', color: 'var(--success)' }}><CheckCircle2 size={14} /> Решен</div>;
+      case 'OPEN': 
+        return (
+          <div className="daysBadge" style={{ background: 'var(--warning-alpha)', color: 'var(--warning)' }}>
+            <Clock size={14} /> Открыт
+          </div>
+        );
+      case 'ANSWERED': 
+        return (
+          <div className="daysBadge" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)' }}>
+            <MessageCircle size={14} /> Ждет ответа
+          </div>
+        );
+      case 'CLOSED': 
+        return (
+          <div className="daysBadge" style={{ background: 'var(--success-alpha)', color: 'var(--success)' }}>
+            <CheckCircle2 size={14} /> Решен
+          </div>
+        );
       default: return null;
     }
   };
@@ -673,45 +763,49 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const ScreenHeader = ({ title }: { title: string }) => (
     <div className="topBar">
       <h1 className="screenHeaderTitle">{title}</h1>
-      <div className="bellBtn" onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) markAsRead(); }}>
-        {unreadCount > 0 ? <BellRing size={20} /> : <Bell size={20} />}
-        {unreadCount > 0 && <span className="unreadBadge">{unreadCount}</span>}
-      </div>
+      
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <div className="bellBtn" onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) markAsRead(); }}>
+          {unreadCount > 0 ? <BellRing size={20} /> : <Bell size={20} />}
+          {unreadCount > 0 && <span className="unreadBadge">{unreadCount}</span>}
+        </div>
 
-      <AnimatePresence>
-        {showNotifications && (
-          <>
-            <div 
-              className="menuBackdrop" 
-              style={{ zIndex: 199 }} 
-              onClick={() => setShowNotifications(false)} 
-            />
-            
-            <motion.div 
-              className="notificationsDropdown"
-              initial={{ opacity: 0, y: -10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            >
-              <h3 className="notificationsTitle">Уведомления</h3>
-              {notifications.length === 0 ? (
-                <p className="notificationsEmpty">Нет новых уведомлений</p>
-              ) : (
-                notifications.map((n) => (
-                  <div key={n.id} className={`notifItem ${n.isRead ? 'read' : 'unread'}`}>
-                    <div className="notifTitle">
-                      {n.title.includes('оплат') ? <Bitcoin size={16} color="var(--accent)" /> : <Info size={16} color="var(--text-primary)" />}
-                      {n.title}
+        <AnimatePresence>
+          {showNotifications && (
+            <>
+              <div 
+                className="menuBackdrop" 
+                style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'transparent' }} 
+                onClick={(e) => { e.stopPropagation(); setShowNotifications(false); }} 
+              />
+              
+              <motion.div 
+                className="notificationsDropdown"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                style={{ position: 'absolute', top: '100%', right: 0, marginTop: '12px', zIndex: 200 }}
+              >
+                <h3 className="notificationsTitle">Уведомления</h3>
+                {notifications.length === 0 ? (
+                  <p className="notificationsEmpty">Нет новых уведомлений</p>
+                ) : (
+                  notifications.map((n) => (
+                    <div key={n.id} className={`notifItem ${n.isRead ? 'read' : 'unread'}`}>
+                      <div className="notifTitle">
+                        {n.title.includes('оплат') ? <Bitcoin size={16} color="var(--accent)" /> : <Info size={16} color="var(--text-primary)" />}
+                        {n.title}
+                      </div>
+                      <div className="notifMessage">{n.message}</div>
+                      <div className="notifTime">{new Date(n.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                     </div>
-                    <div className="notifMessage">{n.message}</div>
-                    <div className="notifTime">{new Date(n.createdAt).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
-                  </div>
-                ))
-              )}
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+                  ))
+                )}
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 
@@ -807,9 +901,70 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   );
 
   const renderProfileTab = () => {
+    if (activeProfileScreen === 'faq') {
+      return <FaqScreen key="faq" onClose={() => setActiveProfileScreen(null)} />;
+    }
+    
+    // 👇 ОБНОВЛЕННЫЙ ЭКРАН БЕЗОПАСНОСТИ (Логин и Пароль)
+    if (activeProfileScreen === 'security') {
+      return (
+        <motion.div key="security" variants={slideVariants} initial="initial" animate="in" exit="out">
+          <div className="deviceDetailHeader">
+            <button className="backButton" onClick={() => setActiveProfileScreen(null)}><ChevronLeft size={24} /></button>
+            <h1 className="screenHeaderTitle">Безопасность</h1>
+          </div>
+
+          <div className="configCard" style={{ marginBottom: '24px' }}>
+            <div className="geminiHeaderRow">
+              <div className="geminiIconWrap" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)' }}>
+                <User size={24} />
+              </div>
+              <div>
+                <h2 className="geminiCardTitle">Логин (Username)</h2>
+                <p className="geminiCardSubtitle">Для входа в приложение</p>
+              </div>
+            </div>
+            
+            {isEditingUsername ? (
+              <div className="deviceNameEdit" style={{ maxWidth: '100%', marginTop: '16px' }}>
+                <input type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} autoFocus placeholder="Введите новый логин" />
+                <button onClick={handleSaveUsername} disabled={savingSecurity} className="saveNameBtn"><Check size={16} /></button>
+              </div>
+            ) : (
+              <div className="deviceNameDisplay" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-input)', padding: '12px 16px', borderRadius: '16px' }}>
+                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>{user?.username}</span>
+                <button onClick={() => setIsEditingUsername(true)} className="editNameBtn" style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+                  <Edit2 size={18} />
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="configCard">
+            <div className="geminiHeaderRow">
+              <div className="geminiIconWrap" style={{ background: 'var(--danger-alpha)', color: 'var(--danger)' }}>
+                <Lock size={24} />
+              </div>
+              <div>
+                <h2 className="geminiCardTitle">Изменить пароль</h2>
+                <p className="geminiCardSubtitle">Должен быть надежным</p>
+              </div>
+            </div>
+            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+              <input type="password" placeholder="Текущий пароль" className="modalInput" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={{ margin: 0 }} />
+              <input type="password" placeholder="Новый пароль" className="modalInput" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ margin: 0 }} />
+              <motion.button type="submit" className="modalSubmitBtn" disabled={savingSecurity || !oldPassword || !newPassword} style={{ marginTop: '8px', width: '100%', padding: '14px', borderRadius: '16px' }} whileTap={{ scale: 0.98 }}>
+                {savingSecurity ? 'Сохранение...' : 'Обновить пароль'}
+              </motion.button>
+            </form>
+          </div>
+        </motion.div>
+      );
+    }
+
     if (activeProfileScreen === 'support') {
-      if (loadingTickets && tickets.length === 0) loadTickets();
       const currentTopicObj = TOPICS.find(t => t.label === ticketTopic) || TOPICS[0];
+      
       return (
         <motion.div key="support" variants={slideVariants} initial="initial" animate="in" exit="out">
           <div className="deviceDetailHeader"><button className="backButton" onClick={() => setActiveProfileScreen(null)}><ChevronLeft size={24} /></button><h1 className="screenHeaderTitle">Поддержка</h1></div>
@@ -874,7 +1029,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
           <div className="profile-menu-group">
             <div className="profile-menu-item">
               <div className="profile-menu-left">
-                <SmartphoneNfc size={20} color="#3390ec" /> Стиль Telegram
+                <Paintbrush size={20} color="#3390ec" /> Стиль Telegram
                 <span className="betaBadge">BETA</span>
               </div>
               <label className="premiumSwitch" onClick={e => e.stopPropagation()}>
@@ -933,19 +1088,14 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             <button className="profile-menu-item" onClick={() => {
               toast.loading('Очистка кэша и обновление...');
               
-              // 1. Очищаем Service Workers (кэш PWA на iOS)
               if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.getRegistrations().then(regs => regs.forEach(r => r.unregister()));
               }
-              
-              // 2. Очищаем жесткий кэш браузера
               if ('caches' in window) {
                 caches.keys().then((names) => {
                   names.forEach(name => caches.delete(name));
                 });
               }
-              
-              // 3. Перезагружаем страницу с уникальным параметром (Cache Buster)
               setTimeout(() => {
                 window.location.href = window.location.pathname + '?v=' + new Date().getTime();
               }, 800);
@@ -964,68 +1114,60 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     return (
       <motion.div key="profileMain" variants={fadeVariants} initial="initial" animate="in" exit="out">
         <ScreenHeader title="Профиль" />
+        
         <div className="profile-header">
           <div className="profile-avatar">{user?.username?.charAt(0)?.toUpperCase() || 'U'}</div>
-          <div className="profile-info"><h2 className="screenHeaderTitle">{user?.username || 'Пользователь'}</h2><p>ID: {user?.telegramId}</p></div>
+          <div className="profile-info">
+            <h2 className="screenHeaderTitle">{user?.username || 'Пользователь'}</h2>
+            <p>ID: {user?.telegramId}</p>
+          </div>
         </div>
+
         <div className="profile-menu-group">
-          <button className="profile-menu-item" onClick={() => setDeepScreen({ type: 'history' })}><div className="profile-menu-left"><RefreshCcw size={20} /> История</div><ChevronRight size={20} color="var(--text-secondary)" /></button>
-          {user?.isAdmin && <button className="profile-menu-item" onClick={() => navigate('/admin')}><div className="profile-menu-left"><ShieldCheck size={20} /> Админ-панель</div><ChevronRight size={20} color="var(--text-secondary)" /></button>}
-          <button className="profile-menu-item" onClick={() => setActiveProfileScreen('settings')}><div className="profile-menu-left"><Settings size={20} /> Настройки</div><ChevronRight size={20} color="var(--text-secondary)" /></button>
-          <button className="profile-menu-item" onClick={() => setActiveProfileScreen('support')}><div className="profile-menu-left"><LifeBuoy size={20} /> Поддержка</div><ChevronRight size={20} color="var(--text-secondary)" /></button>
+          <button className="profile-menu-item" onClick={() => setActiveProfileScreen('security')}>
+            <div className="profile-menu-left"><Lock size={20} /> Безопасность</div>
+            <ChevronRight size={20} color="var(--text-secondary)" />
+          </button>
+          
+          <button className="profile-menu-item" onClick={() => setDeepScreen({ type: 'history' })}>
+            <div className="profile-menu-left"><RefreshCcw size={20} /> История</div>
+            <ChevronRight size={20} color="var(--text-secondary)" />
+          </button>
+          
+          <button className="profile-menu-item" onClick={() => setActiveProfileScreen('faq')}>
+            <div className="profile-menu-left"><BookOpen size={20} /> Инструкции (FAQ)</div>
+            <ChevronRight size={20} color="var(--text-secondary)" />
+          </button>
+
+          {user?.isAdmin && (
+            <button className="profile-menu-item" onClick={() => navigate('/admin')}>
+              <div className="profile-menu-left"><ShieldCheck size={20} /> Админ-панель</div>
+              <ChevronRight size={20} color="var(--text-secondary)" />
+            </button>
+          )}
+          
+          <button className="profile-menu-item" onClick={() => setActiveProfileScreen('settings')}>
+            <div className="profile-menu-left"><Settings size={20} /> Настройки</div>
+            <ChevronRight size={20} color="var(--text-secondary)" />
+          </button>
+          
+          <button className="profile-menu-item" onClick={() => setActiveProfileScreen('support')}>
+            <div className="profile-menu-left"><Headset size={20} /> Поддержка</div>
+            <ChevronRight size={20} color="var(--text-secondary)" />
+          </button>
         </div>
+
         <div className="profile-menu-group">
-          <button className="profile-menu-item danger" onClick={() => { logout(); onLogout(); }}><div className="profile-menu-left"><LogOut size={20} /> Выйти из аккаунта</div></button>
+          <button className="profile-menu-item danger" onClick={() => { logout(); onLogout(); }}>
+            <div className="profile-menu-left"><LogOut size={20} /> Выйти из аккаунта</div>
+          </button>
         </div>
       </motion.div>
     );
   };
 
-  // ==========================================
-  // ЛОГИКА IOS-СВАЙПА "НАЗАД"
-  // ==========================================
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchStartY, setTouchStartY] = useState<number | null>(null);
-
-  const handleSwipeBack = () => {
-    // Теперь эта функция прекрасно видит все стейты!
-    if (deepScreen) {
-      setDeepScreen(null);
-    } else if (activeService) {
-      setActiveService(null);
-    } else if (activeProfileScreen) {
-      setActiveProfileScreen(null);
-    }
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    if (touch.clientX < 40) {
-      setTouchStartX(touch.clientX);
-      setTouchStartY(touch.clientY);
-    } else {
-      setTouchStartX(null);
-      setTouchStartY(null);
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX === null || touchStartY === null) return;
-
-    const touch = e.changedTouches[0];
-    const deltaX = touch.clientX - touchStartX;
-    const deltaY = touch.clientY - touchStartY;
-
-    if (deltaX > 50 && Math.abs(deltaY) < deltaX) {
-      handleSwipeBack();
-    }
-
-    setTouchStartX(null);
-    setTouchStartY(null);
-  };
-
   return (
-    <motion.div className="app-container" variants={pageTransition} initial="initial" animate="in" exit="out" transition={{ duration: 0.4 }} onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <motion.div className="app-container" variants={pageTransition} initial="initial" animate="in" exit="out" transition={{ duration: 0.4 }}>
       <div className="scroll-area">
         <div className="scroll-area-inner">
           <AnimatePresence mode="wait">
@@ -1070,31 +1212,89 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   );
 }
 
+// 4. ЭКРАН FAQ / ИНСТРУКЦИЙ
+const FaqScreen = ({ onClose }: { onClose: () => void }) => {
+  const [expanded, setExpanded] = useState<number | null>(0); 
+
+  const faqs = [
+    {
+      question: 'Как установить приложение на iOS (iPhone)?',
+      answer: (
+        <ol className="faqList">
+          <li>Откройте этот сайт в стандартном браузере <b>Safari</b>.</li>
+          <li>Нажмите на иконку <b>«Поделиться»</b> (квадрат со стрелочкой вверх) внизу экрана.</li>
+          <li>Прокрутите меню вниз и выберите пункт <b>«На экран "Домой"»</b> (Add to Home Screen).</li>
+          <li>Нажмите <b>«Добавить»</b> в правом верхнем углу.</li>
+          <li>Теперь PRIME GO появится среди ваших приложений на главном экране!</li>
+        </ol>
+      )
+    },
+    {
+      question: 'Как подключить VPN на телефоне?',
+      answer: (
+        <div className="faqList">
+          1. В разделе "Сервисы" создайте новое устройство.<br/>
+          2. Скачайте приложение <b>v2RayTun</b> (для iOS) / <b>v2rayNG</b> (для Android).<br/>
+          3. Скопируйте ссылку конфигурации из карточки вашего устройства.<br/>
+          4. Откройте скачанное приложение и импортируйте ссылку из буфера обмена.
+        </div>
+      )
+    }
+  ];
+
+  return (
+    <motion.div variants={slideVariants} initial="initial" animate="in" exit="out" style={{ paddingBottom: '40px' }}>
+      <div className="deviceDetailHeader">
+        <button className="backButton" onClick={onClose}><ChevronLeft size={24} /></button>
+        <h1 className="screenHeaderTitle">FAQ</h1>
+      </div>
+      
+      <div className="faqContainer">
+        {faqs.map((faq, idx) => (
+          <div key={idx} className={`faqItem ${expanded === idx ? 'expanded' : ''}`}>
+            <div className="faqHeader" onClick={() => setExpanded(expanded === idx ? null : idx)}>
+              <h3>{faq.question}</h3>
+              <ChevronDown size={20} className="faqChevron" />
+            </div>
+            <AnimatePresence>
+              {expanded === idx && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="faqContentInner">
+                    {faq.answer}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
 // ==========================================
 // 5. ОРКЕСТРАТОР APP VIEW
 // ==========================================
 export default function AppView() {
   const [appState, setAppState] = useState<'checking' | 'login' | 'maintenance' | 'app'>('checking');
 
-  // Выносим проверку в отдельную функцию, чтобы вызывать ее и при старте, и после логина
   const checkAccess = async () => {
     try {
       setAppState('checking');
-      
-      // 1. Узнаем статус серверов
       const status = await client.system.getStatus();
-
-      // 2. Достаем свежие данные юзера (особенно важно после логина!)
       const userStr = localStorage.getItem('user');
       const user = userStr ? JSON.parse(userStr) : null;
 
-      // 3. Главный блок безопасности
       if (status.maintenance && !user?.isAdmin) {
         setAppState('maintenance');
-        return; // Стоп, дальше не пускаем
+        return; 
       }
 
-      // 4. Если всё ок или юзер - админ
       if (user) {
         setAppState('app');
       } else {
@@ -1102,27 +1302,20 @@ export default function AppView() {
       }
     } catch (error) {
       console.error('Ошибка инициализации приложения:', error);
-      // Чтобы ты сейчас мог тестить фронтенд (пока бэкенд выдает 404), 
-      // я временно ставлю фолбэк на логин/приложение, а не на техработы.
-      // Когда починишь бэкенд, можешь поменять обратно на 'maintenance'.
       const userStr = localStorage.getItem('user');
       setAppState(userStr ? 'app' : 'login'); 
     }
   };
 
-  // Проверяем при первой загрузке страницы
   useEffect(() => {
     checkAccess();
   }, []);
 
   if (appState === 'checking') return null;
 
-  
-
   return (
     <div className="app-wrapper">
       <AnimatePresence mode="wait">
-        {/* Обрати внимание: теперь onLoginSuccess вызывает checkAccess() заново! */}
         {appState === 'login' && (
           <LoginScreen key="login" onLoginSuccess={checkAccess} />
         )}

@@ -1014,17 +1014,17 @@
 }
 
 .saveNameBtn {
-  background: var(--accent);
-  color: white;
-  border: none;
   width: 32px;
   height: 32px;
   border-radius: 8px;
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* ========================================= */
@@ -1071,4 +1071,131 @@ textarea:focus::placeholder {
   line-height: 1.4;
   overflow-y: auto;
   font-family: inherit;
+}
+
+/* ========================================================= */
+/* 📚 СТИЛИ ДЛЯ FAQ / ИНСТРУКЦИЙ                             */
+/* ========================================================= */
+.faqContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 30px;
+}
+
+.faqItem {
+  background: var(--bg-block);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.faqHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.faqHeader h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  padding-right: 16px;
+  line-height: 1.4;
+}
+
+.faqChevron {
+  color: var(--text-tertiary);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.faqItem.expanded .faqChevron {
+  transform: rotate(180deg);
+  color: var(--accent);
+}
+
+.faqItem.expanded {
+  border-color: var(--border-accent);
+  background: var(--bg-hover);
+}
+
+.faqContentInner {
+  padding: 0 20px 20px 20px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.faqList {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.faqList li {
+  margin-bottom: 10px;
+}
+.faqList li:last-child {
+  margin-bottom: 0;
+}
+
+.faqList b {
+  color: var(--text-primary);
+}
+
+/* --- Красивое поле редактирования --- */
+.deviceNameEdit {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.deviceNameEdit input {
+  flex: 1;
+  min-width: 0; /* Обязательно для правильного сжатия flex */
+  padding: 14px 16px; /* Делаем инпут просторнее */
+  background: var(--bg-input);
+  border: 1px solid var(--border-color); /* Мягкая рамка */
+  border-radius: 16px; /* Скругления как в Telegram */
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.deviceNameEdit input:focus {
+  border-color: var(--accent); /* Синяя рамка при фокусе (тема Telegram) */
+  background: var(--bg-hover);
+}
+
+/* --- Красивая кнопка подтверждения --- */
+.saveNameBtn {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: none;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px var(--accent-alpha); /* Мягкое свечение */
+}
+
+.saveNameBtn:hover {
+  transform: scale(1.05);
+}
+
+.saveNameBtn:active {
+  transform: scale(0.95);
 }
