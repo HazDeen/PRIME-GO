@@ -33,16 +33,42 @@ export class DeviceService {
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 30);
     
-    // 🌟 ИСПРАВЛЕНИЕ: Узнаем следующий ID из базы данных
-    const lastDevice = await this.prisma.device.findFirst({ orderBy: { id: 'desc' } });
-    const nextId = (lastDevice?.id || 0) + 1;
+    // 🌟 НОВАЯ ЛОГИКА: Рандомный ID от 1 до 100
+    let clientEmail = '';
+    let isEmailFree = false;
+    const maxSlots = 100;
     
-    // 🌟 Формируем красивый никнейм
-    const clientEmail = `client${nextId}user`; 
+    // Стартуем со случайного числа
+    let startNum = Math.floor(Math.random() * maxSlots) + 1; 
+    let currentNum = startNum;
+    let attempts = 0;
+
+    // Цикл проверки занятости
+    while (!isEmailFree && attempts < maxSlots) {
+      clientEmail = `client${currentNum}user`; 
+
+      // Проверяем, есть ли уже такой email в нашей БД
+      const existing = await this.prisma.device.findFirst({
+        where: { email: clientEmail }
+      });
+
+      if (!existing) {
+        isEmailFree = true; // Нашли свободный слот!
+        break;
+      }
+
+      // Если занято, берем следующее число по кругу (до 100, затем снова 1)
+      currentNum = (currentNum % maxSlots) + 1;
+      attempts++;
+    }
+
+    if (!isEmailFree) {
+      throw new BadRequestException(`Все ${maxSlots} слотов для VPN заняты. Обратитесь к администратору.`);
+    }
 
     const totalGbBytes = 1000 * 1024 * 1024 * 1024;
     
-    // Передаем правильный email в 3x-ui
+    // Передаем правильный email в 3x-ui (inboundId подтянется из .env автоматически)
     const xuiResponse = await this.xuiApiService.addClient(location, {
       uuid: clientUuid,
       email: clientEmail, 

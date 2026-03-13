@@ -190,12 +190,33 @@ export class AdminService {
     const location = data.location || 'ch'; 
     const newUuid = crypto.randomUUID();
     
-    // 🌟 Ищем следующий ID для админской выдачи
-    const lastDevice = await this.prisma.device.findFirst({ orderBy: { id: 'desc' } });
-    const nextId = (lastDevice?.id || 0) + 1;
+    // 🌟 НОВАЯ ЛОГИКА: Рандомный ID от 1 до 100 для админа
+    let clientEmail = '';
+    let isEmailFree = false;
+    const maxSlots = 100;
+    let startNum = Math.floor(Math.random() * maxSlots) + 1; 
+    let currentNum = startNum;
+    let attempts = 0;
+
+    while (!isEmailFree && attempts < maxSlots) {
+      clientEmail = `client${currentNum}user`; 
+      const existing = await this.prisma.device.findFirst({
+        where: { email: clientEmail }
+      });
+
+      if (!existing) {
+        isEmailFree = true;
+        break;
+      }
+      currentNum = (currentNum % maxSlots) + 1;
+      attempts++;
+    }
+
+    if (!isEmailFree) {
+      throw new Error(`Все ${maxSlots} слотов заняты.`);
+    }
 
     const tgUsername = user.username ? `@${user.username}` : `ID:${user.telegramId}`;
-    const clientEmail = `client${nextId}user`;
     const linkRemark = `${tgUsername} (${data.type})`;
 
     // Создаем в 3x-ui
@@ -220,7 +241,7 @@ export class AdminService {
         location: location,
         uuid: xuiData.uuid,
         configLink: xuiData.configLink,
-        email: clientEmail, // Сохраняем системный email
+        email: clientEmail, // Сохраняем системный email "user_X"
         isActive: true,
         connectedAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
