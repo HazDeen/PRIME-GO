@@ -155,32 +155,40 @@ export class DeviceService {
   }
 
   async replaceDevice(deviceId: number) {
-    const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
+    // 1. Подтягиваем устройство ВМЕСТЕ с данными пользователя (чтобы вернуть tgUid)
+    const device = await this.prisma.device.findUnique({ 
+      where: { id: deviceId },
+      include: { user: true } // 👈 Обязательно добавляем связь
+    });
+    
     if (!device) throw new NotFoundException('Устройство не найдено');
 
     const location = device.location || 'ch';
 
+    // Удаляем старого клиента из панели
     if (device.uuid) {
       await this.xuiApiService.deleteClient(location, device.uuid).catch(() => {});
     }
 
     const newUuid = uuidv4();
     
-    // 🌟 При перегенерации ключа сохраняем оригинальный client{ID}user!
+    // Оставляем оригинальное имя клиента (client{ID}user)
     const clientEmail = device.email || `client${deviceId}user`;
     
+    // 2. Создаем нового клиента в 3x-ui
     const xuiResponse = await this.xuiApiService.addClient(location, {
       uuid: newUuid,
       email: clientEmail, 
       totalGb: 1000 * 1024 * 1024 * 1024,
-      expiryTime: device.expiresAt?.getTime() || (Date.now() + 30*24*60*60*1000),
-      tgUid: "0"
+      expiryTime: device.expiresAt ? device.expiresAt.getTime() : 0, 
+      tgUid: device.user ? device.user.telegramId.toString() : "0" 
     });
 
     if (!xuiResponse || !xuiResponse.success) {
       throw new BadRequestException('Ошибка при генерации новой ссылки в VPN панели');
     }
 
+    // 3. Сохраняем новую ссылку в базу (дата окончания при этом остается старой)
     const updated = await this.prisma.device.update({
       where: { id: deviceId },
       data: {
