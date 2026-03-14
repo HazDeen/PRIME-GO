@@ -78,7 +78,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       toast.error('Введите username и пароль');
       return;
     }
-
+//
     setLoading(true);
     try {
       const response = await client.auth.login(username, password);
@@ -98,7 +98,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       setLoading(false);
     }
   };
-
+//
   return (
     <motion.div className="loginPage" variants={pageTransition} initial="initial" animate="in" exit="out" transition={{ duration: 0.4 }}>
       <motion.button className="loginThemeBtn" onClick={toggleTheme} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
