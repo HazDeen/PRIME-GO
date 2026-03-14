@@ -34,7 +34,7 @@ type ProfileScreen = null | 'settings' | 'support' | 'security' | 'faq';
 type DeepScreen = null | { type: 'history' } | { type: 'device'; id: number } | { type: 'ticket'; id: number };
 
 const API_URL = 'https://h4zdeen.up.railway.app';
-const PRESET_AMOUNTS = [100, 300, 500];
+// const PRESET_AMOUNTS = [100, 300, 500];
 const TOPICS = [
   { id: 'payment', label: 'Вопрос по оплате', icon: <CreditCard size={18} /> },
   { id: 'vpn', label: 'Не работает VPN', icon: <Globe size={18} /> },
@@ -628,12 +628,14 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   
   const [showVpnAddModal, setShowVpnAddModal] = useState(false);
   const { addDevice } = useDevices();
-  const { balance, refetch: refetchBalance } = useBalance();
-  const [selectedTopup, setSelectedTopup] = useState<number | 'custom'>(100);
-  const [customAmount, setCustomAmount] = useState('');
-  const [loadingTopup, setLoadingTopup] = useState(false);
-  const currentAmount = selectedTopup === 'custom' ? Number(customAmount) : selectedTopup;
-  const newBalance = (balance || 0) + (currentAmount || 0);
+  const { 
+    // balance, 
+    refetch: refetchBalance } = useBalance();
+  // const [selectedTopup, setSelectedTopup] = useState<number | 'custom'>(100);
+  // const [customAmount, setCustomAmount] = useState('');
+  // const [loadingTopup, setLoadingTopup] = useState(false);
+  // const currentAmount = selectedTopup === 'custom' ? Number(customAmount) : selectedTopup;
+  // const newBalance = (balance || 0) + (currentAmount || 0);
 
   const [loadingGemini, setLoadingGemini] = useState(false);
 
@@ -682,14 +684,14 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     } catch (e) { throw e; }
   };
 
-  const handlePay = async () => {
-    if (!currentAmount || currentAmount < 50) return toast.error('Минимум 50 ₽');
-    setLoadingTopup(true);
-    try {
-      const response = await client.payments.create(currentAmount);
-      window.location.href = response.url;
-    } catch (e: any) { toast.error('Ошибка'); setLoadingTopup(false); }
-  };
+  // const handlePay = async () => {
+  //   if (!currentAmount || currentAmount < 50) return toast.error('Минимум 50 ₽');
+  //   setLoadingTopup(true);
+  //   try {
+  //     const response = await client.payments.create(currentAmount);
+  //     window.location.href = response.url;
+  //   } catch (e: any) { toast.error('Ошибка'); setLoadingTopup(false); }
+  // };
 
   const handleRequestGemini = async () => {
     setLoadingGemini(true);
@@ -879,24 +881,52 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const renderWalletTab = () => (
     <motion.div key="wallet" variants={fadeVariants} initial="initial" animate="in" exit="out">
       <ScreenHeader title="Кошелек" />
-      <div className="balancePreview">
-        <span className="previewLabel">Баланс после пополнения</span>
-        <span className="previewAmount">{newBalance} ₽</span>
+      
+      {/* Показываем текущий баланс на экране кошелька */}
+      <BalanceCard />
+
+      <div className="configCard" style={{ marginTop: '24px', textAlign: 'center', padding: '32px 20px' }}>
+        {/* Анимированная иконка (плавное пульсирование) */}
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} 
+          transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+          style={{ 
+            display: 'inline-flex', 
+            background: 'var(--warning-alpha)', 
+            color: 'var(--warning)', 
+            padding: '18px', 
+            borderRadius: '50%', 
+            marginBottom: '20px' 
+          }}
+        >
+          <Clock size={40} />
+        </motion.div>
+        
+        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
+          Оплата в разработке
+        </h2>
+        
+        <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '28px' }}>
+          В данный момент автоматический шлюз оплаты находится на обновлении. <br/><br/>
+          Чтобы пополнить баланс, совершите перевод по реквизитам и <b>отправьте чек в нашу службу поддержки</b>. Средства будут зачислены на ваш аккаунт в течение пары минут.
+        </p>
+
+        {/* Кнопка перехода в Telegram (замени ссылку на свой контакт, если нужно) */}
+        <a 
+          href="https://t.me/Prime_Go_ADMIN" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          style={{ textDecoration: 'none' }}
+        >
+          <motion.button 
+            className="payButton" 
+            whileTap={{ scale: 0.98 }}
+            style={{ width: '100%', margin: 0 }}
+          >
+            <Send size={20} /> Написать в поддержку
+          </motion.button>
+        </a>
       </div>
-      <div className="amountSelector">
-        <p className="selectorTitle">Выберите сумму</p>
-        <div className="amountGrid">
-          {PRESET_AMOUNTS.map((amt) => (<button key={amt} className={`amountChip ${selectedTopup === amt ? 'active' : ''}`} onClick={() => setSelectedTopup(amt)}>{amt} ₽</button>))}
-        </div>
-        <button className={`customChip ${selectedTopup === 'custom' ? 'active' : ''}`} onClick={() => setSelectedTopup('custom')}>Другое</button>
-        <AnimatePresence>
-          {selectedTopup === 'custom' && (<motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} type="number" className="customAmountInput" placeholder="Сумма (от 50 ₽)..." value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} />)}
-        </AnimatePresence>
-      </div>
-      <div className="infoMessage"><Wallet size={20} className="infoIcon" /><p>Средства зачисляются моментально.</p></div>
-      <motion.button className="payButton" onClick={handlePay} disabled={loadingTopup || (selectedTopup === 'custom' && currentAmount < 50)} whileTap={{ scale: 0.98 }}>
-        <Bitcoin size={20} /> {loadingTopup ? 'Создание счета...' : `Пополнить на ${currentAmount || 0} ₽`}
-      </motion.button>
     </motion.div>
   );
 
