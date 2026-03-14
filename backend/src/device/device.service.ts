@@ -180,7 +180,13 @@ export class DeviceService {
       uuid: newUuid,
       email: clientEmail, 
       totalGb: 1000 * 1024 * 1024 * 1024,
+      
+      // 🚨 ГЛАВНЫЙ ФИКС ДАТЫ: 
+      // Берем дату СТРОГО из базы данных. Если устройство безлимитное (null), ставим 0. 
+      // Никаких подарочных +30 дней!
       expiryTime: device.expiresAt ? device.expiresAt.getTime() : 0, 
+      
+      // 🚨 ФИКС TG ID: Восстанавливаем привязку к Telegram пользователя в XUI
       tgUid: device.user ? device.user.telegramId.toString() : "0" 
     });
 
