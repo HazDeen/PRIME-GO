@@ -45,6 +45,7 @@ export class AdminService {
       balance: user.balance,
       isAdmin: user.isAdmin,
       createdAt: user.createdAt,
+      avatarUrl: user.avatarUrl,
     }));
   }
 
