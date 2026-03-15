@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { XuiApiService } from '../xui/xui-api.service'; // Проверь правильность пути!
+import { BotService } from '../bot/bot.service';
 
 @Injectable()
 export class AdminService {
@@ -8,7 +9,8 @@ export class AdminService {
 
   constructor(
     private prisma: PrismaService,
-    private xuiService: XuiApiService // Внедряем сервис панели 3x-ui
+    private xuiService: XuiApiService,
+    private botService: BotService
   ) {}
 
   async validateAdmin(username: string) {
@@ -251,28 +253,72 @@ export class AdminService {
   }
 
 // Отправка уведомлений
+  // ========================================================
+  // Отправка уведомлений (Сайт + Telegram Push)
+  // ========================================================
   async sendNotification(data: { userIds?: number[]; sendToAll: boolean; title: string; message: string }) {
-    if (data.sendToAll) {
-      const users = await this.prisma.user.findMany({ select: { id: true } });
-      const notifications = users.map(u => ({
-        userId: u.id,
-        title: data.title,
-        message: data.message,
-      }));
-      await this.prisma.notification.createMany({ data: notifications });
-      return { success: true, count: users.length };
-    } else {
-      if (!data.userIds || data.userIds.length === 0) throw new BadRequestException('Получатели не указаны');
-      
-      const notifications = data.userIds.map(id => ({
-        userId: id,
-        title: data.title,
-        message: data.message,
-      }));
+    // 1. Собираем целевых пользователей (Нам ОЧЕНЬ нужен их telegramId для бота)
+    let targetUsers: { id: number; telegramId: bigint }[] = [];
 
-      // createMany отлично подходит для вставки сразу массива записей
-      await this.prisma.notification.createMany({ data: notifications });
-      return { success: true, count: data.userIds.length };
+    if (data.sendToAll) {
+      targetUsers = await this.prisma.user.findMany({
+        select: { id: true, telegramId: true },
+      });
+    } else {
+      if (!data.userIds || data.userIds.length === 0) {
+        throw new BadRequestException('Получатели не указаны');
+      }
+      targetUsers = await this.prisma.user.findMany({
+        where: { id: { in: data.userIds } },
+        select: { id: true, telegramId: true },
+      });
+    }
+
+    if (targetUsers.length === 0) {
+      return { success: true, count: 0 };
+    }
+
+    // 2. Мгновенно сохраняем всё в базу (для колокольчика на сайте)
+    const notifications = targetUsers.map(u => ({
+      userId: u.id, // Оставляем u.id, как было в твоем оригинальном коде
+      title: data.title,
+      message: data.message,
+      isRead: false,
+    }));
+
+    await this.prisma.notification.createMany({ data: notifications });
+
+    // 3. Запускаем рассылку в Telegram в фоновом режиме (не ждем окончания!)
+    this.broadcastToTelegram(targetUsers, data.title, data.message);
+
+    // Сразу возвращаем ответ фронтенду
+    return { success: true, count: targetUsers.length };
+  }
+
+  /**
+   * Вспомогательный метод для безопасной фоновой рассылки
+   */
+  private async broadcastToTelegram(users: { telegramId: bigint }[], title: string, message: string) {
+    // Подбираем иконку по ключевым словам
+    let icon = '🔔';
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('оплат') || titleLower.includes('баланс') || titleLower.includes('пополн')) icon = '💰';
+    else if (titleLower.includes('vpn') || titleLower.includes('устройств')) icon = '📱';
+    else if (titleLower.includes('поддержк') || titleLower.includes('тикет') || titleLower.includes('ответ')) icon = '💬';
+    else if (titleLower.includes('ошибк') || titleLower.includes('отказ') || titleLower.includes('важн')) icon = '⚠️';
+
+    // Твой строгий формат сообщения
+    const tgMessage = `${icon} <b>${title}</b>\n\n${message}`;
+
+    for (const user of users) {
+      try {
+        await this.botService.sendNotification(Number(user.telegramId), tgMessage);
+      } catch (error) {
+        this.logger.error(`Ошибка отправки ТГ-пуша юзеру ${user.telegramId}`);
+      }
+
+      // Пауза для обхода лимитов Telegram (не удалять!)
+      await new Promise(resolve => setTimeout(resolve, 35));
     }
   }
 }
