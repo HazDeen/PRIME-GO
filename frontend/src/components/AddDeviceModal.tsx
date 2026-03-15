@@ -107,10 +107,11 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
     switch (step) {
       case 1:
         return (
-          <div className="wizardStep">
+          <div className="wizardStep" style={{ width: '100%', overflow: 'hidden' }}>
             <h3 className="wizardStepTitle">Выберите сервер</h3>
             <p className="wizardStepDesc">От локации зависит скорость и стоимость</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px', marginTop: '16px' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px', width: '100%' }}>
               {LOCATIONS.map(loc => (
                 <motion.div
                   key={loc.id}
@@ -118,29 +119,39 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   style={{
-                    padding: '16px', borderRadius: '16px', cursor: 'pointer',
+                    width: '100%', /* ФИКС: Жестко задаем ширину */
+                    boxSizing: 'border-box', /* ФИКС: Паддинги не увеличивают ширину */
+                    padding: '16px', 
+                    borderRadius: '16px', 
+                    cursor: 'pointer',
                     background: selectedLocation === loc.id ? 'var(--accent-alpha)' : 'var(--bg-input)',
-                    border: selectedLocation === loc.id ? '2px solid var(--accent)' : '2px solid transparent',
-                    transition: '0.2s', display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    border: selectedLocation === loc.id ? '1px solid var(--accent)' : '1px solid var(--border-color)',
+                    transition: 'all 0.2s ease', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between',
+                    gap: '12px',
+                    overflow: 'hidden' /* ФИКС: Обрезаем всё, что пытается вылезти */
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                    {/* Используем loc.id (ch или at) для генерации нужного класса флага */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0, flex: 1, overflow: 'hidden' }}>
                     <span 
                       className={`fi fi-${loc.id}`} 
                       style={{ 
                         fontSize: '28px', 
-                        borderRadius: '4px', /* Слегка закругляем углы для красоты */
+                        borderRadius: '4px', 
                         overflow: 'hidden',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        flexShrink: 0
                       }} 
                     />
-                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>{loc.label}</span>
-                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{loc.desc}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                      <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{loc.label}</span>
+                      <span style={{ fontSize: '13px', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>{loc.desc}</span>
                     </div>
                   </div>
-                  {selectedLocation === loc.id && <CheckCircle2 size={24} color="var(--accent)" />}
+                  {/* Галочка справа */}
+                  {selectedLocation === loc.id && <CheckCircle2 size={24} color="var(--accent)" style={{ flexShrink: 0 }} />}
                 </motion.div>
               ))}
             </div>
@@ -188,8 +199,7 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
           <div className="wizardStep">
             <h3 className="wizardStepTitle">Подтверждение</h3>
             <p className="wizardStepDesc">Проверьте данные перед созданием</p>
-            
-            <div style={{ background: 'var(--bg-input)', borderRadius: '16px', padding: '16px', marginTop: '16px' }}>
+          
               <div style={{ background: 'var(--bg-input)', borderRadius: '16px', padding: '16px', marginTop: '16px' }}>
               {/* Строка локации */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
@@ -233,7 +243,6 @@ export default function AddDeviceModal({ onClose, onAdd, isBlocked }: Props) {
                   <Edit2 size={14} color="var(--accent)" />
                 </div>
               </div>
-            </div>
             </div>
 
             {/* Итоговая цена */}

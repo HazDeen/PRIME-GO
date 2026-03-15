@@ -37,8 +37,6 @@ type DeepScreen = null | { type: 'history' } | { type: 'device'; id: number } | 
 
 const API_URL = 'https://h4zdeen.up.railway.app';
 
-// const PRESET_AMOUNTS = [100, 300, 500]; // Для старого кошелька
-
 // Официальная иконка Gemini
 const CustomGeminiIcon = () => (
   <svg 
@@ -94,26 +92,57 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) {
-      toast.error('Введите username и пароль');
+      toast.error('Пожалуйста, введите логин и пароль');
       return;
     }
 
     setLoading(true);
     try {
       const response = await client.auth.login(username, password);
-      localStorage.setItem('user', JSON.stringify(response.user));
-      setUser(response.user);
-      toast.success(`Добро пожаловать, ${response.user.username || username}!`);
+      
+      // 🚨 1. ЗАЩИТА: Если сервер вернул текст ошибки напрямую в ответе
+      if (response.message && !response.user) {
+        throw new Error(response.message);
+      }
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      // Достаем данные пользователя
+      const userData = response?.user ? response.user : response;
+
+      // 🚨 2. ЗАЩИТА: Если пользователя вообще нет в ответе, значит логин не удался
+      if (!userData || !userData.username) {
+        throw new Error('not found');
+      }
+
+      // Если всё отлично — пускаем в приложение
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      toast.success(`Добро пожаловать, ${userData.username}!`);
       setIsSuccess(true); 
       setTimeout(() => { onLoginSuccess(); }, 1500);
+
     } catch (error: any) {
-      if (error.message?.includes('Пароль не установлен')) {
-        toast.error('Пароль не установлен. Напишите /setpass в боте');
-      } else if (error.message?.includes('Неверный пароль')) {
-        toast.error('Неверный пароль');
-      } else {
-        toast.error('Ошибка входа');
+      // ПЕРЕХВАТЧИК ОШИБОК
+      const errorMsg = error.message?.toLowerCase() || '';
+      
+      if (errorMsg.includes('пароль не установлен')) {
+        toast.error('Пароль не установлен. Создайте его через нашего бота в Telegram: /setpass');
+      } 
+      // Проверка на неверный пароль (отдельно)
+      else if (errorMsg.includes('неверный пароль') || errorMsg.includes('wrong password') || errorMsg.includes('password') || errorMsg.includes('credentials')) {
+        toast.error('Неверный пароль. Попробуйте еще раз.');
+      } 
+      // Проверка на несуществующего юзера (отдельно)
+      else if (errorMsg.includes('не найден') || errorMsg.includes('not found') || errorMsg.includes('user') || errorMsg.includes('undefined')) {
+        toast.error('Такой пользователь не зарегистрирован или проверьте правильность ввода.');
+      } 
+      // Если пришла вообще неизвестная ошибка
+      else {
+        toast.error('Такой пользователь не зарегистрирован или проверьте правильность ввода.');
       }
+      
       setLoading(false);
     }
   };
@@ -138,7 +167,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
                 <form onSubmit={handleSubmit} className="loginForm">
                   <div className="inputGroup">
                     <div className="inputIconWrapper"><User size={18} /></div>
-                    <input type="text" className="loginInput" placeholder="Login (default: Username (with out @))" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
+                    <input type="text" className="loginInput" placeholder="Login (без символа @)" value={username} onChange={(e) => setUsername(e.target.value)} disabled={loading} />
                   </div>
                   
                   <div className="inputGroup">
@@ -266,7 +295,7 @@ const HistoryScreen = ({ onClose, onGoToTopup }: { onClose: () => void, onGoToTo
           </motion.div>
         ))}
         {Object.keys(transactions).length === 0 && (
-          <div className="supportEmptyState">История пуста</div>
+          <div className="supportEmptyState">История транзакций пуста</div>
         )}
       </div>
     </motion.div>
@@ -289,85 +318,122 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
       setLoading(true);
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const response = await fetch(`${API_URL}/devices/user/${user.telegramId}`, { headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-      const devices = await response.json();
-      const current = devices.find((d: any) => d.id === deviceId);
+      const data = await response.json();
+      
+      // ИСПРАВЛЕНИЕ: Вывод ошибки при загрузке устройств
+      if (!response.ok) {
+        throw new Error(data.message || 'Не удалось загрузить список устройств');
+      }
+
+      const current = data.find((d: any) => d.id === deviceId);
       if (current) {
         setDevice(current);
         setDeviceName(current.name || current.customName);
       } else {
-        toast.error('Устройство не найдено');
+        toast.error('Выбранное устройство не найдено на сервере');
         onClose();
       }
-    } catch (e) { toast.error('Ошибка загрузки'); } finally { setLoading(false); }
+    } catch (e: any) { 
+      toast.error(e.message || 'Сбой при получении данных об устройстве'); 
+      onClose();
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const handleCopy = () => {
     if (device?.configLink) {
       navigator.clipboard.writeText(device.configLink);
       setCopied(true);
-      toast.success('Скопировано!');
+      toast.success('Ссылка успешно скопирована!');
       setTimeout(() => setCopied(false), 2000);
     }
   };
 
   const handleReplaceLink = async () => {
-    toast.loading('Новая ссылка...', { id: 'replace' });
+    toast.loading('Генерация новой ссылки...', { id: 'replace' });
     try {
       const response = await fetch(`${API_URL}/devices/${deviceId}/replace`, { method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
       const data = await response.json();
-      if (response.ok) { setDevice({ ...device, configLink: data.configLink }); toast.success('Обновлено!', { id: 'replace' }); }
-    } catch (e) { toast.error('Ошибка', { id: 'replace' }); }
+      
+      if (!response.ok) throw new Error(data.message || 'Не удалось обновить конфигурацию');
+      
+      setDevice({ ...device, configLink: data.configLink }); 
+      toast.success('Ссылка успешно обновлена!', { id: 'replace' });
+    } catch (e: any) { 
+      toast.error(e.message || 'Ошибка обновления соединения', { id: 'replace' }); 
+    }
   };
 
   const handleSaveName = async () => {
-    if (!deviceName.trim()) return;
+    if (!deviceName.trim()) {
+      toast.error('Название устройства не может быть пустым');
+      return;
+    }
     try {
       const response = await fetch(`${API_URL}/devices/${deviceId}/name`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
         body: JSON.stringify({ customName: deviceName })
       });
-      if (response.ok) { setDevice({ ...device, name: deviceName }); setIsEditing(false); toast.success('Сохранено'); }
-    } catch (e) { toast.error('Ошибка'); }
+      
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || 'Не удалось сохранить новое название');
+
+      setDevice({ ...device, name: deviceName }); 
+      setIsEditing(false); 
+      toast.success('Название успешно сохранено');
+    } catch (e: any) { 
+      toast.error(e.message || 'Ошибка при сохранении названия'); 
+    }
   };
 
   const performDelete = async () => {
     if (isDeleting) return;
     setIsDeleting(true);
-    toast.loading('Удаляем...', { id: 'del' });
+    toast.loading('Удаляем устройство...', { id: 'del' });
     try {
       const response = await fetch(`${API_URL}/devices/${deviceId}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } });
-      if (response.ok) { toast.success('Удалено!', { id: 'del' }); onClose(); }
-    } catch (e) { toast.error('Ошибка', { id: 'del' }); } finally { setIsDeleting(false); }
+      
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Сбой при попытке удаления');
+      }
+
+      toast.success('Устройство навсегда удалено!', { id: 'del' }); 
+      onClose();
+    } catch (e: any) { 
+      toast.error(e.message || 'Ошибка при удалении устройства', { id: 'del' }); 
+    } finally { 
+      setIsDeleting(false); 
+    }
   };
 
   const handleRenew = async () => {
     toast.loading('Продление подписки...', { id: 'renew' });
     try {
-      // 1. Берем текущего юзера из памяти
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
       const response = await fetch(`${API_URL}/devices/${deviceId}/renew`, { 
         method: 'POST', 
         headers: { 
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json' // 👈 ОБЯЗАТЕЛЬНО добавляем заголовок
+          'Content-Type': 'application/json' 
         },
-        // 2. Явно передаем userId в теле запроса
         body: JSON.stringify({ userId: currentUser.id }) 
       });
 
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Ошибка сервера');
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || 'Не удалось оплатить продление сервера');
       }
-      toast.success('Подписка успешно продлена!', { id: 'renew' });
+      toast.success('Подписка успешно продлена! Интернет работает.', { id: 'renew' });
       loadDevice();
     } catch (e: any) { 
-      toast.error(e.message || 'Ошибка продления.', { id: 'renew' }); 
+      toast.error(e.message || 'Ошибка при продлении подписки', { id: 'renew' }); 
     }
   };
 
-  if (loading) return <div className="loadingMessage loadingMessageCenter">Загрузка...</div>;
+  if (loading) return <div className="loadingMessage loadingMessageCenter">Получение данных...</div>;
   if (!device) return null;
 
   return (
@@ -399,7 +465,6 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
           <p className="deviceProfileModel">{device.model || 'VPN Устройство'}</p>
           <div className="deviceProfileStatus deviceProfileStatusMargin">
             {device.daysLeft > 3 ? (
-              /* ОСТАЛОСЬ БОЛЬШЕ 3 ДНЕЙ: Стандартный статус */
               <>
                 <span className={`statusBadge ${device.isActive ? 'active' : 'inactive'}`}>
                   {device.isActive ? '● Активно' : '○ Неактивно'}
@@ -407,7 +472,6 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
                 <span className="daysBadge"><Timer size={14} /> {device.daysLeft} дн.</span>
               </>
             ) : device.daysLeft > 0 && device.daysLeft <= 3 ? (
-              /* ОСТАЛОСЬ ОТ 1 ДО 3 ДНЕЙ: Кнопка слева, дни справа */
               <>
                 <motion.button 
                   className="addButton" 
@@ -423,7 +487,6 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
                 </span>
               </>
             ) : (
-              /* 0 ДНЕЙ: Подписка истекла */
               <motion.button className="addButton danger" onClick={handleRenew} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <RefreshCw size={16} /> Продлить подписку
               </motion.button>
@@ -448,7 +511,7 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
         <div className="deleteCardIcon">{isDeleting ? <div className="spinner-small" /> : confirmDelete ? <AlertTriangle size={24} /> : <Trash2 size={24} />}</div>
         <div className="deleteCardContent">
           <h4>{isDeleting ? 'Удаление...' : confirmDelete ? 'Подтвердите удаление' : 'Удалить устройство'}</h4>
-          <p>{confirmDelete ? 'Нажмите ещё раз' : 'Это нельзя отменить'}</p>
+          <p>{confirmDelete ? 'Нажмите ещё раз' : 'Это действие необратимо'}</p>
         </div>
         {confirmDelete && !isDeleting && (
           <button className="cancelDeleteBtn" onClick={(e) => { e.stopPropagation(); setConfirmDelete(false); }}><X size={16} /></button>
@@ -477,9 +540,20 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
   const loadTicket = async (showLoading = false) => {
     try {
       const response = await fetch(`${API_URL}/tickets/${ticketId}`);
-      setTicket(await response.json());
-    } catch (e) { if (showLoading) { toast.error('Ошибка загрузки'); onClose(); } } 
-    finally { if (showLoading) setLoading(false); }
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.message || 'Не удалось открыть диалог');
+      
+      setTicket(data);
+    } catch (e: any) { 
+      if (showLoading) { 
+        toast.error(e.message || 'Ошибка загрузки истории чата'); 
+        onClose(); 
+      } 
+    } 
+    finally { 
+      if (showLoading) setLoading(false); 
+    }
   };
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -501,9 +575,22 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
     if (textareaRef.current) textareaRef.current.style.height = '52px';
 
     try {
-      await fetch(`${API_URL}/tickets/${ticketId}/message`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: tempMsg.text, isAdmin: false }) });
+      const response = await fetch(`${API_URL}/tickets/${ticketId}/message`, { 
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ text: tempMsg.text, isAdmin: false }) 
+      });
+      
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Сбой при отправке на сервер');
+      }
       loadTicket(false);
-    } catch (e) { toast.error('Ошибка'); loadTicket(false); } finally { setSending(false); }
+    } catch (e: any) { 
+      toast.error(e.message || 'Ошибка при отправке сообщения. Оно может быть не доставлено.'); 
+      loadTicket(false); 
+    } finally { 
+      setSending(false); 
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -513,7 +600,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
     }
   };
 
-  if (loading) return <div className="loadingMessage loadingMessageCenter">Загрузка чата...</div>;
+  if (loading) return <div className="loadingMessage loadingMessageCenter">Соединяемся с поддержкой...</div>;
   if (!ticket) return null;
   const isClosed = ticket.status === 'CLOSED';
 
@@ -530,7 +617,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
       </div>
 
       <div className="chatMessagesArea chatMessagesAreaPad">
-        <div className="chatSystemMessage"><div className="chatSystemMessageInner"><Info size={12} /> Чат создан {new Date(ticket.createdAt).toLocaleDateString()}</div></div>
+        <div className="chatSystemMessage"><div className="chatSystemMessageInner"><Info size={12} /> Обращение открыто {new Date(ticket.createdAt).toLocaleDateString()}</div></div>
         {ticket.messages.map((msg: any) => {
           const isUser = !msg.isAdmin;
           return (
@@ -547,7 +634,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
 
       <div className="chatInputArea chatInputAreaPad">
         {isClosed ? (
-          <div className="chatClosedMessage">Вопрос решен. Чат закрыт.</div>
+          <div className="chatClosedMessage">Вопрос решен. Чат был закрыт администратором.</div>
         ) : (
           <form onSubmit={handleSendMessage} className="chatInputForm">
             <textarea 
@@ -556,7 +643,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
               value={newMessage} 
               onChange={handleTextChange}
               onKeyDown={handleKeyDown}
-              placeholder="Сообщение..." 
+              placeholder="Введите сообщение..." 
               rows={1}
             />
             <button type="submit" className={`chatSendBtn ${newMessage.trim() ? 'active' : 'disabled'}`} disabled={!newMessage.trim() || sending}><Send size={20} /></button>
@@ -604,34 +691,20 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // =========================================================
-  // СТАРЫЕ СОСТОЯНИЯ ДЛЯ ОПЛАТЫ И GEMINI (СОХРАНЕНЫ НА БУДУЩЕЕ)
-  // =========================================================
-  /*
-  const [selectedTopup, setSelectedTopup] = useState<number | 'custom'>(100);
-  const [customAmount, setCustomAmount] = useState('');
-  const [loadingTopup, setLoadingTopup] = useState(false);
-  const currentAmount = selectedTopup === 'custom' ? Number(customAmount) : selectedTopup;
-  const newBalance = (balance || 0) + (currentAmount || 0);
-
-  const [loadingGemini, setLoadingGemini] = useState(false);
-  */
-
   const handleDeleteAvatar = async () => {
-    if (!user?.avatarUrl) return toast.info('У вас не установлена аватарка');
+    if (!user?.avatarUrl) return toast.info('У вас не установлено фото профиля');
     
-    toast.loading('Удаление...', { id: 'delete-avatar' });
+    toast.loading('Удаление аватара...', { id: 'delete-avatar' });
     try {
-      // Отправляем пустую строку на сервер, чтобы очистить поле
       await client.users.updateAvatar(""); 
       
       const updatedUser = { ...user, avatarUrl: "" };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser as any);
       
-      toast.success('Фото профиля удалено', { id: 'delete-avatar' });
+      toast.success('Фото профиля успешно удалено', { id: 'delete-avatar' });
     } catch (e: any) { 
-      toast.error(e.message || 'Ошибка при удалении', { id: 'delete-avatar' }); 
+      toast.error(e.message || 'Ошибка при удалении фотографии', { id: 'delete-avatar' }); 
     }
   };
 
@@ -643,12 +716,12 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
         const updatedUser = { ...user, avatarUrl: data.avatarUrl };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         setUser(updatedUser as any);
-        toast.success('Аватарка успешно восстановлена!', { id: 'tg-avatar' });
+        toast.success('Аватарка успешно подгружена из Telegram!', { id: 'tg-avatar' });
       } else {
-        toast.error(data.message || 'В Telegram не найдено фото', { id: 'tg-avatar' });
+        toast.error(data.message || 'У вас нет публичного фото в Telegram', { id: 'tg-avatar' });
       }
     } catch (e: any) {
-      toast.error(e.message || 'Ошибка синхронизации', { id: 'tg-avatar' });
+      toast.error(e.message || 'Сбой синхронизации с серверами Telegram', { id: 'tg-avatar' });
     }
   };
 
@@ -699,17 +772,30 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const updateSetting = async (key: string, value: boolean) => {
     if (!user) return;
     try {
+      // Оптимистично меняем UI
       if (key === 'autoRenewVpn') setAutoRenewVpn(value);
       if (key === 'autoRenewGemini') setAutoRenewGemini(value);
       if (key === 'tgNotifications') setTgNotifications(value);
 
-      await fetch(`${API_URL}/user/${user?.telegramId}/settings`, {
+      const response = await fetch(`${API_URL}/user/${user?.telegramId}/settings`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ [key]: value })
       });
+      
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Ошибка сервера при сохранении настроек');
+      }
+
       const updatedUser = { ...user, [key]: value };
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser as any);
-    } catch (e) { toast.error('Ошибка сохранения настроек'); }
+    } catch (e: any) { 
+      toast.error(e.message || 'Не удалось применить настройку. Попробуйте еще раз.'); 
+      // Возвращаем старое значение при ошибке
+      if (key === 'autoRenewVpn') setAutoRenewVpn(!value);
+      if (key === 'autoRenewGemini') setAutoRenewGemini(!value);
+      if (key === 'tgNotifications') setTgNotifications(!value);
+    }
   };
 
   const markAsRead = async () => {
@@ -720,9 +806,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   
   const [showVpnAddModal, setShowVpnAddModal] = useState(false);
   const { addDevice } = useDevices();
-  const { 
-    // balance, 
-    refetch: refetchBalance } = useBalance();
+  const { refetch: refetchBalance } = useBalance();
 
   const handleSaveUsername = async () => {
     if (!newUsername.trim() || !user) return;
@@ -734,10 +818,10 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
       localStorage.setItem('user', JSON.stringify(updatedUser));
       setUser(updatedUser); 
       
-      toast.success('Логин успешно обновлен');
+      toast.success('Логин успешно изменен');
       setIsEditingUsername(false);
     } catch(e: any) { 
-      toast.error(e.message || 'Ошибка при сохранении логина'); 
+      toast.error(e.message || 'Ошибка сохранения логина. Возможно, он уже занят.'); 
     } finally { 
       setSavingSecurity(false); 
     }
@@ -749,11 +833,11 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     try {
       setSavingSecurity(true);
       await client.users.updatePassword(oldPassword, newPassword);
-      toast.success('Пароль успешно изменен');
+      toast.success('Пароль аккаунта успешно обновлен');
       setOldPassword('');
       setNewPassword('');
     } catch(e: any) { 
-      toast.error(e.message || 'Неверный текущий пароль или ошибка сервера'); 
+      toast.error(e.message || 'Текущий пароль указан неверно или произошла ошибка'); 
     } finally { 
       setSavingSecurity(false); 
     }
@@ -771,9 +855,12 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     try {
       if (!user) return;
       const response = await fetch(`${API_URL}/tickets/user/${user.telegramId}`);
-      setTickets(await response.json());
-    } catch (e) { 
-      console.error('Ошибка загрузки обращений'); 
+      const data = await response.json();
+      
+      if (!response.ok) throw new Error(data.message || 'Сбой загрузки обращений');
+      setTickets(data);
+    } catch (e: any) { 
+      console.error(e.message || 'Непредвиденная ошибка при загрузке поддержки'); 
     } finally { 
       setLoadingTickets(false); 
     }
@@ -781,68 +868,50 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
 
   const handleCreateTicket = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!ticketText.trim()) return toast.error('Опишите проблему');
+    if (!ticketText.trim()) {
+      toast.error('Пожалуйста, детально опишите вашу проблему');
+      return;
+    }
     setIsSubmittingTicket(true);
-    try {
-      await fetch(`${API_URL}/tickets`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.telegramId, topic: ticketTopic, text: ticketText }),
-      });
-      toast.success('Обращение создано');
-      setShowTicketModal(false); setTicketText(''); loadTickets();
-    } catch (e) { toast.error('Ошибка'); } finally { setIsSubmittingTicket(false); }
-  };
-
-  // =========================================================
-  // СТАРЫЕ ФУНКЦИИ ОПЛАТЫ И GEMINI (СОХРАНЕНЫ НА БУДУЩЕЕ)
-  // =========================================================
-  /*
-  const handlePay = async () => {
-    if (!currentAmount || currentAmount < 50) return toast.error('Минимум 50 ₽');
-    setLoadingTopup(true);
-    try {
-      const response = await client.payments.create(currentAmount);
-      window.location.href = response.url;
-    } catch (e: any) { toast.error('Ошибка'); setLoadingTopup(false); }
-  };
-
-  const handleRequestGemini = async () => {
-    setLoadingGemini(true);
     try {
       const response = await fetch(`${API_URL}/tickets`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.telegramId?.toString(), topic: 'Доступ к Gemini AI', text: 'Хочу получить доступ к Gemini AI.' }),
+        body: JSON.stringify({ userId: user?.telegramId, topic: ticketTopic, text: ticketText }),
       });
-      if (!response.ok) throw new Error();
-      const newTicket = await response.json();
-      toast.success('Заявка создана');
-      setTimeout(() => {
-        setActiveService(null);
-        setActiveTab('profile');
-        setActiveProfileScreen('support');
-        setDeepScreen({ type: 'ticket', id: newTicket.id });
-      }, 1000);
-    } catch (e) { toast.error('Ошибка'); setLoadingGemini(false); }
+      
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.message || 'Отказ в создании обращения');
+      }
+
+      toast.success('Обращение успешно зарегистрировано!');
+      setShowTicketModal(false); 
+      setTicketText(''); 
+      loadTickets();
+    } catch (e: any) { 
+      toast.error(e.message || 'Произошла ошибка при отправке запроса в поддержку'); 
+    } finally { 
+      setIsSubmittingTicket(false); 
+    }
   };
-  */
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN': 
         return (
-          <div className="daysBadge badgeWarning">
+          <div className="daysBadge badgeWarning" style={{ flexShrink: 0 }}>
             <Clock size={14} /> Открыт
           </div>
         );
       case 'ANSWERED': 
         return (
-          <div className="daysBadge badgeAccent">
+          <div className="daysBadge badgeAccent" style={{ flexShrink: 0 }}>
             <MessageCircle size={14} /> Ждет ответа
           </div>
         );
       case 'CLOSED': 
         return (
-          <div className="daysBadge badgeSuccess">
+          <div className="daysBadge badgeSuccess" style={{ flexShrink: 0 }}>
             <CheckCircle2 size={14} /> Решен
           </div>
         );
@@ -996,27 +1065,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             </button>
           </div>
           
-          {/* ========================================================= */}
-          {/* СТАРАЯ КАРТОЧКА С КНОПКОЙ ЗАЯВКИ (СОХРАНЕНА НА БУДУЩЕЕ)   */}
-          {/* ========================================================= */}
-          {/* <div className="configCard geminiInfoCard">
-            <div className="geminiHeaderRow">
-              <div className="geminiIconWrap"><Sparkles size={24} /></div>
-              <div><h2 className="geminiCardTitle">Умный помощник</h2><p className="geminiCardSubtitle">Нейросеть нового поколения</p></div>
-            </div>
-            <ul className="geminiList">
-              <li>Генерация текстов и кода любой сложности</li>
-              <li>Помощь в решении повседневных задач</li>
-            </ul>
-            <motion.button className="geminiSubmitBtn" onClick={handleRequestGemini} disabled={loadingGemini} whileTap={{ scale: 0.98 }}>
-              {loadingGemini ? 'Создание заявки...' : <><MessageSquare size={20} /> Получить доступ</>}
-            </motion.button>
-            <p className="geminiDisclaimer">После нажатия будет создан диалог с поддержкой для активации услуги.</p>
-          </div> */}
-
-          {/* ========================================================= */}
-          {/* АКТИВНАЯ КАРТОЧКА "В РАЗРАБОТКЕ"                          */}
-          {/* ========================================================= */}
           <div className="configCard devCard">
             <motion.div 
               animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} 
@@ -1045,36 +1093,8 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const renderWalletTab = () => (
     <motion.div key="wallet" variants={fadeVariants} initial="initial" animate="in" exit="out">
       <ScreenHeader title="Кошелек" />
-      
       <BalanceCard />
 
-      {/* ========================================================= */}
-      {/* СТАРАЯ ОПЛАТА С ИНПУТАМИ (СОХРАНЕНА НА БУДУЩЕЕ)            */}
-      {/* ========================================================= */}
-      {/*
-      <div className="balancePreview">
-        <span className="previewLabel">Баланс после пополнения</span>
-        <span className="previewAmount">{newBalance} ₽</span>
-      </div>
-      <div className="amountSelector">
-        <p className="selectorTitle">Выберите сумму</p>
-        <div className="amountGrid">
-          {PRESET_AMOUNTS.map((amt) => (<button key={amt} className={`amountChip ${selectedTopup === amt ? 'active' : ''}`} onClick={() => setSelectedTopup(amt)}>{amt} ₽</button>))}
-        </div>
-        <button className={`customChip ${selectedTopup === 'custom' ? 'active' : ''}`} onClick={() => setSelectedTopup('custom')}>Другое</button>
-        <AnimatePresence>
-          {selectedTopup === 'custom' && (<motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} type="number" className="customAmountInput" placeholder="Сумма (от 50 ₽)..." value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} />)}
-        </AnimatePresence>
-      </div>
-      <div className="infoMessage"><Wallet size={20} className="infoIcon" /><p>Средства зачисляются моментально.</p></div>
-      <motion.button className="payButton" onClick={handlePay} disabled={loadingTopup || (selectedTopup === 'custom' && currentAmount < 50)} whileTap={{ scale: 0.98 }}>
-        <Bitcoin size={20} /> {loadingTopup ? 'Создание счета...' : `Пополнить на ${currentAmount || 0} ₽`}
-      </motion.button>
-      */}
-
-      {/* ========================================================= */}
-      {/* АКТИВНАЯ КАРТОЧКА "ОПЛАТА В РАЗРАБОТКЕ"                     */}
-      {/* ========================================================= */}
       <div className="configCard devCard walletCard">
         <motion.div 
           animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} 
@@ -1091,7 +1111,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
           Чтобы пополнить баланс, совершите перевод по{' '}
           <span 
             onClick={() => {
-              // Вставь сюда реальный номер карты или телефона
               navigator.clipboard.writeText('4377 7237 8841 3734'); 
               toast.success('Реквизиты скопированы!');
             }}
@@ -1203,13 +1222,22 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             {loadingTickets ? <div className="supportLoadingScreen"><div className="toast-spinner"></div></div> : tickets.length === 0 ? <div className="supportEmptyState"><MessageCircle size={48} className="supportEmptyIcon"/>Нет обращений</div> : (
               tickets.map((ticket) => (
                 <div key={ticket.id} className="deviceCard" onClick={() => setDeepScreen({ type: 'ticket', id: ticket.id })}>
-                  <div className="deviceIcon"><MessageCircle size={24} /></div>
-                  <div className="deviceInfo">
-                    <div className="deviceNameWrapper"><span className="deviceName">{ticket.topic}</span></div>
-                    <div className="deviceDate">Тикет #{ticket.id} • {new Date(ticket.updatedAt).toLocaleDateString()}</div>
+                  <div className="deviceIcon" style={{ flexShrink: 0 }}><MessageCircle size={24} /></div>
+                  
+                  {/* ФИКС: minWidth: 0 разрешает контейнеру сжиматься */}
+                  <div className="deviceInfo" style={{ minWidth: 0 }}>
+                    <div className="deviceNameWrapper" style={{ minWidth: 0, flexWrap: 'nowrap' }}>
+                      <span className="deviceName" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>
+                        {ticket.topic}
+                      </span>
+                    </div>
+                    <div className="deviceDate" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      Тикет #{ticket.id} • {new Date(ticket.updatedAt).toLocaleDateString()}
+                    </div>
                   </div>
+                  
                   {getStatusBadge(ticket.status)}
-                  <ChevronRight className="deviceChevron" size={20} />
+                  <ChevronRight className="deviceChevron" size={20} style={{ flexShrink: 0 }} />
                 </div>
               ))
             )}
@@ -1362,7 +1390,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
                 const updatedUser = { ...user, avatarUrl: base64 };
                 localStorage.setItem('user', JSON.stringify(updatedUser));
                 setUser(updatedUser as any);
-                toast.success('Аватарка обновлена!');
+                toast.success('Аватарка успешно обновлена!');
               }} 
             />
           <div className="profile-info">
