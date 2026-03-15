@@ -14,63 +14,64 @@ export class BotCronService {
 
   // Запускается каждый день ровно в 12:00 по серверному времени
   @Cron(CronExpression.EVERY_DAY_AT_NOON)
-  async checkBalancesAndNotify() {
-    this.logger.log('🔄 Запуск ежедневной проверки балансов...');
+  async checkSubscriptionsAndNotify() {
+    this.logger.log('🔄 Запуск ежедневной проверки подписок...');
 
     try {
-      // Ищем всех пользователей, у которых есть АКТИВНЫЕ устройства
-      const users = await this.prisma.user.findMany({
-        include: {
-          devices: {
-            where: { isActive: true },
-          },
-        },
+      // Ищем все АКТИВНЫЕ устройства вместе с данными их владельцев
+      const devices = await this.prisma.device.findMany({
+        where: { isActive: true },
+        include: { user: true },
       });
 
-      for (const user of users) {
-        // Если у пользователя нет активных устройств, пропускаем его
-        if (user.devices.length === 0) continue;
+      const now = new Date();
 
-        const dailyRate = user.devices.reduce((sum, d) => sum + (d.location === 'at' ? 5 : 10), 0);
-        const balance = Number(user.balance);
-        const daysLeft = Math.floor(balance / dailyRate);
+      for (const device of devices) {
+        if (!device.expiresAt) continue;
+
+        const user = device.user;
+        if (!user) continue;
+
+        const timeDiff = device.expiresAt.getTime() - now.getTime();
+        const daysLeft = Math.ceil(timeDiff / (1000 * 3600 * 24));
+
+        // Вытаскиваем имя и системный ID (clientXXuser)
+        const deviceName = device.customName || device.name;
+        const deviceIdentifier = device.email; 
 
         // 🚨 Отправляем уведомления в зависимости от остатка дней
         if (daysLeft === 3) {
           await this.botService.sendNotification(
             user.telegramId,
-            `⚠️ <b>Внимание!</b>\n\nТвоего баланса (${balance} ₽) хватит ровно на <b>3 дня</b> работы VPN.\n\nПожалуйста, пополни счет, чтобы не потерять доступ к интернету. 🌐`
+            `⚠️ <b>Внимание!</b>\n\nПодписка на VPN-устройство <b>"${deviceName}"</b> (<code>${deviceIdentifier}</code>) истекает через <b>3 дня</b>.\n\nЗайди в приложение и нажми "Продлить", чтобы не потерять доступ. 🌐`
           );
-          this.logger.log(`Уведомление (3 дня) отправлено пользователю ${user.username}`);
+          this.logger.log(`Уведомление (3 дня) отправлено ${user.username} для ${deviceIdentifier}`);
           
         } else if (daysLeft === 1) {
           await this.botService.sendNotification(
             user.telegramId,
-            `🚨 <b>Срочно!</b>\n\nЗавтра твой VPN будет отключен за неуплату.\n\nПополни баланс прямо сейчас в нашем приложении! 💳`
+            `🚨 <b>Срочно!</b>\n\nЗавтра твой VPN <b>"${deviceName}"</b> (<code>${deviceIdentifier}</code>) будет отключен!\n\nПополни баланс и продли подписку прямо сейчас. 💳`
           );
-          this.logger.log(`Уведомление (1 день) отправлено пользователю ${user.username}`);
+          this.logger.log(`Уведомление (1 день) отправлено ${user.username} для ${deviceIdentifier}`);
           
         } else if (daysLeft <= 0) {
-          // Если баланс ушел в ноль или минус
-          await this.botService.sendNotification(
-            user.telegramId,
-            `❌ <b>VPN отключен</b>\n\nНа твоем счету закончились средства. Доступ приостановлен.\n\nЧтобы снова пользоваться сервисом, просто пополни баланс, и устройства активируются автоматически. 🔄`
-          );
-          this.logger.log(`Уведомление (Отключен) отправлено пользователю ${user.username}`);
-          
-          // 🔥 БОНУС: Здесь ты можешь сразу выключить устройства в базе!
-          /*
-          await this.prisma.device.updateMany({
-            where: { userId: user.id, isActive: true },
+          // 1. Отключаем устройство в нашей базе данных
+          await this.prisma.device.update({
+            where: { id: device.id },
             data: { isActive: false },
           });
-          // И добавить логику отправки запроса в 3x-ui на отключение клиента...
-          */
+
+          // 2. Отправляем уведомление с указанием конкретной ссылки
+          await this.botService.sendNotification(
+            user.telegramId,
+            `❌ <b>VPN отключен</b>\n\nСрок действия устройства <b>"${deviceName}"</b> (<code>${deviceIdentifier}</code>) подошел к концу.\n\nЗайди в приложение и продли подписку, чтобы ссылка снова заработала. 🔄`
+          );
+          this.logger.log(`Устройство ${deviceIdentifier} пользователя ${user.username} отключено (срок истек).`);
         }
       }
-      this.logger.log('✅ Проверка балансов завершена.');
+      this.logger.log('✅ Проверка подписок завершена.');
     } catch (error) {
-      this.logger.error(`❌ Ошибка во время проверки балансов: ${(error as Error).message}`);
+      this.logger.error(`❌ Ошибка во время проверки подписок: ${(error as Error).message}`);
     }
   }
 }
