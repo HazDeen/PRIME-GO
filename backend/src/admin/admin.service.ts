@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { XuiApiService } from '../xui/xui-api.service'; // Проверь правильность пути!
 
@@ -248,5 +248,31 @@ export class AdminService {
     });
 
     return { success: true, device: newDevice };
+  }
+
+// Отправка уведомлений
+  async sendNotification(data: { userIds?: number[]; sendToAll: boolean; title: string; message: string }) {
+    if (data.sendToAll) {
+      const users = await this.prisma.user.findMany({ select: { id: true } });
+      const notifications = users.map(u => ({
+        userId: u.id,
+        title: data.title,
+        message: data.message,
+      }));
+      await this.prisma.notification.createMany({ data: notifications });
+      return { success: true, count: users.length };
+    } else {
+      if (!data.userIds || data.userIds.length === 0) throw new BadRequestException('Получатели не указаны');
+      
+      const notifications = data.userIds.map(id => ({
+        userId: id,
+        title: data.title,
+        message: data.message,
+      }));
+
+      // createMany отлично подходит для вставки сразу массива записей
+      await this.prisma.notification.createMany({ data: notifications });
+      return { success: true, count: data.userIds.length };
+    }
   }
 }

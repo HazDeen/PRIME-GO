@@ -247,4 +247,9 @@ export class AdminController {
       blockAt: settings.blockAt  // 👈 Возвращаем обратно фронтенду
     };
   }
+
+  @Post('notifications')
+  async sendNotification(@Body() body: { userIds?: number[]; sendToAll: boolean; title: string; message: string }) {
+    return this.adminService.sendNotification(body);
+  }
 }
