@@ -53,6 +53,7 @@ export class AuthService {
       username: user.username,
       balance: user.balance,
       isAdmin: user.isAdmin,
+      avatarUrl: user.avatarUrl,
     };
   }
 }
