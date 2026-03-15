@@ -445,7 +445,8 @@ body {
   inset: 0;
   display: flex;
   justify-content: center;
-  align-items: flex-end;
+  align-items: center; /* 👈 ИЗМЕНИЛИ: теперь модалка центрируется по вертикали */
+  padding: 20px; /* 👈 ИЗМЕНИЛИ: добавили отступы от краев экрана */
   z-index: 1000;
 }
 
@@ -462,26 +463,48 @@ body {
   width: 100%;
   max-width: 420px;
   background: var(--bg-secondary);
-  border-radius: 32px 32px 0 0;
-  padding: 24px;
-  padding-bottom: calc(24px + env(safe-area-inset-bottom, 16px)) !important;
-  border-top: 1px solid var(--border-color);
+  border-radius: 32px !important; /* 👈 ИЗМЕНИЛИ: закругление со всех сторон, а не только сверху */
+  padding: 24px !important; /* 👈 ИЗМЕНИЛИ: равномерные отступы со всех сторон */
+  border: 1px solid var(--border-color) !important; /* 👈 ИЗМЕНИЛИ: рамка вокруг всего окна */
   box-shadow: var(--shadow);
   z-index: 1002;
-  max-height: 65dvh; 
+  max-height: 85dvh; /* 👈 ИЗМЕНИЛИ: увеличили максимальную высоту, так как теперь есть место снизу */
   overflow-y: auto;
   overscroll-behavior: none; 
   -webkit-overflow-scrolling: touch;
 }
 
 .modalHandle {
-  width: 48px;
-  height: 5px;
-  background: var(--text-tertiary);
-  border-radius: 3px;
-  margin: 0 auto 20px;
+  display: none; /* 👈 ИЗМЕНИЛИ: скрываем "палочку" для свайпа, так как для окна по центру она не имеет смысла */
+}
+
+/* Кнопка закрытия модалки (Крестик) */
+.modalCloseBtn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+  z-index: 10; /* Чтобы крестик всегда был поверх контента */
+}
+
+.modalCloseBtn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: scale(1.05);
+}
+
+.modalCloseBtn:active {
+  transform: scale(0.95);
 }
 
 .modalTitle {

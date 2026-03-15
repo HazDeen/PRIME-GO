@@ -343,12 +343,22 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
   const handleRenew = async () => {
     toast.loading('Продление подписки...', { id: 'renew' });
     try {
+      // 1. Берем текущего юзера из памяти
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
       const response = await fetch(`${API_URL}/devices/${deviceId}/renew`, { 
-        method: 'POST', headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } 
+        method: 'POST', 
+        headers: { 
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json' // 👈 ОБЯЗАТЕЛЬНО добавляем заголовок
+        },
+        // 2. Явно передаем userId в теле запроса
+        body: JSON.stringify({ userId: currentUser.id }) 
       });
+
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.message || 'Ошибка');
+        throw new Error(err.message || 'Ошибка сервера');
       }
       toast.success('Подписка успешно продлена!', { id: 'renew' });
       loadDevice();
@@ -388,15 +398,33 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
           )}
           <p className="deviceProfileModel">{device.model || 'VPN Устройство'}</p>
           <div className="deviceProfileStatus deviceProfileStatusMargin">
-            {device.daysLeft > 0 ? (
+            {device.daysLeft > 3 ? (
+              /* ОСТАЛОСЬ БОЛЬШЕ 3 ДНЕЙ: Стандартный статус */
               <>
                 <span className={`statusBadge ${device.isActive ? 'active' : 'inactive'}`}>
                   {device.isActive ? '● Активно' : '○ Неактивно'}
                 </span>
                 <span className="daysBadge"><Timer size={14} /> {device.daysLeft} дн.</span>
               </>
+            ) : device.daysLeft > 0 && device.daysLeft <= 3 ? (
+              /* ОСТАЛОСЬ ОТ 1 ДО 3 ДНЕЙ: Кнопка слева, дни справа */
+              <>
+                <motion.button 
+                  className="addButton" 
+                  onClick={handleRenew} 
+                  whileHover={{ scale: 1.02 }} 
+                  whileTap={{ scale: 0.98 }}
+                  style={{ padding: '6px 12px', fontSize: '13px', marginRight: '8px' }}
+                >
+                  <RefreshCw size={14} /> Продлить
+                </motion.button>
+                <span className="daysBadge badgeWarning" style={{ color: 'var(--warning)', background: 'var(--warning-alpha)' }}>
+                  <Timer size={14} /> {device.daysLeft} дн.
+                </span>
+              </>
             ) : (
-              <motion.button className="addButton" onClick={handleRenew} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              /* 0 ДНЕЙ: Подписка истекла */
+              <motion.button className="addButton danger" onClick={handleRenew} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <RefreshCw size={16} /> Продлить подписку
               </motion.button>
             )}
@@ -576,7 +604,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  console.log("Данные пользователя сейчас:", user);
   // =========================================================
   // СТАРЫЕ СОСТОЯНИЯ ДЛЯ ОПЛАТЫ И GEMINI (СОХРАНЕНЫ НА БУДУЩЕЕ)
   // =========================================================
@@ -605,6 +632,23 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
       toast.success('Фото профиля удалено', { id: 'delete-avatar' });
     } catch (e: any) { 
       toast.error(e.message || 'Ошибка при удалении', { id: 'delete-avatar' }); 
+    }
+  };
+
+  const handleRestoreTelegramAvatar = async () => {
+    toast.loading('Синхронизация с Telegram...', { id: 'tg-avatar' });
+    try {
+      const data = await client.users.syncTelegramAvatar();
+      if (data.avatarUrl) {
+        const updatedUser = { ...user, avatarUrl: data.avatarUrl };
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setUser(updatedUser as any);
+        toast.success('Аватарка успешно восстановлена!', { id: 'tg-avatar' });
+      } else {
+        toast.error(data.message || 'В Telegram не найдено фото', { id: 'tg-avatar' });
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Ошибка синхронизации', { id: 'tg-avatar' });
     }
   };
 
@@ -1261,6 +1305,12 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             </div>
           </div>
           <div className="profile-menu-group settingsGroupMargin">
+            <button className="profile-menu-item" onClick={handleRestoreTelegramAvatar}>
+              <div className="profile-menu-left">
+                <RefreshCw size={20} color="var(--accent)" /> 
+                Восстановить фото из Telegram
+              </div>
+            </button>
             <button className="profile-menu-item danger" onClick={handleDeleteAvatar}>
               <div className="profile-menu-left">
                 <Trash2 size={20} /> 

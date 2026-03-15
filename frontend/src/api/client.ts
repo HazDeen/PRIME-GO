@@ -280,7 +280,16 @@ export const client = {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Ошибка обновления аватарки');
       return data;
-    }
+    },
+    syncTelegramAvatar: async () => {
+      const response = await fetch(`${API_BASE_URL}/user/avatar/telegram`, {
+        method: 'POST',
+        headers: getHeaders()
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Ошибка синхронизации');
+      return data;
+    },
   },
 
   // --- ПЛАТЕЖИ ---

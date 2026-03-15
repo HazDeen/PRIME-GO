@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Edit2 } from 'lucide-react';
 import Cropper from 'react-easy-crop';
+import { toast } from 'sonner'; // 👈 ДОБАВИЛИ ИМПОРТ УВЕДОМЛЕНИЙ
 
 interface Props {
   currentAvatar?: string | null;
@@ -69,18 +70,26 @@ export default function AvatarUploader({ currentAvatar, username, onUpload, size
         0, 0, 200, 200
       );
     }
-    // Конвертируем в WEBP для минимального веса (около 3-5кб)
+    // Конвертируем в WEBP для минимального веса (около 3-15кб)
     return canvas.toDataURL('image/webp', 0.8);
   };
 
   const handleSaveCrop = async () => {
+    // Защита от слишком быстрого клика
+    if (!croppedAreaPixels) {
+      toast.error('Подождите, фото еще обрабатывается...');
+      return;
+    }
+
     setIsUploading(true);
     try {
       const base64Image = await createCroppedImage();
-      await onUpload(base64Image);
-      setImageToCrop(null);
-    } catch (e) {
+      await onUpload(base64Image); // Отправляем на сервер
+      setImageToCrop(null); // Если всё ок - закрываем модалку
+    } catch (e: any) {
       console.error(e);
+      // 👈 ТЕПЕРЬ МЫ УВИДИМ ОШИБКУ НА ЭКРАНЕ
+      toast.error(e.message || 'Ошибка при сохранении фото на сервере');
     } finally {
       setIsUploading(false);
     }
@@ -162,7 +171,7 @@ export default function AvatarUploader({ currentAvatar, username, onUpload, size
           </div>
         )}
       </AnimatePresence>,
-      document.body // 👈 ПОРТАЛ ВЫКИДЫВАЕТ МОДАЛКУ В КОРЕНЬ
+      document.body
       )}
     </>
   );

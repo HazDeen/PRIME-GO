@@ -20,6 +20,7 @@ export interface User {
   username: string;
   balance: number;
   isAdmin: boolean;
+  avatarUrl?: string | null;
 }
 
 export interface Device {
