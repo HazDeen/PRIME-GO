@@ -73,6 +73,7 @@ export class UserService {
     return {
       id: user.id,
       telegramId: Number(user.telegramId),
+      avatarUrl: user.avatarUrl,
       firstName: user.firstName,
       lastName: user.lastName,
       username: user.username,

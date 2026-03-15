@@ -10,6 +10,7 @@ datasource db {
 model User {
   id          Int      @id @default(autoincrement())
   telegramId  BigInt   @unique
+  avatarUrl    String?
   firstName   String?
   lastName    String?
   username    String?

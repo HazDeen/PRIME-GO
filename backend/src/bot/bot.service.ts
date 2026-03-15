@@ -152,13 +152,49 @@ export class BotService implements OnModuleInit, BeforeApplicationShutdown {
         const lastName = ctx.from.last_name || '';
         const username = ctx.from.username || '';
 
+        // 🌟 1. Сначала проверяем, есть ли юзер в базе и есть ли у него уже аватарка
+        const existingUser = await this.prisma.user.findUnique({
+          where: { telegramId: BigInt(telegramId) }
+        });
+
+        let avatarBase64 = null;
+
+        // 🌟 2. Если юзера нет ИЛИ у него нет аватарки — только тогда качаем из Telegram
+        if (!existingUser || !existingUser.avatarUrl) {
+          try {
+            const profilePhotos = await ctx.telegram.getUserProfilePhotos(telegramId, 0, 1);
+            
+            if (profilePhotos.total_count > 0) {
+              const fileId = profilePhotos.photos[0][0].file_id;
+              const fileLink = await ctx.telegram.getFileLink(fileId);
+              const response = await fetch(fileLink.href);
+              const arrayBuffer = await response.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              avatarBase64 = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+            }
+          } catch (avatarError) {
+            this.logger.warn(`Не удалось получить аватарку для ${telegramId}: ${(avatarError as Error).message}`);
+          }
+        }
+
+        // 🌟 3. Сохраняем в базу
         await this.prisma.user.upsert({
           where: { telegramId: BigInt(telegramId) },
-          update: { firstName, lastName, username },
+          update: { 
+            firstName, 
+            lastName, 
+            username,
+            // Если бот скачал новую аватарку (т.к. старой не было), то записываем её
+            ...(avatarBase64 && { avatarUrl: avatarBase64 }) 
+          },
           create: {
             telegramId: BigInt(telegramId),
-            firstName, lastName, username,
-            balance: 0, isAdmin: false,
+            firstName, 
+            lastName, 
+            username,
+            balance: 0, 
+            isAdmin: false,
+            avatarUrl: avatarBase64, // Записываем при первой регистрации
           },
         });
 

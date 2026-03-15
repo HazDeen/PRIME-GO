@@ -129,4 +129,25 @@ export class UserController {
 
     return { success: true, message: 'Пароль обновлен' };
   }
+
+  // 🌟 ОБНОВЛЕНИЕ АВАТАРКИ
+  @Put('avatar')
+  async updateAvatar(
+    @Headers('x-username') username: string,
+    @Body() body: { avatarBase64: string }
+  ) {
+    if (!username) throw new UnauthorizedException('Username required');
+    
+    const user = await prisma.user.findFirst({ 
+      where: { username: { equals: username, mode: 'insensitive' } } 
+    });
+    if (!user) throw new UnauthorizedException('User not found');
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { avatarUrl: body.avatarBase64 }
+    });
+
+    return { success: true, message: 'Аватарка обновлена' };
+  }
 }
