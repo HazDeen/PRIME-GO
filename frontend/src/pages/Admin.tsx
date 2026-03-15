@@ -5,11 +5,12 @@ import { toast } from 'sonner';
 import { 
   Plus, Wallet, ShieldCheck, ShieldAlert, 
   Trash2, Copy, ChevronDown, LogOut, Monitor, 
-  Smartphone, Edit2, RefreshCw, MessageSquare, ChevronRight 
+  Smartphone, Edit2, RefreshCw, MessageSquare, ChevronRight, Bell
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/admin.css';
 import AdminAddDeviceModal from '../components/AdminAddDeviceModal';
+import AdminSendNotificationModal from '../components/AdminSendNotificationModal';
 
 export interface User {
   id: number;
@@ -30,7 +31,7 @@ export interface Device {
 }
 
 export interface ModalState {
-  type: 'balance' | 'name' | 'deleteDevice' | 'admin' | 'addDevice' | 'rename' | 'regenerate' | null;
+  type: 'balance' | 'name' | 'deleteDevice' | 'admin' | 'addDevice' | 'rename' | 'regenerate' | 'notification' | null;
   title: string;
   data?: any;
   inputValue?: string;
@@ -200,6 +201,15 @@ const Admin: React.FC = () => {
       
       {/* 🛡️ ГЛОБАЛЬНЫЕ КНОПКИ УПРАВЛЕНИЯ */}
       <div className="topRightControls">
+        <motion.button 
+          className="settingsToggleBtn"
+          onClick={() => setConfirmModal({ type: 'notification', title: '' })}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Bell size={20} color="var(--text-secondary)" />
+        </motion.button>
+
         <motion.button 
           className="settingsToggleBtn"
           onClick={() => setIsExtraSettingsOpen(!isExtraSettingsOpen)}
@@ -499,6 +509,19 @@ const Admin: React.FC = () => {
             onAdd={async (userId: number, name: string, type: string, location: string) => {
               await client.admin.addDeviceForUser(userId, { name, type, location });
               fetchData(); 
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* МОДАЛКА УВЕДОМЛЕНИЙ */}
+      <AnimatePresence>
+        {confirmModal?.type === 'notification' && (
+          <AdminSendNotificationModal 
+            users={users} 
+            onClose={() => setConfirmModal(null)} 
+            onSend={async (data) => {
+              await client.admin.sendNotification(data);
             }}
           />
         )}

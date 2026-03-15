@@ -753,50 +753,65 @@
 }
 
 /* ========================================= */
-/* --- ТЕМА LIQUID GLASS (by Hazdeen) ---   */
+/* --- ТЕМА LIQUID GLASS (iOS 26 Style) ---  */
 /* ========================================= */
 [data-theme="liquid-glass"] {
-  /* Базовая цветовая палитра: глубокие океанские оттенки */
-  --bg-primary: #040810; /* Очень глубокий, почти черный синий */
-  --bg-secondary: #060c18;
-  --bg-main: #040810;
+  /* Базовая палитра: глубокий черный и чистый серый, как в iOS */
+  --bg-primary: #000000; 
+  --bg-secondary: #1c1c1e;
+  --bg-main: #000000;
   
-  /* Основной акцент: сочный, градиентный циан */
-  --accent: #00f2fe; 
-  --accent-light: #4facfe; /* Для градиентов */
-  --accent-alpha: rgba(0, 242, 254, 0.12);
+  /* Основной акцент: классический iOS Blue (Dark Mode) */
+  --accent: #0a84ff; 
+  --accent-light: #5e5ce6; 
+  --accent-alpha: rgba(10, 132, 255, 0.15);
   
-  /* Эффект Жидкого Стекла (Стеклянные панели) */
-  /* Мы делаем фон панелей более прозрачным, чтобы усилить размытие */
-  --bg-card: rgba(16, 26, 46, 0.25);
-  --bg-block: rgba(16, 26, 46, 0.25);
-  --bg-input: rgba(30, 41, 67, 0.3);
-  --bg-hover: rgba(44, 62, 98, 0.4);
+  /* Эффект чистого матового стекла (Frosted Glass) */
+  --bg-card: rgba(28, 28, 30, 0.5); /* Очень прозрачный темно-серый */
+  --bg-block: rgba(28, 28, 30, 0.5);
+  --bg-input: rgba(255, 255, 255, 0.08);
+  --bg-hover: rgba(255, 255, 255, 0.12);
   
-  /* Увеличиваем размытие фона для эффекта глубины */
-  --glass-blur: 50px; /* Было 30px, стало 50px! */
+  /* Максимальное размытие фона */
+  --glass-blur: 40px; 
   
-  /* Стилизация текста и границ */
+  /* Стилизация текста */
   --text-primary: #ffffff;
-  --text-secondary: rgba(240, 248, 255, 0.7); /* Чуть холоднее */
-  --text-tertiary: rgba(240, 248, 255, 0.4);
+  --text-secondary: rgba(235, 235, 245, 0.6); /* iOS System Gray */
+  --text-tertiary: rgba(235, 235, 245, 0.3);
   
-  --success: #3ef87b;
-  --danger: #ff5e62;
-  --warning: #ffbe0b;
+  /* Классические системные цвета iOS */
+  --success: #30d158; 
+  --danger: #ff453a; 
+  --warning: #ffd60a; 
   
-  /* Границы: очень тонкие, светлые, с бликом (субтильный эффект стекла) */
-  --border-color: rgba(255, 255, 255, 0.05);
-  --border-accent: rgba(0, 242, 254, 0.25);
+  /* Границы: тонкие, полупрозрачные, без свечения */
+  --border-color: rgba(255, 255, 255, 0.15);
+  --border-accent: rgba(10, 132, 255, 0.3);
   
-  /* Тени: более глубокие, но мягкие (ambient occlusion) */
-  --shadow: 0 16px 64px rgba(0, 0, 0, 0.6);
-  --shadow-sm: 0 8px 32px rgba(0, 0, 0, 0.4);
+  /* Тени: натуральные, мягкие, создают глубину */
+  --shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+  /* 🌟 ПЕРЕМЕННЫЕ ТЕМЫ ЖИДКОГО СТЕКЛА 🌟 */
+  
+  /* Цвет стекла (красный, зеленый, синий, прозрачность 10%) */
+  /* Используйте rgba(), а не hex, чтобы управлять прозрачностью */
+  --glass-bg: rgba(28, 44, 60, 0.1); 
+  
+  /* Степень размытия фона за стеклом */
+  --glass-blur: 15px;
+  
+  /* Цвет тонкой обводки для эффекта блика */
+  --glass-border: rgba(255, 255, 255, 0.1);
+  
+  /* Мягкая тень для глубины */
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
 }
 
-/* --- Стилизация элементов для Liquid Glass --- */
+/* --- Стилизация элементов под iOS 26 --- */
 
-/* 1. Добавляем "спекулярный блик" (глянец) на верхнюю грань стеклянных панелей */
+/* 1. Карточки и панели - матовое стекло */
 [data-theme="liquid-glass"] .profile-menu-group, 
 [data-theme="liquid-glass"] .service-card,
 [data-theme="liquid-glass"] .profile-header,
@@ -806,147 +821,114 @@
 [data-theme="liquid-glass"] .notificationsDropdown,
 [data-theme="liquid-glass"] .modalSheet,
 [data-theme="liquid-glass"] .deviceCard {
-  border-radius: 28px;
-  position: relative;
-  overflow: hidden; /* Важно для псевдоэлемента блика */
-  border: 1px solid var(--border-color);
+  border-radius: 24px; 
+  border: 0.5px solid rgba(255, 255, 255, 0.15); /* Тончайшая iOS граница */
   box-shadow: var(--shadow-sm);
   backdrop-filter: blur(var(--glass-blur)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
+  background: var(--bg-card);
 }
 
-/* Создаем эффект глянцевой кромки через псевдоэлемент */
-[data-theme="liquid-glass"] .service-card::before,
-[data-theme="liquid-glass"] .profile-header::before,
-[data-theme="liquid-glass"] .deviceCard::before,
-[data-theme="liquid-glass"] .profile-menu-group::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px; /* Толщина блика */
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.15) 0%,   /* Блик в левом верхнем углу */
-    rgba(255, 255, 255, 0.0) 40%,
-    rgba(255, 255, 255, 0.0) 60%,
-    rgba(0, 242, 254, 0.05) 100%    /* Слабый акцентный оттенок в правом нижнем */
-  );
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-/* 2. Обновляем Навигацию (Нижний бар) */
+/* 2. Навигация (Нижний бар как в iPhone) */
 [data-theme="liquid-glass"] .bottom-nav {
-  background: rgba(8, 14, 28, 0.6); /* Более прозрачный */
-  backdrop-filter: blur(40px) saturate(200%);
-  -webkit-backdrop-filter: blur(40px) saturate(200%);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(28, 28, 30, 0.65); 
+  backdrop-filter: blur(50px) saturate(200%);
+  -webkit-backdrop-filter: blur(50px) saturate(200%);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.15);
 }
 
-[data-theme="liquid-glass"] .nav-item {
-  color: var(--text-tertiary);
-}
+[data-theme="liquid-glass"] .nav-item { color: var(--text-tertiary); }
 
-/* Активный пункт навигации с эффектом свечения циан */
+/* Активный пункт навигации - строгий синий, БЕЗ НЕОНА */
 [data-theme="liquid-glass"] .nav-item.active {
-  color: var(--text-primary);
-  text-shadow: 0 0 15px rgba(0, 242, 254, 0.8), 0 0 5px #ffffff;
+  color: var(--accent);
+  text-shadow: none; 
 }
+[data-theme="liquid-glass"] .nav-item.active svg { filter: none; }
 
-[data-theme="liquid-glass"] .nav-item.active svg {
-  filter: drop-shadow(0 0 8px rgba(0, 242, 254, 0.6));
-}
-
-/* 3. Градиентные кнопки (Главный призыв к действию) */
+/* 3. Кнопки (Главный призыв к действию) - строгие и плоские */
 [data-theme="liquid-glass"] .payButton,
 [data-theme="liquid-glass"] .geminiSubmitBtn,
 [data-theme="liquid-glass"] .loginButton,
 [data-theme="liquid-glass"] .modalSubmitBtn {
-  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
-  color: #000000; /* Черный текст на циане для контраста */
-  border-radius: 18px;
+  background: var(--accent);
+  color: #ffffff;
+  border-radius: 14px; 
   border: none;
-  font-weight: 800;
-  box-shadow: 0 8px 32px rgba(0, 242, 254, 0.4), inset 0 2px 2px rgba(255, 255, 255, 0.4);
-  transition: all 0.3s ease;
+  font-weight: 600; 
+  box-shadow: none; /* Убрали неоновое свечение */
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 [data-theme="liquid-glass"] .payButton:hover:not(:disabled) {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 48px rgba(0, 242, 254, 0.6), inset 0 2px 2px rgba(255, 255, 255, 0.5);
+  transform: scale(0.98);
+  opacity: 0.9;
+  box-shadow: none;
 }
 
-/* 4. Маленькие акцентные кнопки (Пополнить, История, Копировать) */
+/* 4. Маленькие акцентные кнопки */
 [data-theme="liquid-glass"] .actionBtnSmall,
 [data-theme="liquid-glass"] .topupSmallButton,
 [data-theme="liquid-glass"] .copyLinkBtn,
 [data-theme="liquid-glass"] .addButton {
-  background: rgba(0, 242, 254, 0.1);
-  color: var(--accent);
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  border: none;
   border-radius: 16px;
   backdrop-filter: blur(10px);
 }
 
-[data-theme="liquid-glass"] .actionBtnSmall:hover {
-  background: rgba(0, 242, 254, 0.2);
-  border-color: rgba(0, 242, 254, 0.4);
-}
+[data-theme="liquid-glass"] .actionBtnSmall:hover { background: rgba(255, 255, 255, 0.15); }
 
-/* 5. Обновляем Иконки Сервисов (Градиент циан) */
+/* 5. Обновляем Иконки Сервисов */
 [data-theme="liquid-glass"] .service-icon-wrapper {
-  background: linear-gradient(135deg, var(--accent) 0%, #ffffff 130%); /* Легкий металлический отлив */
-  color: #000000;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 242, 254, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.5);
-}
-
-/* Иконка Gemini (Градиент фиолетовый/акцент) */
-[data-theme="liquid-glass"] .service-icon-wrapper.ai {
-  background: linear-gradient(135deg, #a855f7 0%, var(--accent) 100%);
-  color: white;
-  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.3);
-}
-
-/* 6. Обновляем Чат (Пузыри сообщений как стекло) */
-[data-theme="liquid-glass"] .chatBubble {
-  border-radius: 20px;
-  backdrop-filter: blur(10px);
-}
-
-[data-theme="liquid-glass"] .chatBubble.userStyle {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-[data-theme="liquid-glass"] .chatBubble.adminStyle {
-  background: rgba(0, 242, 254, 0.15);
+  background: var(--accent);
   color: #ffffff;
-  border: 1px solid rgba(0, 242, 254, 0.2);
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+/* Иконка Gemini - монохромный Apple-стиль */
+[data-theme="liquid-glass"] .service-icon-wrapper.ai {
+  background: #000000;
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: none; 
+}
+
+/* 6. Обновляем Чат (Пузыри сообщений как в iMessage) */
+[data-theme="liquid-glass"] .chatBubble {
+  border-radius: 18px;
+  backdrop-filter: none;
+}
+[data-theme="liquid-glass"] .chatBubble.userStyle {
+  background: var(--accent); /* Синие отправленные сообщения */
+  color: #ffffff;
+  border: none;
+}
+[data-theme="liquid-glass"] .chatBubble.adminStyle {
+  background: rgba(44, 44, 46, 1); /* Серые полученные сообщения */
+  color: #ffffff;
+  border: none;
 }
 
 /* 7. Мелкие детали (Инпуты, Свичеры, Бейджи) */
 [data-theme="liquid-glass"] .loginInput,
 [data-theme="liquid-glass"] .modalInput {
-  background: var(--bg-input);
-  border: 1px solid var(--border-color);
-  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 0.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
   color: var(--text-primary);
 }
 
 [data-theme="liquid-glass"] .loginInput:focus,
 [data-theme="liquid-glass"] .modalInput:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 15px rgba(0, 242, 254, 0.2);
+  box-shadow: none; 
 }
 
 [data-theme="liquid-glass"] .premiumSwitch input:checked + .slider {
-  background: linear-gradient(135deg, var(--accent-light) 0%, var(--accent) 100%);
+  background: var(--success); /* Фирменный зеленый тумблер iOS */
 }
 
 [data-theme="liquid-glass"] .premiumSwitch .slider:before {
@@ -957,17 +939,50 @@
 [data-theme="liquid-glass"] .bellBtn,
 [data-theme="liquid-glass"] .backButton,
 [data-theme="liquid-glass"] .loginThemeBtn {
-  border: 1px solid var(--border-color);
-  background: rgba(16, 26, 46, 0.3);
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
   color: var(--text-primary);
-  border-radius: 16px;
+  border-radius: 50%; /* Идеально круглые кнопки */
 }
 
 [data-theme="liquid-glass"] .bellBtn:hover,
 [data-theme="liquid-glass"] .backButton:hover {
-  background: rgba(0, 242, 254, 0.1);
-  border-color: var(--accent);
-  color: var(--accent);
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+}
+
+/* appview.css */
+
+[data-theme="liquid-glass"] .mini-app-content {
+  /* Убедитесь, что отступы и закругления остаются */
+  border-radius: 20px;
+  padding: 20px;
+  margin-top: 10px;
+  
+  /* ЗАМЕНЯЕМ СТАРЫЕ СВОЙСТВА НА СТЕКЛЯННЫЕ: */
+  
+  /* 1. Делаем фон полупрозрачным */
+  background-color: var(--glass-bg); 
+  
+  /* 2. Добавляем размытие фона ЗА элементом */
+  backdrop-filter: blur(var(--glass-blur)); 
+  -webkit-backdrop-filter: blur(var(--glass-blur)); /* Для поддержки в Safari */
+  
+  /* 3. Добавляем тонкую, полупрозрачную обводку для эффекта блика */
+  /* Важно использовать !important, если другие стили переопределяют border */
+  border: 1px solid var(--glass-border) !important;
+  
+  /* 4. Применяем мягкую тень для глубины */
+  box-shadow: var(--glass-shadow); 
+  
+  /* Добавляем плавность при изменении стиля */
+  transition: all 0.3s ease;
+}
+
+/* ПО ЖЕЛАНИЮ: Небольшое усиление эффекта при наведении */
+[data-theme="liquid-glass"] .mini-app-content:hover {
+  background-color: rgba(28, 44, 60, 0.2); /* 20% непрозрачности */
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 /* --- ОСТАЛЬНОЕ --- */
@@ -1198,4 +1213,200 @@ textarea:focus::placeholder {
 
 .saveNameBtn:active {
   transform: scale(0.95);
+}
+
+/* ========================================================= */
+/* 🎨 УБИРАЕМ INLINE STYLES (REFACTORING)                    */
+/* ========================================================= */
+
+.maintenanceCard { text-align: center; padding: 50px 30px; position: relative; }
+.maintenanceHeader { width: 100%; display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.maintenanceLogoutBtn { position: absolute; top: 16px; right: 16px; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; margin: 0; z-index: 10; }
+.maintenanceLogoutIcon { margin-left: -2px; }
+.maintenanceSpinner { display: inline-block; margin-bottom: 20px; color: var(--text-primary); }
+.maintenanceTitle { font-size: 28px; margin-bottom: 12px; }
+.maintenanceDesc { font-size: 15px; line-height: 1.6; }
+.maintenanceFooter { margin-top: 30px; }
+.maintenanceWarning { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--warning); }
+.maintenanceWarningText { font-weight: 600; }
+
+.emptySpace44 { width: 44px; }
+.loadingMessageCenter { text-align: center; margin-top: 40px; }
+.screenWrapperPadding { padding-bottom: 40px; }
+
+.transactionIcon.isTopup { background: var(--success-alpha); color: var(--success); }
+.transactionIcon.isWithdraw { background: var(--danger-alpha); color: var(--danger); }
+
+.deviceNameDisplayWrap { flex-wrap: wrap; }
+.deviceProfileStatusMargin { margin-top: 12px; }
+
+.chatContainerFull { padding: 16px; height: 100%; }
+.chatHeaderNoBorder { border-bottom: none; }
+.chatMessagesAreaPad { padding: 0 10px; }
+.chatInputAreaPad { padding: 16px 0 20px 0; }
+
+.headerActions { position: relative; display: flex; align-items: center; }
+.notifBackdrop { position: fixed; inset: 0; z-index: 199; background: transparent; }
+.notifDropdownPos { position: absolute; top: 100%; right: 0; margin-top: 12px; z-index: 200; }
+.flexCenter { display: flex; align-items: center; justify-content: center; }
+.flexDisplay { display: flex; }
+
+.devCard { margin-top: 24px; text-align: center; padding: 36px 20px; }
+.walletCard { padding: 32px 20px; }
+.devIconWrap { display: inline-flex; padding: 20px; border-radius: 50%; margin-bottom: 20px; }
+.devIconWrap.accent { background: var(--accent-alpha); color: var(--accent); }
+.devIconWrap.warning { background: var(--warning-alpha); color: var(--warning); padding: 18px; }
+.devTitle { font-size: 22px; font-weight: 700; color: var(--text-primary); margin-bottom: 12px; }
+.devTitle.wallet { font-size: 20px; font-weight: 600; }
+.devDesc { font-size: 15px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 24px; }
+.devDesc.wallet { margin-bottom: 28px; }
+.devBadge { display: inline-block; background: var(--bg-secondary); padding: 8px 16px; border-radius: 12px; font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+.textDecorationNone { text-decoration: none; }
+.fullWidthBtn { width: 100%; margin: 0; }
+
+.securityCardMargin { margin-bottom: 24px; }
+.iconWrapAccent { background: var(--accent-alpha); color: var(--accent); }
+.iconWrapDanger { background: var(--danger-alpha); color: var(--danger); }
+.securityEditWrap { max-width: 100%; margin-top: 16px; }
+.securityDisplayWrap { margin-top: 16px; display: flex; align-items: center; justify-content: space-between; background: var(--bg-input); padding: 12px 16px; border-radius: 16px; }
+.securityUsernameText { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.securityEditIconBtn { background: transparent; border: none; color: var(--accent); cursor: pointer; display: flex; padding: 4px; }
+.securityForm { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+.securityInput { margin: 0; }
+.securitySubmitBtn { margin-top: 8px; width: 100%; padding: 14px; border-radius: 16px; }
+
+.dropdownIconColor { color: var(--text-secondary); }
+.textareaNoResize { resize: none; }
+
+.settingsGroupMargin { margin-top: 24px; }
+
+.themeToggleTrack { width: 52px; height: 32px; border-radius: 16px; padding: 3px; display: flex; align-items: center; transition: all 0.3s; }
+.themeToggleTrack.light { background: var(--bg-input); border: 1px solid var(--border-color); justify-content: flex-start; }
+.themeToggleTrack.dark { background: var(--accent); border: 1px solid var(--accent); justify-content: flex-end; }
+.themeToggleTrack.disabled { opacity: 0.5; }
+.themeToggleTrack.disabled.dark { background: var(--bg-input); border: 1px solid var(--border-color); }
+.themeToggleThumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; }
+
+.faqContentHidden { overflow: hidden; }
+
+.badgeWarning { background: var(--warning-alpha); color: var(--warning); }
+.badgeAccent { background: var(--accent-alpha); color: var(--accent); }
+.badgeSuccess { background: var(--success-alpha); color: var(--success); }
+
+.geminiOfficialText { font-size: 18px; font-weight: 700; color: var(--accent); text-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+.customGeminiImg { width: 28px; height: 28px; }
+
+.historyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  padding-top: 8px;
+}
+
+.historyHeader h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.topupSmallButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: var(--text-primary);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+}
+
+.topupSmallButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);
+}
+
+.transactionGroup {
+  margin-bottom: 24px;
+}
+
+.transactionDate {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-left: 4px;
+}
+
+.transactionRow {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  margin-bottom: 8px;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.transactionRow:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-accent);
+}
+
+.transactionIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+  flex-shrink: 0;
+}
+
+.transactionInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.transactionDesc {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.transactionTime {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.transactionAmount {
+  font-size: 17px;
+  font-weight: 700;
+  margin-left: 12px;
+  flex-shrink: 0;
+}
+
+.transactionAmount.positive {
+  color: var(--success);
+}
+
+.transactionAmount.negative {
+  color: var(--danger);
 }

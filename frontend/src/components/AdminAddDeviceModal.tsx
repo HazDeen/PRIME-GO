@@ -88,73 +88,115 @@ export default function AdminAddDeviceModal({ onClose, onAdd, users, isBlocked }
         <p className="modalSub">Устройство будет добавлено выбранному пользователю без списания баланса.</p>
 
         {/* 1. ПОЛЬЗОВАТЕЛЬ */}
-        <div className="modalField" style={{ position: 'relative' }}>
+        <div className="modalField" style={{ position: 'relative', zIndex: isDropdownOpen ? 50 : 1 }}>
           <label className="modalLabel">Пользователь</label>
-          <div 
-            className="modalInput"
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsDropdownOpen(!isDropdownOpen);
-            }}
-            style={{ 
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
-              marginBottom: isDropdownOpen ? '8px' : '24px',
-              borderColor: isDropdownOpen ? 'var(--accent)' : 'var(--border-input)',
-              background: isDropdownOpen ? 'var(--accent-alpha)' : 'var(--bg-input)'
-            }}
-          >
-            <span style={{ color: selectedUser ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>
-              {selectedUser ? (selectedUser.username || `ID: ${selectedUser.telegramId}`) : "Выберите пользователя..."}
-            </span>
-            <motion.div animate={{ rotate: isDropdownOpen ? 180 : 0 }}>
-              <ChevronDown size={20} color="var(--text-secondary)" />
-            </motion.div>
-          </div>
-
-          <AnimatePresence>
-            {isDropdownOpen && (
-              <motion.div
-                className="no-scrollbar"
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                style={{
-                  position: 'absolute', top: '72px', left: 0, right: 0,
-                  background: 'var(--bg-secondary)', border: '1px solid var(--border-color)',
-                  borderRadius: '16px', maxHeight: '160px', overflowY: 'auto',
-                  zIndex: 10, boxShadow: '0 8px 30px rgba(0,0,0,0.2)'
-                }}
-              >
-                {users.map(u => (
-                  <div 
-                    key={u.id}
-                    onClick={() => { setSelectedUserId(u.id); setIsDropdownOpen(false); }}
-                    style={{
-                      padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      cursor: 'pointer', borderBottom: '1px solid var(--border-color)',
-                      background: selectedUserId === u.id ? 'var(--accent-alpha)' : 'transparent',
-                      color: selectedUserId === u.id ? 'var(--accent)' : 'var(--text-primary)'
-                    }}
-                  >
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontWeight: 600, fontSize: '15px' }}>{u.username || 'Без ника'}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>ID: {u.telegramId}</span>
-                    </div>
-                    {selectedUserId === u.id && <Check size={18} />}
-                  </div>
-                ))}
+          
+          {/* Обёртка для бесшовного объединения поля и списка */}
+          <div style={{ position: 'relative', marginBottom: '24px' }}>
+            <div 
+              className="modalInput"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsDropdownOpen(!isDropdownOpen);
+              }}
+              style={{ 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
+                marginBottom: 0, // Убираем отступ, чтобы прилепить список
+                borderBottomLeftRadius: isDropdownOpen ? '0' : '20px', // Убираем закругления снизу
+                borderBottomRightRadius: isDropdownOpen ? '0' : '20px',
+                borderColor: isDropdownOpen ? 'var(--text-primary)' : 'var(--border-input)',
+                borderBottomColor: isDropdownOpen ? 'transparent' : 'var(--border-input)', // Скрываем нижнюю рамку поля
+                background: isDropdownOpen ? 'var(--bg-input)' : 'var(--bg-input)', // Плотный фон при открытии
+                transition: 'all 0.2s ease',
+                position: 'relative',
+                zIndex: 2 // Поле поверх списка
+              }}
+            >
+              <span style={{ 
+                color: selectedUser ? 'var(--text-primary)' : 'var(--text-tertiary)',
+                fontWeight: selectedUser ? 500 : 400 
+              }}>
+                {selectedUser ? (selectedUser.username || `ID: ${selectedUser.telegramId}`) : "Выберите пользователя..."}
+              </span>
+              <motion.div animate={{ rotate: isDropdownOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown size={20} color={isDropdownOpen ? 'var(--text-primary)' : 'var(--text-secondary)'} />
               </motion.div>
-            )}
-          </AnimatePresence>
+            </div>
+
+            <AnimatePresence>
+              {isDropdownOpen && (
+                <motion.div
+                  className="no-scrollbar"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  style={{
+                    position: 'absolute', 
+                    top: '100%', // Идеально стыкуется с низом поля
+                    left: 0, right: 0,
+                    background: 'var(--bg-list)', // ПЛОТНЫЙ ФОН БЕЗ BLUR
+                    backdropFilter: 'blur(12px)', // Эффект стекла
+                    WebkitBackdropFilter: 'blur(12px)',
+                    border: '1px solid var(--text-primary)', // Общая рамка с полем
+                    borderTop: '1px solid var(--border-input)', // Тонкий разделитель внутри
+                    borderBottomLeftRadius: '20px', 
+                    borderBottomRightRadius: '20px', 
+                    maxHeight: '220px', 
+                    overflowY: 'auto',
+                    boxShadow: '0 15px 40px rgba(0,0,0,0.6)', 
+                    padding: '8px',
+                    paddingTop: '4px',
+                    zIndex: 1
+                  }}
+                >
+                  {users.map(u => (
+                    <div 
+                      key={u.id}
+                      onClick={() => { setSelectedUserId(u.id); setIsDropdownOpen(false); }}
+                      style={{
+                        padding: '12px 14px', 
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        cursor: 'pointer', 
+                        borderRadius: '14px', 
+                        background: selectedUserId === u.id ? 'var(--accent-alpha)' : 'transparent',
+                        color: selectedUserId === u.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                        marginBottom: '4px',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedUserId !== u.id) e.currentTarget.style.background = 'var(--bg-hover)';
+                        e.currentTarget.style.color = 'var(--text-primary)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedUserId !== u.id) {
+                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                        }
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <span style={{ fontWeight: 600, fontSize: '15px' }}>
+                          {u.username || 'Без ника'}
+                        </span>
+                        <span style={{ 
+                          fontSize: '12px', 
+                          color: selectedUserId === u.id ? 'var(--text-secondary)' : 'var(--text-tertiary)' 
+                        }}>
+                          ID: {u.telegramId}
+                        </span>
+                      </div>
+                      {selectedUserId === u.id && <Check size={18} color="var(--text-primary)" />}
+                    </div>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
 
-        {/* 2. 🌍 ВЫБОР СЕРВЕРА (Анимация отступа теперь здесь) */}
-        <div 
-          className="modalField" 
-          style={{ 
-            marginBottom: '20px',
-            marginTop: isDropdownOpen ? '170px' : '0', 
-            transition: 'margin 0.2s' 
-          }}
-        >
+        {/* 2. 🌍 ВЫБОР СЕРВЕРА (Убрали костыль с marginTop) */}
+        <div className="modalField" style={{ marginBottom: '20px' }}>
           <label className="modalLabel" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Globe size={16} /> Выберите сервер
           </label>

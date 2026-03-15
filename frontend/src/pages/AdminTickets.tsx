@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { ChevronLeft, Filter, Search, Clock, MessageCircle, CheckCircle2, ChevronRight, User, ChevronDown } from 'lucide-react';
+import { ChevronLeft, Filter, Search, Clock, MessageCircle, CheckCircle2, ChevronRight, User, ChevronDown, Check } from 'lucide-react';
 
 const API_URL = 'https://h4zdeen.up.railway.app';
 
@@ -68,11 +68,11 @@ export default function AdminTickets() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN': 
-        return <div className="daysBadge" style={{ background: 'var(--warning-alpha)', color: 'var(--warning)' }}><Clock size={14} /> Новый</div>;
+        return <div className="daysBadge" style={{ background: 'var(--warning-alpha)', color: 'var(--warning)', flexShrink: 0 }}><Clock size={14} /> Новый</div>;
       case 'ANSWERED': 
-        return <div className="daysBadge" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)' }}><MessageCircle size={14} /> Отвечен</div>;
+        return <div className="daysBadge" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)', flexShrink: 0 }}><MessageCircle size={14} /> Отвечен</div>;
       case 'CLOSED': 
-        return <div className="daysBadge" style={{ background: 'var(--success-alpha)', color: 'var(--success)' }}><CheckCircle2 size={14} /> Закрыт</div>;
+        return <div className="daysBadge" style={{ background: 'var(--success-alpha)', color: 'var(--success)', flexShrink: 0 }}><CheckCircle2 size={14} /> Закрыт</div>;
       default: return null;
     }
   };
@@ -120,35 +120,34 @@ export default function AdminTickets() {
         <div className="adminDropdownsRow">
           
           {/* Dropdown: СТАТУС */}
-          <div className="adminDropdownWrapper">
+          <div className="customFilterDropdown" style={{ zIndex: isStatusOpen ? 50 : 1 }}>
             <div 
-              className="modalInput adminDropdownTrigger"
+              className={`modalInput customFilterTrigger ${isStatusOpen ? 'open' : ''}`}
               onClick={() => { setIsStatusOpen(!isStatusOpen); setIsTopicOpen(false); }}
             >
               <span>{filterStatus.label}</span>
-              <ChevronDown 
-                size={18} 
-                style={{ color: 'var(--text-secondary)', transform: isStatusOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} 
-              />
+              <ChevronDown size={18} />
             </div>
+            
             <AnimatePresence>
               {isStatusOpen && (
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 20 }} onClick={() => setIsStatusOpen(false)} />
+                  <div style={{ position: 'fixed', inset: 0, zIndex: -1 }} onClick={() => setIsStatusOpen(false)} />
                   <motion.div
-                    className="adminDropdownList"
-                    initial={{ opacity: 0, y: -5, scale: 0.95 }} 
-                    animate={{ opacity: 1, y: 0, scale: 1 }} 
-                    exit={{ opacity: 0, y: -5, scale: 0.95 }} 
-                    transition={{ duration: 0.15 }}
+                    className="no-scrollbar customFilterList"
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    exit={{ opacity: 0, y: -10 }} 
+                    transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     {STATUS_OPTIONS.map(opt => (
                       <div
                         key={opt.value}
                         onClick={() => { setFilterStatus(opt); setIsStatusOpen(false); }}
-                        className={`adminDropdownItem ${filterStatus.value === opt.value ? 'active' : ''}`}
+                        className={`customFilterItem ${filterStatus.value === opt.value ? 'active' : ''}`}
                       >
                         {opt.label}
+                        {filterStatus.value === opt.value && <Check size={16} color="var(--text-primary)" />}
                       </div>
                     ))}
                   </motion.div>
@@ -158,35 +157,34 @@ export default function AdminTickets() {
           </div>
 
           {/* Dropdown: ТЕМА */}
-          <div className="adminDropdownWrapper">
+          <div className="customFilterDropdown" style={{ zIndex: isTopicOpen ? 50 : 1 }}>
             <div 
-              className="modalInput adminDropdownTrigger"
+              className={`modalInput customFilterTrigger ${isTopicOpen ? 'open' : ''}`}
               onClick={() => { setIsTopicOpen(!isTopicOpen); setIsStatusOpen(false); }}
             >
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{filterTopic.label}</span>
-              <ChevronDown 
-                size={18} 
-                style={{ color: 'var(--text-secondary)', transform: isTopicOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }} 
-              />
+              <span>{filterTopic.label}</span>
+              <ChevronDown size={18} />
             </div>
+            
             <AnimatePresence>
               {isTopicOpen && (
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 20 }} onClick={() => setIsTopicOpen(false)} />
+                  <div style={{ position: 'fixed', inset: 0, zIndex: -1 }} onClick={() => setIsTopicOpen(false)} />
                   <motion.div
-                    className="adminDropdownList"
-                    initial={{ opacity: 0, y: -5, scale: 0.95 }} 
-                    animate={{ opacity: 1, y: 0, scale: 1 }} 
-                    exit={{ opacity: 0, y: -5, scale: 0.95 }} 
-                    transition={{ duration: 0.15 }}
+                    className="no-scrollbar customFilterList"
+                    initial={{ opacity: 0, y: -10 }} 
+                    animate={{ opacity: 1, y: 0 }} 
+                    exit={{ opacity: 0, y: -10 }} 
+                    transition={{ duration: 0.15, ease: "easeOut" }}
                   >
                     {TOPIC_OPTIONS.map(opt => (
                       <div
                         key={opt.value}
                         onClick={() => { setFilterTopic(opt); setIsTopicOpen(false); }}
-                        className={`adminDropdownItem ${filterTopic.value === opt.value ? 'active' : ''}`}
+                        className={`customFilterItem ${filterTopic.value === opt.value ? 'active' : ''}`}
                       >
                         {opt.label}
+                        {filterTopic.value === opt.value && <Check size={16} color="var(--text-primary)" />}
                       </div>
                     ))}
                   </motion.div>
@@ -222,19 +220,26 @@ export default function AdminTickets() {
               <div className="deviceIcon" style={{ background: 'var(--bg-input)' }}>
                 <User size={24} color="var(--text-secondary)" />
               </div>
-              <div className="deviceInfo">
-                <div className="deviceNameWrapper" style={{ alignItems: 'baseline' }}>
-                  {/* 🔥 Выводим никнейм основным текстом */}
-                  <span className="deviceName" style={{ fontSize: '16px' }}>
+              {/* ФИКС: Добавляем minWidth: 0, чтобы блок мог безопасно сжиматься */}
+              <div className="deviceInfo" style={{ minWidth: 0 }}>
+                
+                <div className="deviceNameWrapper" style={{ alignItems: 'baseline', minWidth: 0, flexWrap: 'nowrap' }}>
+                  {/* ФИКС: Обрезаем длинный никнейм многоточием */}
+                  <span className="deviceName" style={{ fontSize: '16px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 1 }}>
                     {ticket.username}
                   </span>
-                  <span style={{ fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                  
+                  {/* ID пользователя не обрезаем, оставляем видимым */}
+                  <span style={{ fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 500, flexShrink: 0 }}>
                     {ticket.userId}
                   </span>
                 </div>
-                <div className="deviceDate" style={{ color: 'var(--text-primary)', fontWeight: 500 }}>
+                
+                {/* ФИКС: Тему тоже обрезаем, если юзер написал целое сочинение */}
+                <div className="deviceDate" style={{ color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {ticket.topic}
                 </div>
+                
                 <div className="deviceDate" style={{ fontSize: '11px', marginTop: '4px' }}>
                   {new Date(ticket.createdAt).toLocaleDateString()}
                 </div>

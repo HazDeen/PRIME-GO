@@ -413,7 +413,17 @@ export const client = {
       });
       if (!res.ok) throw new Error('Ошибка сохранения настроек');
       return res.json();
-    }
+    },
+    sendNotification: async (data: { userIds?: number[], sendToAll: boolean, title: string, message: string }) => {
+      const response = await fetch(`${API_BASE_URL}/admin/notifications`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify(data)
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Ошибка отправки уведомления');
+      return result;
+    },
   }
 };
 

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  Shield, Sparkles, Wallet, User, ChevronRight, 
+  Rss, Wallet, User, ChevronRight, 
   Settings, ShieldCheck, LogOut,
   ChevronLeft, Plus, Bell, Moon, Sun, 
-  MessageSquare, Bitcoin, Globe, Bug, Lightbulb, MessageCircle, 
+  // MessageSquare, 
+  Bitcoin, Globe, Bug, Lightbulb, MessageCircle, 
   Headset, CreditCard, ChevronDown, ArrowDownToLine, RefreshCcw, 
   Edit2, Trash2, Smartphone, Check, AlertTriangle, 
   Copy, RefreshCw, X, Timer, Send, Info, Clock, CheckCircle2, BellRing,
@@ -34,7 +35,24 @@ type ProfileScreen = null | 'settings' | 'support' | 'security' | 'faq';
 type DeepScreen = null | { type: 'history' } | { type: 'device'; id: number } | { type: 'ticket'; id: number };
 
 const API_URL = 'https://h4zdeen.up.railway.app';
-// const PRESET_AMOUNTS = [100, 300, 500];
+
+// const PRESET_AMOUNTS = [100, 300, 500]; // Для старого кошелька
+
+// Официальная иконка Gemini
+const CustomGeminiIcon = () => (
+  <svg 
+    fill="currentColor" 
+    fillRule="evenodd" 
+    height="32" 
+    width="32" 
+    style={{ flex: 'none', lineHeight: 1 }} 
+    viewBox="0 0 24 24" 
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path d="M20.616 10.835a14.147 14.147 0 01-4.45-3.001 14.111 14.111 0 01-3.678-6.452.503.503 0 00-.975 0 14.134 14.134 0 01-3.679 6.452 14.155 14.155 0 01-4.45 3.001c-.65.28-1.318.505-2.002.678a.502.502 0 000 .975c.684.172 1.35.397 2.002.677a14.147 14.147 0 014.45 3.001 14.112 14.112 0 013.679 6.453.502.502 0 00.975 0c.172-.685.397-1.351.677-2.003a14.145 14.145 0 013.001-4.45 14.113 14.113 0 016.453-3.678.503.503 0 000-.975 13.245 13.245 0 01-2.003-.678z"></path>
+  </svg>
+);
+
 const TOPICS = [
   { id: 'payment', label: 'Вопрос по оплате', icon: <CreditCard size={18} /> },
   { id: 'vpn', label: 'Не работает VPN', icon: <Globe size={18} /> },
@@ -78,7 +96,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       toast.error('Введите username и пароль');
       return;
     }
-//
+
     setLoading(true);
     try {
       const response = await client.auth.login(username, password);
@@ -98,7 +116,7 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
       setLoading(false);
     }
   };
-//
+
   return (
     <motion.div className="loginPage" variants={pageTransition} initial="initial" animate="in" exit="out" transition={{ duration: 0.4 }}>
       <motion.button className="loginThemeBtn" onClick={toggleTheme} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -164,25 +182,25 @@ const LoginScreen = ({ onLoginSuccess }: { onLoginSuccess: () => void }) => {
 const MaintenanceScreen = ({ onLogout }: { onLogout: () => void }) => (
   <motion.div className="loginPage" variants={pageTransition} initial="initial" animate="in" exit="out" transition={{ duration: 0.4 }}>
     <div className="loginContainer">
-      <motion.div className="loginCard" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, type: "spring" }} style={{ textAlign: 'center', padding: '50px 30px', position: 'relative' }}>
-        <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
-          <motion.button className="logoutButton" onClick={onLogout} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Выйти из аккаунта" style={{ position: 'absolute', top: '16px', right: '16px', borderRadius: '50%', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, zIndex: 10 }}>
-            <LogOut size={20} style={{ marginLeft: '-2px' }} />
+      <motion.div className="loginCard maintenanceCard" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5, type: "spring" }}>
+        <div className="maintenanceHeader">
+          <motion.button className="logoutButton maintenanceLogoutBtn" onClick={onLogout} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} title="Выйти из аккаунта">
+            <LogOut size={20} className="maintenanceLogoutIcon" />
           </motion.button>
         </div>
-        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 8, ease: "linear" }} style={{ display: 'inline-block', marginBottom: '20px', color: 'var(--text-primary)' }}>
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 8, ease: "linear" }} className="maintenanceSpinner">
           <Settings size={64} strokeWidth={1.5} />
         </motion.div>
         
-        <h1 className="loginTitle" style={{ fontSize: '28px', marginBottom: '12px' }}>Технические работы</h1>
-        <p className="loginDescription" style={{ fontSize: '15px', lineHeight: '1.6' }}>
+        <h1 className="loginTitle maintenanceTitle">Технические работы</h1>
+        <p className="loginDescription maintenanceDesc">
           Прямо сейчас мы обновляем сервера, чтобы VPN работал еще быстрее и стабильнее. <br/><br/> Пожалуйста, возвращайтесь немного позже! 🚀
         </p>
 
-        <div className="loginFooter" style={{ marginTop: '30px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', color: 'var(--warning)' }}>
+        <div className="loginFooter maintenanceFooter">
+          <div className="maintenanceWarning">
             <ShieldAlert size={18} />
-            <span style={{ fontWeight: 600 }}>Ваши данные и подписки в безопасности</span>
+            <span className="maintenanceWarningText">Ваши данные и подписки в безопасности</span>
           </div>
         </div>
       </motion.div>
@@ -203,9 +221,9 @@ const HistoryScreen = ({ onClose, onGoToTopup }: { onClose: () => void, onGoToTo
         <div className="historyHeader">
           <button className="backButton" onClick={onClose}><ChevronLeft size={24} /></button>
           <h1 className="screenHeaderTitle">История</h1>
-          <div style={{ width: 44 }} />
+          <div className="emptySpace44" />
         </div>
-        <div className="loadingMessage" style={{ textAlign: 'center', marginTop: '40px' }}>⏳ Загрузка...</div>
+        <div className="loadingMessage loadingMessageCenter">⏳ Загрузка...</div>
       </motion.div>
     );
   }
@@ -229,7 +247,7 @@ const HistoryScreen = ({ onClose, onGoToTopup }: { onClose: () => void, onGoToTo
               const Icon = isTopup ? ArrowDownToLine : RefreshCcw;
               return (
                 <div key={itemIdx} className="transactionRow">
-                  <div className="transactionIcon" style={{ background: isTopup ? 'var(--success-alpha)' : 'var(--danger-alpha)', color: isTopup ? 'var(--success)' : 'var(--danger)' }}>
+                  <div className={`transactionIcon ${isTopup ? 'isTopup' : 'isWithdraw'}`}>
                     <Icon size={20} />
                   </div>
                   <div className="transactionInfo">
@@ -338,11 +356,11 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
     }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', marginTop: '40px' }}>Загрузка...</div>;
+  if (loading) return <div className="loadingMessage loadingMessageCenter">Загрузка...</div>;
   if (!device) return null;
 
   return (
-    <motion.div variants={slideVariants} initial="initial" animate="in" exit="out" style={{ paddingBottom: '40px' }}>
+    <motion.div variants={slideVariants} initial="initial" animate="in" exit="out" className="screenWrapperPadding">
       <div className="deviceDetailHeader">
         <button className="backButton" onClick={onClose}><ChevronLeft size={24} /></button>
         <h1 className="screenHeaderTitle">Настройки</h1>
@@ -357,7 +375,7 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
               <button onClick={handleSaveName} className="saveNameBtn"><Check size={16} /></button>
             </div>
           ) : (
-            <div className="deviceNameDisplay" style={{ flexWrap: 'wrap' }}>
+            <div className="deviceNameDisplay deviceNameDisplayWrap">
               <h2>{device.name}</h2>
               <button onClick={() => setIsEditing(true)} className="editNameBtn"><Edit2 size={14} /></button>
               
@@ -368,7 +386,7 @@ const DeviceDetailScreen = ({ deviceId, onClose }: { deviceId: number, onClose: 
             </div>
           )}
           <p className="deviceProfileModel">{device.model || 'VPN Устройство'}</p>
-          <div className="deviceProfileStatus" style={{ marginTop: '12px' }}>
+          <div className="deviceProfileStatus deviceProfileStatusMargin">
             {device.daysLeft > 0 ? (
               <>
                 <span className={`statusBadge ${device.isActive ? 'active' : 'inactive'}`}>
@@ -466,13 +484,13 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
     }
   };
 
-  if (loading) return <div style={{ textAlign: 'center', marginTop: '40px' }}>Загрузка чата...</div>;
+  if (loading) return <div className="loadingMessage loadingMessageCenter">Загрузка чата...</div>;
   if (!ticket) return null;
   const isClosed = ticket.status === 'CLOSED';
 
   return (
-    <motion.div className="chatContainer" variants={slideVariants} initial="initial" animate="in" exit="out" style={{ padding: 0, height: '100%' }}>
-      <div className="chatHeader" style={{ borderBottom: 'none' }}>
+    <motion.div className="chatContainer chatContainerFull" variants={slideVariants} initial="initial" animate="in" exit="out">
+      <div className="chatHeader chatHeaderNoBorder">
         <div className="chatHeaderLeft">
           <button className="backButton" onClick={onClose}><ChevronLeft size={24} /></button>
           <div className="chatTitleInfo">
@@ -482,7 +500,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
         </div>
       </div>
 
-      <div className="chatMessagesArea" style={{ padding: '0 10px' }}>
+      <div className="chatMessagesArea chatMessagesAreaPad">
         <div className="chatSystemMessage"><div className="chatSystemMessageInner"><Info size={12} /> Чат создан {new Date(ticket.createdAt).toLocaleDateString()}</div></div>
         {ticket.messages.map((msg: any) => {
           const isUser = !msg.isAdmin;
@@ -498,7 +516,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chatInputArea" style={{ padding: '16px 0 20px 0' }}>
+      <div className="chatInputArea chatInputAreaPad">
         {isClosed ? (
           <div className="chatClosedMessage">Вопрос решен. Чат закрыт.</div>
         ) : (
@@ -543,7 +561,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') !== 'light');
   const [isTelegramTheme, setIsTelegramTheme] = useState(() => localStorage.getItem('tgTheme') === 'true');
 
-  // 👇 Стейты безопасности для Логина и Пароля
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [newUsername, setNewUsername] = useState(user?.username || '');
   const [oldPassword, setOldPassword] = useState('');
@@ -558,7 +575,19 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Сбрасываем поля при открытии экрана безопасности
+  // =========================================================
+  // СТАРЫЕ СОСТОЯНИЯ ДЛЯ ОПЛАТЫ И GEMINI (СОХРАНЕНЫ НА БУДУЩЕЕ)
+  // =========================================================
+  /*
+  const [selectedTopup, setSelectedTopup] = useState<number | 'custom'>(100);
+  const [customAmount, setCustomAmount] = useState('');
+  const [loadingTopup, setLoadingTopup] = useState(false);
+  const currentAmount = selectedTopup === 'custom' ? Number(customAmount) : selectedTopup;
+  const newBalance = (balance || 0) + (currentAmount || 0);
+
+  const [loadingGemini, setLoadingGemini] = useState(false);
+  */
+
   useEffect(() => {
     if (activeProfileScreen === 'security') {
       setNewUsername(user?.username || '');
@@ -603,7 +632,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     };
   }, [activeProfileScreen, user]);
 
-
   const updateSetting = async (key: string, value: boolean) => {
     if (!user) return;
     try {
@@ -631,15 +659,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const { 
     // balance, 
     refetch: refetchBalance } = useBalance();
-  // const [selectedTopup, setSelectedTopup] = useState<number | 'custom'>(100);
-  // const [customAmount, setCustomAmount] = useState('');
-  // const [loadingTopup, setLoadingTopup] = useState(false);
-  // const currentAmount = selectedTopup === 'custom' ? Number(customAmount) : selectedTopup;
-  // const newBalance = (balance || 0) + (currentAmount || 0);
 
-  const [loadingGemini, setLoadingGemini] = useState(false);
-
-  // 👇 ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ЛОГИНА
   const handleSaveUsername = async () => {
     if (!newUsername.trim() || !user) return;
     try {
@@ -659,7 +679,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     }
   };
 
-  // 👇 ОБНОВЛЕННАЯ ФУНКЦИЯ СОХРАНЕНИЯ ПАРОЛЯ
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!oldPassword || !newPassword) return;
@@ -682,34 +701,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
       refetchBalance(); 
       setTimeout(() => window.location.reload(), 1500);
     } catch (e) { throw e; }
-  };
-
-  // const handlePay = async () => {
-  //   if (!currentAmount || currentAmount < 50) return toast.error('Минимум 50 ₽');
-  //   setLoadingTopup(true);
-  //   try {
-  //     const response = await client.payments.create(currentAmount);
-  //     window.location.href = response.url;
-  //   } catch (e: any) { toast.error('Ошибка'); setLoadingTopup(false); }
-  // };
-
-  const handleRequestGemini = async () => {
-    setLoadingGemini(true);
-    try {
-      const response = await fetch(`${API_URL}/tickets`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user?.telegramId?.toString(), topic: 'Доступ к Gemini AI', text: 'Хочу получить доступ к Gemini AI.' }),
-      });
-      if (!response.ok) throw new Error();
-      const newTicket = await response.json();
-      toast.success('Заявка создана');
-      setTimeout(() => {
-        setActiveService(null);
-        setActiveTab('profile');
-        setActiveProfileScreen('support');
-        setDeepScreen({ type: 'ticket', id: newTicket.id });
-      }, 1000);
-    } catch (e) { toast.error('Ошибка'); setLoadingGemini(false); }
   };
 
   const loadTickets = async () => {
@@ -738,23 +729,56 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     } catch (e) { toast.error('Ошибка'); } finally { setIsSubmittingTicket(false); }
   };
 
+  // =========================================================
+  // СТАРЫЕ ФУНКЦИИ ОПЛАТЫ И GEMINI (СОХРАНЕНЫ НА БУДУЩЕЕ)
+  // =========================================================
+  /*
+  const handlePay = async () => {
+    if (!currentAmount || currentAmount < 50) return toast.error('Минимум 50 ₽');
+    setLoadingTopup(true);
+    try {
+      const response = await client.payments.create(currentAmount);
+      window.location.href = response.url;
+    } catch (e: any) { toast.error('Ошибка'); setLoadingTopup(false); }
+  };
+
+  const handleRequestGemini = async () => {
+    setLoadingGemini(true);
+    try {
+      const response = await fetch(`${API_URL}/tickets`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user?.telegramId?.toString(), topic: 'Доступ к Gemini AI', text: 'Хочу получить доступ к Gemini AI.' }),
+      });
+      if (!response.ok) throw new Error();
+      const newTicket = await response.json();
+      toast.success('Заявка создана');
+      setTimeout(() => {
+        setActiveService(null);
+        setActiveTab('profile');
+        setActiveProfileScreen('support');
+        setDeepScreen({ type: 'ticket', id: newTicket.id });
+      }, 1000);
+    } catch (e) { toast.error('Ошибка'); setLoadingGemini(false); }
+  };
+  */
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'OPEN': 
         return (
-          <div className="daysBadge" style={{ background: 'var(--warning-alpha)', color: 'var(--warning)' }}>
+          <div className="daysBadge badgeWarning">
             <Clock size={14} /> Открыт
           </div>
         );
       case 'ANSWERED': 
         return (
-          <div className="daysBadge" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)' }}>
+          <div className="daysBadge badgeAccent">
             <MessageCircle size={14} /> Ждет ответа
           </div>
         );
       case 'CLOSED': 
         return (
-          <div className="daysBadge" style={{ background: 'var(--success-alpha)', color: 'var(--success)' }}>
+          <div className="daysBadge badgeSuccess">
             <CheckCircle2 size={14} /> Решен
           </div>
         );
@@ -766,27 +790,38 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     <div className="topBar">
       <h1 className="screenHeaderTitle">{title}</h1>
       
-      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <div className="headerActions">
         <div className="bellBtn" onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) markAsRead(); }}>
-          {unreadCount > 0 ? <BellRing size={20} /> : <Bell size={20} />}
-          {unreadCount > 0 && <span className="unreadBadge">{unreadCount}</span>}
+          <motion.div 
+            animate={unreadCount > 0 ? { rotate: [0, -15, 15, -15, 15, 0] } : { rotate: 0 }} 
+            transition={{ repeat: unreadCount > 0 ? Infinity : 0, repeatDelay: 3, duration: 0.5 }}
+            className="flexDisplay"
+          >
+            {unreadCount > 0 ? <BellRing size={20} /> : <Bell size={20} />}
+          </motion.div>
+          {unreadCount > 0 && (
+            <motion.span 
+              className="unreadBadge"
+              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring" }}
+            >
+              {unreadCount}
+            </motion.span>
+          )}
         </div>
 
         <AnimatePresence>
           {showNotifications && (
             <>
               <div 
-                className="menuBackdrop" 
-                style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'transparent' }} 
+                className="menuBackdrop notifBackdrop" 
                 onClick={(e) => { e.stopPropagation(); setShowNotifications(false); }} 
               />
               
               <motion.div 
-                className="notificationsDropdown"
+                className="notificationsDropdown notifDropdownPos"
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                style={{ position: 'absolute', top: '100%', right: 0, marginTop: '12px', zIndex: 200 }}
               >
                 <h3 className="notificationsTitle">Уведомления</h3>
                 {notifications.length === 0 ? (
@@ -817,14 +852,41 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
         <motion.div key="grid" variants={fadeVariants} initial="initial" animate="in" exit="out">
           <ScreenHeader title="Сервисы" />
           <div className="services-grid">
-            <div className="service-card" onClick={() => setActiveService('vpn')}>
-              <div className="service-icon-wrapper"><Shield size={28} /></div>
+            <motion.div 
+              className="service-card" 
+              onClick={() => setActiveService('vpn')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <motion.div 
+                className="service-icon-wrapper"
+                animate={{ y: [0, -4, 0] }} 
+                transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+              >
+                <Rss size={28} />
+              </motion.div>
               <span className="service-title">Prime VPN</span>
-            </div>
-            <div className="service-card" onClick={() => setActiveService('gemini')}>
-              <div className="service-icon-wrapper ai"><Sparkles size={28} /></div>
+            </motion.div>
+
+            <motion.div 
+              className="service-card" 
+              onClick={() => setActiveService('gemini')}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <motion.div 
+                className="service-icon-wrapper ai"
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1],
+                }} 
+                transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+              >
+                <CustomGeminiIcon />
+              </motion.div>
               <span className="service-title">Gemini AI</span>
-            </div>
+              
+            </motion.div>
           </div>
         </motion.div>
       );
@@ -840,7 +902,12 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
           <BalanceCard />
           <div className="actionsRow">
             <button className="actionBtnSmall" onClick={() => setActiveTab('wallet')}><Wallet size={20} /> Пополнить</button>
-            <button className="actionBtnSmall" onClick={() => setDeepScreen({ type: 'history' })}><RefreshCcw size={20} /> История</button>
+            <button className="actionBtnSmall" onClick={() => setDeepScreen({ type: 'history' })}>
+              <motion.div whileHover={{ rotate: 180 }} whileTap={{ rotate: 360 }} transition={{ duration: 0.3 }} className="flexDisplay">
+                <RefreshCcw size={20} />
+              </motion.div> 
+              История
+            </button>
           </div>
           <DevicesCard onAddClick={() => setShowVpnAddModal(true)} onDeviceClick={(id) => setDeepScreen({ type: 'device', id })} />
         </motion.div>
@@ -857,9 +924,18 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
           <BalanceCard />
           <div className="actionsRow">
             <button className="actionBtnSmall" onClick={() => setActiveTab('wallet')}><Wallet size={20} /> Пополнить</button>
-            <button className="actionBtnSmall" onClick={() => setDeepScreen({ type: 'history' })}><RefreshCcw size={20} /> История</button>
+            <button className="actionBtnSmall" onClick={() => setDeepScreen({ type: 'history' })}>
+              <motion.div whileHover={{ rotate: 180 }} whileTap={{ rotate: 360 }} transition={{ duration: 0.3 }} className="flexDisplay">
+                <RefreshCcw size={20} />
+              </motion.div> 
+              История
+            </button>
           </div>
-          <div className="configCard geminiInfoCard">
+          
+          {/* ========================================================= */}
+          {/* СТАРАЯ КАРТОЧКА С КНОПКОЙ ЗАЯВКИ (СОХРАНЕНА НА БУДУЩЕЕ)   */}
+          {/* ========================================================= */}
+          {/* <div className="configCard geminiInfoCard">
             <div className="geminiHeaderRow">
               <div className="geminiIconWrap"><Sparkles size={24} /></div>
               <div><h2 className="geminiCardTitle">Умный помощник</h2><p className="geminiCardSubtitle">Нейросеть нового поколения</p></div>
@@ -872,6 +948,30 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
               {loadingGemini ? 'Создание заявки...' : <><MessageSquare size={20} /> Получить доступ</>}
             </motion.button>
             <p className="geminiDisclaimer">После нажатия будет создан диалог с поддержкой для активации услуги.</p>
+          </div> */}
+
+          {/* ========================================================= */}
+          {/* АКТИВНАЯ КАРТОЧКА "В РАЗРАБОТКЕ"                          */}
+          {/* ========================================================= */}
+          <div className="configCard devCard">
+            <motion.div 
+              animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} 
+              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+              className="devIconWrap warning"
+            >
+              <Clock size={40} />
+            </motion.div>
+            
+            <h2 className="devTitle">Скоро появится</h2>
+            
+            <p className="devDesc">
+              Мы готовим для вас интеграцию с мощнейшей нейросетью нового поколения. <br/><br/>
+              Генерация текстов, написание кода и ответы на любые вопросы! ✨
+            </p>
+
+            <div className="devBadge">
+              В активной разработке 🛠
+            </div>
           </div>
         </motion.div>
       );
@@ -882,46 +982,60 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
     <motion.div key="wallet" variants={fadeVariants} initial="initial" animate="in" exit="out">
       <ScreenHeader title="Кошелек" />
       
-      {/* Показываем текущий баланс на экране кошелька */}
       <BalanceCard />
 
-      <div className="configCard" style={{ marginTop: '24px', textAlign: 'center', padding: '32px 20px' }}>
-        {/* Анимированная иконка (плавное пульсирование) */}
+      {/* ========================================================= */}
+      {/* СТАРАЯ ОПЛАТА С ИНПУТАМИ (СОХРАНЕНА НА БУДУЩЕЕ)            */}
+      {/* ========================================================= */}
+      {/*
+      <div className="balancePreview">
+        <span className="previewLabel">Баланс после пополнения</span>
+        <span className="previewAmount">{newBalance} ₽</span>
+      </div>
+      <div className="amountSelector">
+        <p className="selectorTitle">Выберите сумму</p>
+        <div className="amountGrid">
+          {PRESET_AMOUNTS.map((amt) => (<button key={amt} className={`amountChip ${selectedTopup === amt ? 'active' : ''}`} onClick={() => setSelectedTopup(amt)}>{amt} ₽</button>))}
+        </div>
+        <button className={`customChip ${selectedTopup === 'custom' ? 'active' : ''}`} onClick={() => setSelectedTopup('custom')}>Другое</button>
+        <AnimatePresence>
+          {selectedTopup === 'custom' && (<motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} type="number" className="customAmountInput" placeholder="Сумма (от 50 ₽)..." value={customAmount} onChange={(e) => setCustomAmount(e.target.value)} />)}
+        </AnimatePresence>
+      </div>
+      <div className="infoMessage"><Wallet size={20} className="infoIcon" /><p>Средства зачисляются моментально.</p></div>
+      <motion.button className="payButton" onClick={handlePay} disabled={loadingTopup || (selectedTopup === 'custom' && currentAmount < 50)} whileTap={{ scale: 0.98 }}>
+        <Bitcoin size={20} /> {loadingTopup ? 'Создание счета...' : `Пополнить на ${currentAmount || 0} ₽`}
+      </motion.button>
+      */}
+
+      {/* ========================================================= */}
+      {/* АКТИВНАЯ КАРТОЧКА "ОПЛАТА В РАЗРАБОТКЕ"                     */}
+      {/* ========================================================= */}
+      <div className="configCard devCard walletCard">
         <motion.div 
           animate={{ scale: [1, 1.1, 1], opacity: [0.8, 1, 0.8] }} 
           transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-          style={{ 
-            display: 'inline-flex', 
-            background: 'var(--warning-alpha)', 
-            color: 'var(--warning)', 
-            padding: '18px', 
-            borderRadius: '50%', 
-            marginBottom: '20px' 
-          }}
+          className="devIconWrap warning"
         >
           <Clock size={40} />
         </motion.div>
         
-        <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>
-          Оплата в разработке
-        </h2>
+        <h2 className="devTitle wallet">Оплата в разработке</h2>
         
-        <p style={{ fontSize: '15px', color: 'var(--text-secondary)', lineHeight: '1.6', marginBottom: '28px' }}>
+        <p className="devDesc wallet">
           В данный момент автоматический шлюз оплаты находится на обновлении. <br/><br/>
           Чтобы пополнить баланс, совершите перевод по реквизитам и <b>отправьте чек в нашу службу поддержки</b>. Средства будут зачислены на ваш аккаунт в течение пары минут.
         </p>
 
-        {/* Кнопка перехода в Telegram (замени ссылку на свой контакт, если нужно) */}
         <a 
           href="https://t.me/Prime_Go_ADMIN" 
           target="_blank" 
           rel="noopener noreferrer"
-          style={{ textDecoration: 'none' }}
+          className="textDecorationNone"
         >
           <motion.button 
-            className="payButton" 
+            className="payButton fullWidthBtn" 
             whileTap={{ scale: 0.98 }}
-            style={{ width: '100%', margin: 0 }}
           >
             <Send size={20} /> Написать в поддержку
           </motion.button>
@@ -935,7 +1049,6 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
       return <FaqScreen key="faq" onClose={() => setActiveProfileScreen(null)} />;
     }
     
-    // 👇 ОБНОВЛЕННЫЙ ЭКРАН БЕЗОПАСНОСТИ (Логин и Пароль)
     if (activeProfileScreen === 'security') {
       return (
         <motion.div key="security" variants={slideVariants} initial="initial" animate="in" exit="out">
@@ -944,9 +1057,9 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             <h1 className="screenHeaderTitle">Безопасность</h1>
           </div>
 
-          <div className="configCard" style={{ marginBottom: '24px' }}>
+          <div className="configCard securityCardMargin">
             <div className="geminiHeaderRow">
-              <div className="geminiIconWrap" style={{ background: 'var(--accent-alpha)', color: 'var(--accent)' }}>
+              <div className="geminiIconWrap iconWrapAccent">
                 <User size={24} />
               </div>
               <div>
@@ -956,14 +1069,14 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             </div>
             
             {isEditingUsername ? (
-              <div className="deviceNameEdit" style={{ maxWidth: '100%', marginTop: '16px' }}>
+              <div className="deviceNameEdit securityEditWrap">
                 <input type="text" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} autoFocus placeholder="Введите новый логин" />
                 <button onClick={handleSaveUsername} disabled={savingSecurity} className="saveNameBtn"><Check size={16} /></button>
               </div>
             ) : (
-              <div className="deviceNameDisplay" style={{ marginTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg-input)', padding: '12px 16px', borderRadius: '16px' }}>
-                <span style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>{user?.username}</span>
-                <button onClick={() => setIsEditingUsername(true)} className="editNameBtn" style={{ background: 'transparent', border: 'none', color: 'var(--accent)', cursor: 'pointer', display: 'flex', padding: '4px' }}>
+              <div className="deviceNameDisplay securityDisplayWrap">
+                <span className="securityUsernameText">{user?.username}</span>
+                <button onClick={() => setIsEditingUsername(true)} className="editNameBtn securityEditIconBtn">
                   <Edit2 size={18} />
                 </button>
               </div>
@@ -972,7 +1085,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
 
           <div className="configCard">
             <div className="geminiHeaderRow">
-              <div className="geminiIconWrap" style={{ background: 'var(--danger-alpha)', color: 'var(--danger)' }}>
+              <div className="geminiIconWrap iconWrapDanger">
                 <Lock size={24} />
               </div>
               <div>
@@ -980,10 +1093,10 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
                 <p className="geminiCardSubtitle">Должен быть надежным</p>
               </div>
             </div>
-            <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
-              <input type="password" placeholder="Текущий пароль" className="modalInput" value={oldPassword} onChange={e => setOldPassword(e.target.value)} style={{ margin: 0 }} />
-              <input type="password" placeholder="Новый пароль" className="modalInput" value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ margin: 0 }} />
-              <motion.button type="submit" className="modalSubmitBtn" disabled={savingSecurity || !oldPassword || !newPassword} style={{ marginTop: '8px', width: '100%', padding: '14px', borderRadius: '16px' }} whileTap={{ scale: 0.98 }}>
+            <form onSubmit={handleChangePassword} className="securityForm">
+              <input type="password" placeholder="Текущий пароль" className="modalInput securityInput" value={oldPassword} onChange={e => setOldPassword(e.target.value)} />
+              <input type="password" placeholder="Новый пароль" className="modalInput securityInput" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+              <motion.button type="submit" className="modalSubmitBtn securitySubmitBtn" disabled={savingSecurity || !oldPassword || !newPassword} whileTap={{ scale: 0.98 }}>
                 {savingSecurity ? 'Сохранение...' : 'Обновить пароль'}
               </motion.button>
             </form>
@@ -1030,7 +1143,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
                       <label className="modalLabel">Тема обращения</label>
                       <div className="modalInput customDropdownHeader" onClick={() => setIsDropdownOpen(!isDropdownOpen)}>
                         <div className="customDropdownHeaderContent"><span className="customDropdownIcon">{currentTopicObj.icon}</span><span>{currentTopicObj.label}</span></div>
-                        <ChevronDown size={20} style={{ color: 'var(--text-secondary)' }} />
+                        <ChevronDown size={20} className="dropdownIconColor" />
                       </div>
                       <AnimatePresence>
                         {isDropdownOpen && (
@@ -1040,7 +1153,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
                         )}
                       </AnimatePresence>
                     </div>
-                    <div className="modalField modalActionsZIndex"><label className="modalLabel">Описание проблемы</label><textarea className="modalInput" value={ticketText} onChange={e => setTicketText(e.target.value)} placeholder="Опишите ситуацию..." rows={4} style={{ resize: 'none' }} /></div>
+                    <div className="modalField modalActionsZIndex"><label className="modalLabel">Описание проблемы</label><textarea className="modalInput textareaNoResize" value={ticketText} onChange={e => setTicketText(e.target.value)} placeholder="Опишите ситуацию..." rows={4} /></div>
                     <div className="modalActionsRow modalActionsZIndex"><button type="button" className="modalCancelBtn" onClick={() => setShowTicketModal(false)}>Отмена</button><button type="submit" className="modalSubmitBtn" disabled={isSubmittingTicket}>{isSubmittingTicket ? 'Отправка...' : 'Создать'}</button></div>
                   </form>
                 </motion.div>
@@ -1077,14 +1190,8 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
                 </motion.div>
                 {isDarkMode ? 'Тёмная тема' : 'Светлая тема'}
               </div>
-              <div style={{
-                width: '52px', height: '32px', borderRadius: '16px', padding: '3px',
-                background: isTelegramTheme ? 'var(--bg-input)' : (isDarkMode ? 'var(--accent)' : 'var(--bg-input)'),
-                border: '1px solid ' + (isTelegramTheme ? 'var(--border-color)' : (isDarkMode ? 'var(--accent)' : 'var(--border-color)')),
-                display: 'flex', alignItems: 'center', justifyContent: isDarkMode ? 'flex-end' : 'flex-start',
-                opacity: isTelegramTheme ? 0.5 : 1, transition: 'all 0.3s'
-              }}>
-                <motion.div layout transition={{ type: "spring", stiffness: 700, damping: 30 }} style={{ width: '24px', height: '24px', borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className={`themeToggleTrack ${isTelegramTheme ? 'disabled' : ''} ${isDarkMode ? 'dark' : 'light'}`}>
+                <motion.div layout transition={{ type: "spring", stiffness: 700, damping: 30 }} className="themeToggleThumb">
                   <motion.div initial={false} animate={{ rotate: isDarkMode ? 360 : 0 }}>
                     {isDarkMode ? <Moon size={14} color="#000" /> : <Sun size={14} color="#f59e0b" />}
                   </motion.div>
@@ -1114,7 +1221,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
               </label>
             </div>
           </div>
-          <div className="profile-menu-group" style={{ marginTop: '24px' }}>
+          <div className="profile-menu-group settingsGroupMargin">
             <button className="profile-menu-item" onClick={() => {
               toast.loading('Очистка кэша и обновление...');
               
@@ -1218,15 +1325,25 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
         {!deepScreen && (
           <motion.div className="bottom-nav" initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}>
             {[
-              { id: 'services', icon: Shield, label: 'Сервисы' },
+              { id: 'services', icon: Rss, label: 'Сервисы' },
               { id: 'wallet', icon: Wallet, label: 'Кошелек' },
               { id: 'profile', icon: User, label: 'Профиль' }
             ].map(tab => {
-              const Icon = tab.icon;
+              const Icon = tab.icon as any;
               const isActive = activeTab === tab.id;
               return (
-                <button key={tab.id} onClick={() => { setActiveTab(tab.id as Tab); setShowNotifications(false); setShowVpnAddModal(false); if (tab.id !== 'services') setActiveService(null); if (tab.id !== 'profile') setActiveProfileScreen(null); }} className={`nav-item ${isActive ? 'active' : ''}`}>
-                  <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                <button 
+                  key={tab.id} 
+                  onClick={() => { setActiveTab(tab.id as Tab); setShowNotifications(false); setShowVpnAddModal(false); if (tab.id !== 'services') setActiveService(null); if (tab.id !== 'profile') setActiveProfileScreen(null); }} 
+                  className={`nav-item ${isActive ? 'active' : ''}`}
+                >
+                  <motion.div
+                    whileTap={{ scale: 0.8, y: 5 }} 
+                    animate={isActive ? { scale: [1, 1.15, 1], y: [0, -2, 0] } : { scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                  >
+                    <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
+                  </motion.div>
                   <span className="nav-label">{tab.label}</span>
                 </button>
               )
@@ -1242,8 +1359,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   );
 }
 
-// 4. ЭКРАН FAQ / ИНСТРУКЦИЙ
-const FaqScreen = ({ onClose }: { onClose: () => void }) => {
+function FaqScreen({ onClose }: { onClose: () => void }) {
   const [expanded, setExpanded] = useState<number | null>(0); 
 
   const faqs = [
@@ -1273,7 +1389,7 @@ const FaqScreen = ({ onClose }: { onClose: () => void }) => {
   ];
 
   return (
-    <motion.div variants={slideVariants} initial="initial" animate="in" exit="out" style={{ paddingBottom: '40px' }}>
+    <motion.div variants={slideVariants} initial="initial" animate="in" exit="out" className="screenWrapperPadding">
       <div className="deviceDetailHeader">
         <button className="backButton" onClick={onClose}><ChevronLeft size={24} /></button>
         <h1 className="screenHeaderTitle">FAQ</h1>
@@ -1292,7 +1408,7 @@ const FaqScreen = ({ onClose }: { onClose: () => void }) => {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  style={{ overflow: 'hidden' }}
+                  className="faqContentHidden"
                 >
                   <div className="faqContentInner">
                     {faq.answer}
@@ -1305,7 +1421,7 @@ const FaqScreen = ({ onClose }: { onClose: () => void }) => {
       </div>
     </motion.div>
   );
-};
+}
 
 // ==========================================
 // 5. ОРКЕСТРАТОР APP VIEW
