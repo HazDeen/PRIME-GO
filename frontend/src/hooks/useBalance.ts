@@ -1,24 +1,31 @@
+// frontend/src/hooks/useBalance.ts
+
 import { useState, useEffect } from 'react';
 import { api } from '../api/client';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from './useAuth'; // Используем новый разделенный хук
 
+// frontend/src/hooks/useBalance.ts
 export const useBalance = () => {
   const [balance, setBalance] = useState(0);
   const [daysLeft, setDaysLeft] = useState(0);
   const [loading, setLoading] = useState(true);
-  const { updateBalance } = useAuth();
+  
+  // Теперь эта строка не будет вызывать ошибку
+  const { updateUser } = useAuth(); 
 
   const fetchBalance = async () => {
     try {
       setLoading(true);
-      console.log('💰 Fetching balance...');
-      
       const data = await api.users.getProfile();
-      console.log('✅ Balance response:', data);
       
       setBalance(data.balance);
       setDaysLeft(data.daysLeft);
-      updateBalance(data.balance);
+      
+      // Обновляем и баланс, и аватарку одновременно
+      updateUser({
+        balance: data.balance,
+        avatarUrl: data.avatarUrl
+      });
     } catch (error) {
       console.error('❌ Failed to fetch balance:', error);
     } finally {

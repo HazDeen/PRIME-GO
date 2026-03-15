@@ -12,7 +12,7 @@ import {
   Eye, EyeOff, LogIn, ShieldAlert, Lock, Paintbrush, BookOpen
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useBalance } from '../hooks/useBalance';
 import { useDevices } from '../hooks/useDevices';
 import { useTransactions } from '../hooks/useTransactions';
@@ -23,6 +23,7 @@ import 'flag-icons/css/flag-icons.min.css';
 import BalanceCard from "../components/BalanceCard";
 import DevicesCard from "../components/DevicesCard";
 import AddDeviceModal from "../components/AddDeviceModal";
+import AvatarUploader from '../components/AvatarUploader';
 
 import '../styles/appview.css';
 
@@ -543,7 +544,7 @@ const TicketChatScreen = ({ ticketId, onClose }: { ticketId: number, onClose: ()
 // ==========================================
 const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const navigate = useNavigate();
-  const { user, setUser, logout } = useAuth(); 
+  const { user, setUser, logout } = useAuth();
   
   const [activeTab, setActiveTab] = useState<Tab>('services');
   const [activeService, setActiveService] = useState<Service>(null);
@@ -575,6 +576,7 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
   const [isSubmittingTicket, setIsSubmittingTicket] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  console.log("Данные пользователя сейчас:", user);
   // =========================================================
   // СТАРЫЕ СОСТОЯНИЯ ДЛЯ ОПЛАТЫ И GEMINI (СОХРАНЕНЫ НА БУДУЩЕЕ)
   // =========================================================
@@ -587,6 +589,24 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
 
   const [loadingGemini, setLoadingGemini] = useState(false);
   */
+
+  const handleDeleteAvatar = async () => {
+    if (!user?.avatarUrl) return toast.info('У вас не установлена аватарка');
+    
+    toast.loading('Удаление...', { id: 'delete-avatar' });
+    try {
+      // Отправляем пустую строку на сервер, чтобы очистить поле
+      await client.users.updateAvatar(""); 
+      
+      const updatedUser = { ...user, avatarUrl: "" };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser as any);
+      
+      toast.success('Фото профиля удалено', { id: 'delete-avatar' });
+    } catch (e: any) { 
+      toast.error(e.message || 'Ошибка при удалении', { id: 'delete-avatar' }); 
+    }
+  };
 
   useEffect(() => {
     if (activeProfileScreen === 'security') {
@@ -1024,7 +1044,26 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
         
         <p className="devDesc wallet">
           В данный момент автоматический шлюз оплаты находится на обновлении. <br/><br/>
-          Чтобы пополнить баланс, совершите перевод по реквизитам и <b>отправьте чек в нашу службу поддержки</b>. Средства будут зачислены на ваш аккаунт в течение пары минут.
+          Чтобы пополнить баланс, совершите перевод по{' '}
+          <span 
+            onClick={() => {
+              // Вставь сюда реальный номер карты или телефона
+              navigator.clipboard.writeText('4377 7237 8841 3734'); 
+              toast.success('Реквизиты скопированы!');
+            }}
+            style={{ 
+              color: 'var(--warning)', 
+              cursor: 'pointer', 
+              fontWeight: 700,
+              textDecoration: 'underline',
+              textUnderlineOffset: '4px',
+              textDecorationThickness: '2px'
+            }}
+            title="Нажмите, чтобы скопировать"
+          >
+            реквизитам
+          </span>
+          {' '}и <b>отправьте чек в нашу службу поддержки</b>. Средства будут зачислены на ваш аккаунт в течение пары минут.
         </p>
 
         <a 
@@ -1222,6 +1261,14 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
             </div>
           </div>
           <div className="profile-menu-group settingsGroupMargin">
+            <button className="profile-menu-item danger" onClick={handleDeleteAvatar}>
+              <div className="profile-menu-left">
+                <Trash2 size={20} /> 
+                Удалить фото профиля
+              </div>
+            </button>
+          </div>
+          <div className="profile-menu-group settingsGroupMargin">
             <button className="profile-menu-item" onClick={() => {
               toast.loading('Очистка кэша и обновление...');
               
@@ -1253,7 +1300,21 @@ const MainAppScreen = ({ onLogout }: { onLogout: () => void }) => {
         <ScreenHeader title="Профиль" />
         
         <div className="profile-header">
-          <div className="profile-avatar">{user?.username?.charAt(0)?.toUpperCase() || 'U'}</div>
+            <AvatarUploader 
+              currentAvatar={
+                user?.avatarUrl?.startsWith('data:image') || user?.avatarUrl?.startsWith('http') 
+                  ? user.avatarUrl 
+                  : user?.avatarUrl ? `${API_URL}${user.avatarUrl}` : null
+              } 
+              username={user?.username || ''} 
+              onUpload={async (base64) => {
+                await client.users.updateAvatar(base64);
+                const updatedUser = { ...user, avatarUrl: base64 };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                setUser(updatedUser as any);
+                toast.success('Аватарка обновлена!');
+              }} 
+            />
           <div className="profile-info">
             <h2 className="screenHeaderTitle">{user?.username || 'Пользователь'}</h2>
             <p>ID: {user?.telegramId}</p>

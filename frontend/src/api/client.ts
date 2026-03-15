@@ -270,6 +270,16 @@ export const client = {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Ошибка обновления пароля');
       return data;
+    },
+    updateAvatar: async (avatarBase64: string) => {
+      const response = await fetch(`${API_BASE_URL}/user/avatar`, {
+        method: 'PUT',
+        headers: getHeaders(),
+        body: JSON.stringify({ avatarBase64 })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'Ошибка обновления аватарки');
+      return data;
     }
   },
 

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft } from 'lucide-react';
 import { useBalance } from '../hooks/useBalance';
 import { useDevices } from '../hooks/useDevices';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import BalanceCard from "../components/BalanceCard";
 import DevicesCard from "../components/DevicesCard";
 import ActionButtons from "../components/ActionButtons";

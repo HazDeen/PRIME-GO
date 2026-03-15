@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-interface User {
+export interface User {
   id: number;
   telegramId: string;
+  avatarUrl?: string | null;
   firstName: string;
   lastName: string;
   username: string;
@@ -14,20 +15,30 @@ interface User {
   tgNotifications?: boolean;
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   setUser: (user: User | null) => void;
   loading: boolean;
   updateBalance: (newBalance: number) => void;
+  updateUser: (data: Partial<User>) => void;
   logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// 👈 Теперь мы экспортируем сам контекст
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+
+  const updateUser = (data: Partial<User>) => {
+      if (user) {
+        const updated = { ...user, ...data };
+        setUser(updated);
+        localStorage.setItem('user', JSON.stringify(updated));
+      }
+    };
 
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -41,8 +52,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setLoading(false);
   }, []);
 
-  // ❌ МЫ УДАЛИЛИ useEffect, КОТОРЫЙ ДЕЛАЛ navigate('/login')
-  // Теперь роутер не будет дергаться. AppView сам поймет, что user == null, и покажет форму входа.
+  
 
   const updateBalance = (newBalance: number) => {
     if (user) {
@@ -54,22 +64,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = () => {
     localStorage.removeItem('user');
-    localStorage.removeItem('token'); // Подчищаем токен на всякий случай
+    localStorage.removeItem('token'); 
     setUser(null);
-    navigate('/'); // 👈 Кидаем на главную
+    navigate('/'); 
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, loading, updateBalance, logout }}> {/* 👈 ДОБАВИТЬ СЮДА */}
+    <AuthContext.Provider value={{ user, setUser, loading, updateBalance, updateUser, logout }}>
       {children}
     </AuthContext.Provider>
   )
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within AuthProvider');
-  }
-  return context;
 };

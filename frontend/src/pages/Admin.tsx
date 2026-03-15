@@ -12,6 +12,8 @@ import '../styles/admin.css';
 import AdminAddDeviceModal from '../components/AdminAddDeviceModal';
 import AdminSendNotificationModal from '../components/AdminSendNotificationModal';
 
+const API_URL = 'https://h4zdeen.up.railway.app';
+
 export interface User {
   id: number;
   telegramId: number;
@@ -322,7 +324,21 @@ const Admin: React.FC = () => {
                     transition={{ delay: idx * 0.05 }}
                   >
                     <div className="cardMainRow" onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}>
-                      <div className="userIcon">{user.isAdmin ? <ShieldCheck size={20}/> : <Smartphone size={20}/>}</div>
+                      <div className="userIcon" style={{ padding: 0, overflow: 'hidden' }}>
+                        {(user as any).avatarUrl ? (
+                          <img 
+                            src={
+                              (user as any).avatarUrl.startsWith('data:image') || (user as any).avatarUrl.startsWith('http')
+                                ? (user as any).avatarUrl
+                                : `${API_URL}${(user as any).avatarUrl}`
+                            } 
+                            alt="avatar" 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                          />
+                        ) : (
+                          user.isAdmin ? <ShieldCheck size={20}/> : <Smartphone size={20}/>
+                        )}
+                      </div>
                       <div className="cardInfo">
                         <div className="primaryText">{user.username || `@id${user.telegramId}`}</div>
                         <div className="secondaryText">{user.balance} ₽ • {user.isAdmin ? 'Админ' : 'Клиент'}</div>
