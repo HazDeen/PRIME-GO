@@ -150,4 +150,11 @@ export class UserController {
 
     return { success: true, message: 'Аватарка обновлена' };
   }
+
+  // 🌟 СИНХРОНИЗАЦИЯ АВАТАРКИ ИЗ TELEGRAM
+  @Post('avatar/telegram')
+  async syncTelegramAvatar(@Headers('x-username') username: string) {
+    if (!username) throw new UnauthorizedException('Username required');
+    return this.userService.syncTelegramAvatar(username);
+  }
 }

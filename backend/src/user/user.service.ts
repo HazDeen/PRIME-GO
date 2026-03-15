@@ -138,4 +138,48 @@ export class UserService {
     const user = await this.findUserByUsername(username);
     return this.topUpBalance(user.id, amount);
   }
+
+  async syncTelegramAvatar(username: string) {
+    this.logger.log(`🔄 Синхронизация аватарки для @${username}`);
+    const user = await this.findUserByUsername(username);
+    const botToken = process.env.BOT_TOKEN;
+    const tgId = Number(user.telegramId);
+
+    try {
+      // 1. Получаем список фотографий профиля
+      const photosRes = await fetch(`https://api.telegram.org/bot${botToken}/getUserProfilePhotos?user_id=${tgId}&limit=1`);
+      const photosData = await photosRes.json();
+
+      if (photosData.ok && photosData.result.total_count > 0) {
+        // Берем самую маленькую версию актуального фото (для экономии места)
+        const fileId = photosData.result.photos[0][0].file_id;
+        
+        // 2. Получаем путь к файлу на серверах Telegram
+        const fileRes = await fetch(`https://api.telegram.org/bot${botToken}/getFile?file_id=${fileId}`);
+        const fileData = await fileRes.json();
+        
+        if (fileData.ok) {
+          const filePath = fileData.result.file_path;
+          
+          // 3. Скачиваем картинку и переводим в Base64
+          const imageRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
+          const arrayBuffer = await imageRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const avatarBase64 = `data:image/jpeg;base64,${buffer.toString('base64')}`;
+
+          // 4. Сохраняем в базу данных
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: { avatarUrl: avatarBase64 }
+          });
+
+          return { success: true, avatarUrl: avatarBase64 };
+        }
+      }
+      return { success: false, message: 'У вас нет публичного фото в Telegram' };
+    } catch (e) {
+      this.logger.error('Ошибка синхронизации аватарки:', e);
+      return { success: false, message: 'Ошибка связи с Telegram API' };
+    }
+  }
 }
