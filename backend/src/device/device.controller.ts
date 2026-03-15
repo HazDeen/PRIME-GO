@@ -129,12 +129,32 @@ export class DeviceController {
   }
 
   @Post(':id/renew')
-  async renewDevice(@Param('id') id: string, @Headers('Authorization') auth: string) {
-    // Получаем пользователя (зависит от твоей авторизации, обычно из токена или можно передать userId)
-    // Упрощенно для примера (лучше брать из токена):
-    const tokenParams = JSON.parse(Buffer.from(auth.split('.')[1], 'base64').toString()); 
-    const userId = tokenParams.id; // Твой ID из токена
+  async renewDevice(
+    @Param('id') id: string, 
+    @Headers('authorization') auth: string,
+    @Body('userId') bodyUserId: number // 👈 Принимаем ID из body
+  ) {
+    let userId = bodyUserId;
 
-    return this.deviceService.renewDevice(parseInt(id), userId);
+    // Безопасный фоллбэк: если ID в body нет, аккуратно достаем из токена
+    if (!userId && auth && auth.includes('Bearer ') && auth.includes('.')) {
+      try {
+        const token = auth.split(' ')[1];
+        if (token && token.includes('.')) {
+          const base64Payload = token.split('.')[1];
+          const payload = JSON.parse(Buffer.from(base64Payload, 'base64').toString('utf8'));
+          userId = payload.id || payload.sub;
+        }
+      } catch (e) {
+        console.error('Ошибка парсинга токена:', e.message);
+      }
+    }
+
+    if (!userId) {
+      // Теперь сервер не падает с ошибкой 500, а красиво возвращает 400
+      throw new BadRequestException('Не удалось определить ID пользователя. Перезайдите в аккаунт.');
+    }
+
+    return this.deviceService.renewDevice(Number(userId), Number(id));
   }
 }
