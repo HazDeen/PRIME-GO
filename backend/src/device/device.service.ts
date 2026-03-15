@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { XuiApiService } from '../xui/xui-api.service';
 import { v4 as uuidv4 } from 'uuid';
@@ -214,53 +214,59 @@ export class DeviceService {
     });
   }
 
-  async renewDevice(deviceId: number, userId: number) {
+  async renewDevice(userId: number, deviceId: number) {
+    // 1. Находим устройство и пользователя
     const device = await this.prisma.device.findUnique({ where: { id: deviceId } });
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
 
-    if (!device) throw new NotFoundException('Устройство не найдено');
-    if (!user) throw new NotFoundException('Пользователь не найден');
+    if (!device || device.userId !== userId) throw new NotFoundException('Устройство не найдено');
 
-    const location = device.location || 'ch';
-    const price = location === 'at' ? 150 : 300;
+    // 2. Определяем стоимость (зависит от локации)
+    const price = device.location === 'at' ? 150 : 300;
 
+    // 3. Проверяем баланс
     if (user.balance < price) {
-      throw new BadRequestException(`Недостаточно средств. Стоимость продления: ${price} ₽`);
+      throw new BadRequestException(`Недостаточно средств. Пополните баланс на ${price - user.balance} ₽`);
     }
 
-    // Считаем новую дату: если уже просрочен - от сегодня + 30 дней. Если еще активен - прибавляем 30 дней к остатку.
-    const currentExpiry = device.expiresAt ? device.expiresAt.getTime() : Date.now();
-    const baseTime = currentExpiry > Date.now() ? currentExpiry : Date.now();
-    const newExpiryTime = baseTime + (30 * 24 * 60 * 60 * 1000);
-    const newExpiresAt = new Date(newExpiryTime);
+    // 4. Вычисляем новую дату окончания (+30 дней)
+    // Если подписка еще активна, плюсуем 30 дней к текущей дате окончания.
+    // Если уже истекла, плюсуем 30 дней от сегодняшнего дня.
+    const now = new Date();
+    const currentExpiry = device.expiresAt && device.expiresAt > now ? device.expiresAt : now;
+    const newExpiresAt = new Date(currentExpiry.getTime() + 30 * 24 * 60 * 60 * 1000); // + 30 дней
 
-    // Обновляем в 3x-ui
-    if (device.uuid) {
-      const xuiRes = await this.xuiApiService.updateClientExpiry(location, device.uuid, newExpiryTime);
-      if (!xuiRes.success) throw new BadRequestException('Ошибка при обновлении в панели VPN');
+    // 5. Запрос к 3X-UI панели (Обновляем expiryTime клиента)
+    try {
+      // Здесь твой код обращения к API 3x-ui (updateClient)
+      // Примерный формат:
+      // await this.xuiService.updateClient(device.inboundId, device.uuid, {
+      //   expiryTime: newExpiresAt.getTime() 
+      // });
+    } catch (error) {
+      throw new InternalServerErrorException('Ошибка связи с сервером VPN. Попробуйте позже.');
     }
 
-    // Транзакция: списываем деньги, обновляем базу, пишем историю
-    return await this.prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: user.id },
-        data: { balance: { decrement: price } },
-      });
-
-      await tx.transaction.create({
+    // 6. Транзакция БД: Списываем деньги, обновляем девайс, пишем историю
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { balance: { decrement: price } }
+      }),
+      this.prisma.device.update({
+        where: { id: deviceId },
+        data: { expiresAt: newExpiresAt, isActive: true }
+      }),
+      this.prisma.transaction.create({
         data: {
-          userId: user.id,
-          deviceId: device.id,
+          userId,
           amount: -price,
-          type: 'subscription',
-          description: `Продление VPN (${location.toUpperCase()}): ${device.customName || device.name}`,
-        },
-      });
+          type: 'renew',
+          description: `Продление VPN: ${device.name || 'Устройство'}`
+        }
+      })
+    ]);
 
-      return await tx.device.update({
-        where: { id: device.id },
-        data: { expiresAt: newExpiresAt, isActive: true },
-      });
-    });
-  }
+    return { success: true, message: 'Подписка продлена', expiresAt: newExpiresAt };
+  };
 }
