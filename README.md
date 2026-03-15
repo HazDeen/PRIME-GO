@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# 🚀 PRIME GO | Telegram Mini App & VPN Management
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**PRIME GO** — это комплексная платформа для управления VPN-подключениями (на базе протокола VLESS/Xray) через современное Telegram Mini App. Проект включает в себя клиентское приложение с премиальным дизайном, продвинутую админ-панель, встроенную систему тикетов и умного Telegram-бота для рассылки Push-уведомлений.
 
-Currently, two official plugins are available:
+## ✨ Ключевые возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 📱 Клиентская часть (Mini App)
+* **Премиальный UI/UX:** Интерфейс выполнен в уникальном стиле *Liquid Glass* (iOS 26 Style) с использованием глубокого размытия (backdrop-filter), глянцевых бликов и плавных анимаций переходов на базе `framer-motion`.
+* **Управление подписками:** Покупка, продление и удаление VPN-устройств в 1 клик. Автоматическое получение `configLink` для v2RayTun / Vibe.
+* **Система поддержки (Тикеты):** Встроенный Live-чат с администрацией прямо внутри Mini App (с историей сообщений и статусами).
+* **Персонализация:** Поддержка светлой, темной темы и специального режима "Стиль Telegram".
+* **Кошелек:** Внутренний баланс пользователя и история транзакций.
+* **Интеграции (в разработке):** Подготовка к внедрению Gemini AI.
 
-## React Compiler
+### 👑 Панель администратора
+* **Управление пользователями:** Просмотр списка клиентов, изменение баланса, выдача прав.
+* **Монолитный UI:** Кастомные элементы управления и выпадающие списки, идеально вписанные в стеклянный дизайн.
+* **Управление VPN (3x-ui):** Выдача устройств напрямую через админку (с выбором локации, например, Швейцария или Австрия), генерация ссылок, принудительное синхронное удаление клиентов из панели `3x-ui`.
+* **Массовые рассылки:** Отправка уведомлений конкретным пользователям или всем сразу прямо из интерфейса.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🤖 Telegram-бот (NestJS)
+* **Smart Notifications:** Бот автоматически распознает тип события (💰 оплата, 📱 выдача VPN, 💬 ответ поддержки, ⚠️ системное сообщение) и подбирает нужные эмодзи и текст для Push-уведомлений в Telegram.
+* **Anti-Spam защита:** Встроенная фоновая очередь рассылки (delay 35ms) для безопасного обхода лимитов Telegram API при массовых оповещениях (`sendToAll`).
+* **Управление доступом:** Регистрация, установка и сброс пароля от Web-аккаунта через бота.
+* **Graceful Shutdown:** Корректная обработка сигналов завершения (SIGINT/SIGTERM) для предотвращения конфликтов вебхуков при деплое (например, на Railway).
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## 🛠 Технологический стек
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Frontend
+* **Core:** React, TypeScript, Vite
+* **Routing:** React Router DOM
+* **Animations:** Framer Motion
+* **Styling:** CSS Variables, Glassmorphism, Flexbox/Grid
+* **UI Components:** Lucide React (иконки), Sonner (Toasts), Flag-icons
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Backend
+* **Core:** NestJS, Node.js, TypeScript
+* **Database:** PostgreSQL + Prisma ORM
+* **Bot API:** Telegraf
+* **Integrations:** 3x-ui API (Xray/VLESS)
+* **Security:** bcrypt (хеширование паролей)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## ⚙️ Установка и запуск (Локально)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Предварительные требования
+* Node.js (v18+)
+* PostgreSQL
+* Рабочая панель 3x-ui (для генерации конфигов)
+* Токен Telegram-бота (от @BotFather)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+### 1. Клонирование репозитория
+```bash
+git clone [https://github.com/HazDeen/PRIME-GO.git](https://github.com/HazDeen/PRIME-GO.git)
+cd PRIME-GO
