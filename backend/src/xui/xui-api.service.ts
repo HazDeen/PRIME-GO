@@ -120,22 +120,30 @@ export class XuiApiService {
     const config = this.getServerConfig(location);
 
     try {
-      // 1. Сначала нужно получить текущие данные клиента
-      const response = await api.get(`/panel/api/inbounds/getClientTraffics/${config.inboundId}`);
-      if (!response.data?.success) return { success: false, msg: 'Не удалось получить данные клиента' };
+      // 1. Получаем полную конфигурацию инбаунда, чтобы не затереть flow, email и limitIp клиента
+      const response = await api.get(`/panel/api/inbounds/get/${config.inboundId}`);
       
-      const client = response.data.obj.find((c: any) => c.email.includes(uuid) || c.email === uuid || c.id === uuid);
+      if (!response.data?.success || !response.data?.obj) {
+        return { success: false, msg: 'Не удалось получить данные инбаунда из 3x-ui' };
+      }
+
+      const inbound = response.data.obj;
+      const settings = JSON.parse(inbound.settings);
       
-      // 2. Формируем запрос на обновление
+      // 2. Ищем нашего клиента в списке
+      const client = settings.clients.find((c: any) => c.id === uuid);
+      if (!client) {
+        return { success: false, msg: 'Клиент не найден в панели 3x-ui' };
+      }
+
+      // 3. Обновляем ТОЛЬКО дату окончания, сохраняя все остальные настройки (flow, email и т.д.)
+      client.expiryTime = newExpiryTime;
+
+      // 4. Формируем запрос на обновление
       const payload = new URLSearchParams({
         id: config.inboundId.toString(),
         settings: JSON.stringify({
-          clients: [{
-            id: uuid,
-            expiryTime: newExpiryTime,
-            enable: true
-            // Остальные параметры 3x-ui сохранит автоматически
-          }]
+          clients: [client] // Отправляем целого клиента обратно
         }),
       });
 
