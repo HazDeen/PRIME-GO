@@ -238,11 +238,19 @@ export class DeviceService {
 
     // 5. Запрос к 3X-UI панели (Обновляем expiryTime клиента)
     try {
-      // Здесь твой код обращения к API 3x-ui (updateClient)
-      // Примерный формат:
-      // await this.xuiService.updateClient(device.inboundId, device.uuid, {
-      //   expiryTime: newExpiresAt.getTime() 
-      // });
+      if (device.uuid) {
+        const location = device.location || 'ch';
+        const xuiResponse = await this.xuiApiService.updateClientExpiry(
+          location, 
+          device.uuid, 
+          newExpiresAt.getTime()
+        );
+
+        if (!xuiResponse || !xuiResponse.success) {
+          this.logger.error(`Ошибка 3x-ui при продлении UUID ${device.uuid}: ${xuiResponse?.msg}`);
+          throw new Error('Не удалось обновить дату в панели 3x-ui');
+        }
+      }
     } catch (error) {
       throw new InternalServerErrorException('Ошибка связи с сервером VPN. Попробуйте позже.');
     }
